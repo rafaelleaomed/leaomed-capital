@@ -15,15 +15,15 @@ export default function DashboardLayout({
         {/* Topbar Executiva com Glassmorphism */}
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white/80 dark:bg-slate-950/80 px-4 md:px-6 backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 font-bold text-slate-950 shadow-lg shadow-emerald-500/20">
-              <Sparkles className="h-5 w-5" />
+            <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-emerald-500/30 bg-slate-900 shadow-lg shadow-emerald-500/20">
+              <img src="/logo.jpg" alt="LeãoMed Capital Logo" className="h-full w-full object-cover" />
             </div>
             <div>
               <span className="font-display text-base md:text-lg font-bold tracking-tight text-slate-900 dark:text-white block leading-tight">
                 LeãoMed Capital
               </span>
               <span className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-bold block">
-                PJ Inter & PF Multicontas
+                Gestão Patrimonial & IA Consultiva
               </span>
             </div>
           </div>

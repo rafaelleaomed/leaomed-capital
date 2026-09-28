@@ -78,8 +78,8 @@ function LoginForm() {
       <div className="relative w-full max-w-md">
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-500/20 rounded-2xl mb-4">
-            <TrendingUp className="w-7 h-7 text-emerald-400" />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-slate-900 border border-emerald-500/30 rounded-2xl mb-4 overflow-hidden shadow-xl shadow-emerald-500/10">
+            <img src="/logo.jpg" alt="LeãoMed Capital Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
             LeãoMed Capital
