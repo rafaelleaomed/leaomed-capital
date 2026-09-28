@@ -1,0 +1,98 @@
+# ========================
+# Dependências
+# ========================
+node_modules/
+.pnp
+.pnp.js
+
+# ========================
+# Configuração de Agentes de IA (não vai para o repositório)
+# ========================
+.agent/
+.agents/
+.claude/
+
+# ========================
+# Build / Next.js
+# ========================
+.next/
+out/
+build/
+dist/
+
+# ========================
+# Variáveis de Ambiente (NUNCA commitar)
+# ========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ========================
+# Arquivos sensíveis do projeto
+# ========================
+# Planilha financeira real
+*.xlsx
+*.xls
+*.ods
+
+# PDFs de contratos/dados pessoais
+*.pdf
+
+# Prints de extratos bancários
+Screenshot_*.jpg
+Screenshot_*.png
+
+# Dados temporários
+.tmp/
+
+# Executáveis locais
+cloudflared.exe
+
+# ========================
+# Ferramentas Python (seeds, scripts de dados reais)
+# ========================
+tools/__pycache__/
+tools/*.pyc
+tools/.env
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# ========================
+# Sistema Operacional
+# ========================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ========================
+# Logs
+# ========================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ========================
+# IDEs e Editores
+# ========================
+.vscode/settings.json
+.idea/
+*.iml
+
+# ========================
+# Vercel
+# ========================
+.vercel
+
+# ========================
+# TypeScript
+# ========================
+*.tsbuildinfo
+next-env.d.ts

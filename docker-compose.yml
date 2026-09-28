@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: apex_finance_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: apex_finance
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/01_initial_schema.sql:/docker-entrypoint-initdb.d/01_initial_schema.sql
+      - ./database/02_custom_taxonomy_and_projections.sql:/docker-entrypoint-initdb.d/02_custom_taxonomy_and_projections.sql
+
+volumes:
+  pgdata:
