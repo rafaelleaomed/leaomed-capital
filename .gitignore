@@ -40,7 +40,7 @@ dist/
 # PDFs de contratos/dados pessoais
 *.pdf
 
-# Prints de extratos bancários
+# Prints de extratos bancários soltos
 Screenshot_*.jpg
 Screenshot_*.png
 
@@ -96,3 +96,5 @@ yarn-error.log*
 # ========================
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
