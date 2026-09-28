@@ -20,7 +20,7 @@ export default function DashboardLayout({
             </div>
             <div>
               <span className="font-display text-base md:text-lg font-bold tracking-tight text-slate-900 dark:text-white block leading-tight">
-                Aethel Wealth
+                LeãoMed Capital
               </span>
               <span className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-bold block">
                 PJ Inter & PF Multicontas

@@ -1,4 +1,4 @@
-# 💎 Aethel Wealth — Plataforma Financeira Inteligente
+# 💎 LeãoMed Capital — Plataforma Financeira Inteligente
 
 > Dashboard financeiro pessoal com gestão unificada PJ + PF, IA consultiva, rebalanceamento de portfólio e projeções automáticas.
 

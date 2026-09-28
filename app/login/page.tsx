@@ -82,7 +82,7 @@ function LoginForm() {
             <TrendingUp className="w-7 h-7 text-emerald-400" />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
-            Aethel Wealth
+            LeãoMed Capital
           </h1>
           <p className="text-slate-400 text-sm mt-1">
             Plataforma Financeira Inteligente
