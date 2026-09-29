@@ -36,11 +36,27 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
   }, [])
 
   // Perfil
-  const [fullName, setFullName] = useState('Dr. Rafael Leão')
-  const [email, setEmail] = useState('rafaelleaobh@gmail.com')
+  const [fullName, setFullName] = useState('Dr. Usuário')
+  const [email, setEmail] = useState('usuario@leaomed.com')
   const [specialty, setSpecialty] = useState('Cirurgião Geral / Médico')
   const [crm, setCrm] = useState('CRM-MG')
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('')
+
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const supabase = createSupabaseBrowserClient()
+        const { data } = await supabase.auth.getUser()
+        if (data?.user) {
+          if (data.user.email) setEmail(data.user.email)
+          if (data.user.user_metadata?.full_name) setFullName(data.user.user_metadata.full_name)
+        }
+      } catch (err) {
+        // fallback
+      }
+    }
+    loadUser()
+  }, [])
 
   // Senha
   const [newPassword, setNewPassword] = useState('')

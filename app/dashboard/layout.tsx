@@ -4,11 +4,27 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { UserAccountHeader } from '@/components/dashboard/UserAccountHeader'
 import { SidebarNavigation } from '@/components/dashboard/SidebarNavigation'
 
-export default function DashboardLayout({
+import { createClient } from '@/utils/supabase/server'
+
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  let userName = 'Dr. Usuário'
+  let userEmail = 'usuario@leaomed.com'
+
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      userEmail = user.email || userEmail
+      userName = user.user_metadata?.full_name || user.user_metadata?.name || 'Dr. Rafael Leão'
+    }
+  } catch (e) {
+    // fallback seguro caso sem sessao ativa
+  }
+
   return (
     <ThemeProvider>
       <div className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-[#070B12] text-slate-900 dark:text-slate-100 transition-colors duration-200">
@@ -39,7 +55,7 @@ export default function DashboardLayout({
             </div>
 
             {/* Cabeçalho Interativo do Usuário com Mini Registro e Configurações */}
-            <UserAccountHeader initialName="Dr. Rafael Leão" initialEmail="rafaelleaobh@gmail.com" />
+            <UserAccountHeader initialName={userName} initialEmail={userEmail} />
           </div>
         </header>
 

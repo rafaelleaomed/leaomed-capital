@@ -11,6 +11,12 @@ if not NEON_URI:
 
 USER_ID = os.environ.get("USER_ID", "d8225585-6cf1-4dc7-ba96-724bc2bb7cc0")
 
+if "--force" not in sys.argv:
+    print("⚠️ PROTEÇÃO ATIVA: Este script apaga e recria registros no PostgreSQL.")
+    print("   Para confirmar a substituição de dados, execute passando o parâmetro --force:")
+    print("   python tools/seed_neon_investments_and_installments.py --force")
+    sys.exit(0)
+
 def seed():
     conn = psycopg2.connect(NEON_URI)
     conn.autocommit = True

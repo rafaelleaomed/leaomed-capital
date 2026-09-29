@@ -12,8 +12,8 @@ interface UserAccountHeaderProps {
 }
 
 export function UserAccountHeader({
-  initialName = 'Dr. Rafael Leão',
-  initialEmail = 'rafaelleaobh@gmail.com',
+  initialName = 'Dr. Usuário',
+  initialEmail = 'usuario@leaomed.com',
   isDemo = false
 }: UserAccountHeaderProps) {
   const [isOpen, setIsOpen] = useState(false)

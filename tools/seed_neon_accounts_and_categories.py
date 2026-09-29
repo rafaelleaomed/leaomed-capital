@@ -14,6 +14,12 @@ if not NEON_URI:
 
 USER_ID = os.environ.get("USER_ID", "d8225585-6cf1-4dc7-ba96-724bc2bb7cc0")
 
+if "--force" not in sys.argv:
+    print("⚠️ PROTEÇÃO ATIVA: Este script executa inserts e atualizações em lote nas tabelas de contas e categorias.")
+    print("   Para confirmar a execução, passe o parâmetro --force:")
+    print("   python tools/seed_neon_accounts_and_categories.py --force")
+    sys.exit(0)
+
 def get_uuid(name: str):
     return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"apex_{name}"))
 
