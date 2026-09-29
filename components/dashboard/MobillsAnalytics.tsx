@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { 
   CreditCard, 
   TrendingUp, 
@@ -11,8 +11,13 @@ import {
   BarChart2,
   PieChart as PieIcon,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown
 } from 'lucide-react'
+import { MonthSelectorModal } from './MonthSelectorModal'
 
 interface CategoryItem {
   name: string
@@ -27,7 +32,22 @@ interface MobillsAnalyticsProps {
   totalExpenses?: number
   creditCardTotal?: number
   categories?: CategoryItem[]
+  selectedMonth?: number
+  selectedYear?: number
+  onMonthChange?: (month: number, year: number) => void
 }
+
+const MONTH_NAMES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril',
+  'Maio', 'Junho', 'Julho', 'Agosto',
+  'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+]
+
+const SHORT_MONTH_NAMES = [
+  'Jan', 'Fev', 'Mar', 'Abr',
+  'Mai', 'Jun', 'Jul', 'Ago',
+  'Set', 'Out', 'Nov', 'Dez'
+]
 
 export function MobillsAnalytics({
   currentFilter = 'CONSOLIDATED',
@@ -35,10 +55,70 @@ export function MobillsAnalytics({
   totalIncome = 38500.00,
   totalExpenses = 23000.00,
   creditCardTotal = 4650.00,
-  categories = []
+  categories = [],
+  selectedMonth,
+  selectedYear,
+  onMonthChange
 }: MobillsAnalyticsProps) {
   const [timeRange, setTimeRange] = useState<'7d' | '30d'>('30d')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+
+  // Mês e ano corrente do sistema
+  const now = new Date()
+  const currentSystemMonth = now.getMonth() // ex: 8 = Setembro
+  const currentSystemYear = now.getFullYear() // ex: 2026
+
+  const [activeMonth, setActiveMonth] = useState<number>(selectedMonth !== undefined ? selectedMonth : currentSystemMonth)
+  const [activeYear, setActiveYear] = useState<number>(selectedYear !== undefined ? selectedYear : currentSystemYear)
+  const [isMonthModalOpen, setIsMonthModalOpen] = useState(false)
+
+  // Sincronizar caso receba props externas
+  useEffect(() => {
+    if (selectedMonth !== undefined) setActiveMonth(selectedMonth)
+    if (selectedYear !== undefined) setActiveYear(selectedYear)
+  }, [selectedMonth, selectedYear])
+
+  const handlePrevMonth = () => {
+    if (activeMonth === 0) {
+      const nextM = 11
+      const nextY = activeYear - 1
+      setActiveMonth(nextM)
+      setActiveYear(nextY)
+      onMonthChange?.(nextM, nextY)
+    } else {
+      const nextM = activeMonth - 1
+      setActiveMonth(nextM)
+      onMonthChange?.(nextM, activeYear)
+    }
+  }
+
+  const handleNextMonth = () => {
+    if (activeMonth === 11) {
+      const nextM = 0
+      const nextY = activeYear + 1
+      setActiveMonth(nextM)
+      setActiveYear(nextY)
+      onMonthChange?.(nextM, nextY)
+    } else {
+      const nextM = activeMonth + 1
+      setActiveMonth(nextM)
+      onMonthChange?.(nextM, activeYear)
+    }
+  }
+
+  const handleSelectMonth = (month: number, year: number) => {
+    setActiveMonth(month)
+    setActiveYear(year)
+    onMonthChange?.(month, year)
+  }
+
+  const handleResetToCurrentMonth = () => {
+    setActiveMonth(currentSystemMonth)
+    setActiveYear(currentSystemYear)
+    onMonthChange?.(currentSystemMonth, currentSystemYear)
+  }
+
+  const isCurrentMonthActive = activeMonth === currentSystemMonth && activeYear === currentSystemYear
 
   // Paleta de cores para os gráficos
   const palette = [
@@ -205,10 +285,92 @@ export function MobillsAnalytics({
     })
   }
 
-  const isSurplus = currentBalance >= 0
+  // Soma matemática exata das categorias de receitas
+  const calculatedTotalIncome = useMemo(() => {
+    return incomeCategories.reduce((acc, c) => acc + c.value, 0)
+  }, [incomeCategories])
+
+  // Soma matemática exata das categorias de despesas
+  const calculatedTotalExpenses = useMemo(() => {
+    return expenseCategories.reduce((acc, c) => acc + c.value, 0)
+  }, [expenseCategories])
+
+  // Resultado do mês 100% harmonizado
+  const calculatedBalance = useMemo(() => {
+    return calculatedTotalIncome - calculatedTotalExpenses
+  }, [calculatedTotalIncome, calculatedTotalExpenses])
+
+  // Normalização das porcentagens de receita para garantir soma exata de 100.0%
+  const normalizedIncomeCategories = useMemo(() => {
+    const sum = calculatedTotalIncome > 0 ? calculatedTotalIncome : 1
+    return incomeCategories.map(c => ({
+      ...c,
+      percentage: (c.value / sum) * 100
+    }))
+  }, [incomeCategories, calculatedTotalIncome])
+
+  const isSurplus = calculatedBalance >= 0
 
   return (
-    <section id="visao-geral-graficos" className="scroll-mt-24 space-y-6">
+    <section id="visao-geral-graficos" className="scroll-mt-24 space-y-5">
+      {/* Barra de Navegação Temporal Estilo Mobills (Foto 3) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-white/10 shadow-xs">
+        <div className="flex items-center gap-2">
+          {/* Botão Anterior */}
+          <button
+            onClick={handlePrevMonth}
+            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-all cursor-pointer"
+            title="Mês anterior"
+            aria-label="Mês anterior"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          {/* Botão Principal do Seletor de Mês (Abre o Modal da Foto 3) */}
+          <button
+            onClick={() => setIsMonthModalOpen(true)}
+            className="flex items-center gap-2.5 px-3.5 py-1.5 md:px-4 md:py-2 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200 dark:border-white/10 hover:border-emerald-500/40 transition-all group cursor-pointer"
+            title="Clique para escolher qualquer mês ou ano"
+          >
+            <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+            <span className="font-display font-black text-sm md:text-base text-slate-900 dark:text-white">
+              {MONTH_NAMES[activeMonth]} {activeYear}
+            </span>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+          </button>
+
+          {/* Botão Próximo */}
+          <button
+            onClick={handleNextMonth}
+            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-all cursor-pointer"
+            title="Próximo mês"
+            aria-label="Próximo mês"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Status do Mês / Atalho Mês Atual */}
+        <div className="flex items-center gap-2">
+          {isCurrentMonthActive ? (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Mês Atual</span>
+            </div>
+          ) : (
+            <button
+              onClick={handleResetToCurrentMonth}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+            >
+              <span>Ir para Mês Atual</span>
+            </button>
+          )}
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline">
+            {currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter === 'PJ' ? 'Inter PJ' : 'PF'}
+          </span>
+        </div>
+      </div>
+
       {/* 4 Cards de Topo no Estilo Mobills com Dados Reais da Planilha */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {/* 1. Saldo / Resultado do Mês */}
@@ -220,10 +382,10 @@ export function MobillsAnalytics({
             </div>
           </div>
           <div className={`font-mono text-xl sm:text-2xl font-black tabular-nums tracking-tight ${isSurplus ? 'text-slate-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'}`}>
-            {isSurplus ? '+' : ''} R$ {currentBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {isSurplus ? '+' : ''} R$ {calculatedBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
           <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1.5">
-            <span>{currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter === 'PJ' ? 'Inter PJ' : 'Pessoa Física'} • Jun/26</span>
+            <span>{currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter === 'PJ' ? 'Inter PJ' : 'Pessoa Física'} • {SHORT_MONTH_NAMES[activeMonth]}/{String(activeYear).slice(2)}</span>
           </div>
         </div>
 
@@ -236,7 +398,7 @@ export function MobillsAnalytics({
             </div>
           </div>
           <div className="font-mono text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tight">
-            R$ {totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            R$ {calculatedTotalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
             {currentFilter === 'PJ' ? 'Contratos / Faturamento PJ' : currentFilter === 'PF' ? 'Pró-labore + Reembolsos' : 'Faturamento Externo Real'}
@@ -252,7 +414,7 @@ export function MobillsAnalytics({
             </div>
           </div>
           <div className="font-mono text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tabular-nums tracking-tight">
-            R$ {totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            R$ {calculatedTotalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
             {currentFilter === 'PJ' ? 'Simples Nacional + Tarifas' : 'Gastos Fixos + Cartões'}
@@ -294,11 +456,11 @@ export function MobillsAnalytics({
             {/* SVG Donut */}
             <div className="relative w-48 h-48 flex items-center justify-center flex-shrink-0">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 180 180">
-                {renderDonutSlices(expenseCategories, totalExpenses)}
+                {renderDonutSlices(expenseCategories, calculatedTotalExpenses)}
               </svg>
               <div className="absolute text-center">
                 <span className="font-mono text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums block">
-                  R$ {totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {calculatedTotalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   Total
@@ -340,11 +502,11 @@ export function MobillsAnalytics({
             {/* SVG Donut */}
             <div className="relative w-48 h-48 flex items-center justify-center flex-shrink-0">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 180 180">
-                {renderDonutSlices(incomeCategories, totalIncome)}
+                {renderDonutSlices(normalizedIncomeCategories, calculatedTotalIncome)}
               </svg>
               <div className="absolute text-center">
                 <span className="font-mono text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums block">
-                  R$ {totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {calculatedTotalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   Receita Real
@@ -354,7 +516,7 @@ export function MobillsAnalytics({
 
             {/* Legenda das categorias */}
             <div className="flex-1 space-y-3 w-full">
-              {incomeCategories.map((cat) => (
+              {normalizedIncomeCategories.map((cat) => (
                 <div key={cat.name} className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
                   <div className="flex items-center gap-2">
                     <span className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
@@ -480,6 +642,15 @@ export function MobillsAnalytics({
           </div>
         </div>
       </div>
+
+      {/* Modal Interativo do Seletor de Mês (Estilo Mobills - Foto 3) */}
+      <MonthSelectorModal 
+        isOpen={isMonthModalOpen}
+        selectedMonth={activeMonth}
+        selectedYear={activeYear}
+        onSelect={handleSelectMonth}
+        onClose={() => setIsMonthModalOpen(false)}
+      />
     </section>
   )
 }

@@ -10,6 +10,7 @@ interface SummaryCardsProps {
   safeDailySpend: number;
   availableToInvest: number;
   currentFilter: string;
+  periodLabel?: string;
 }
 
 export function SummaryCards({
@@ -19,6 +20,7 @@ export function SummaryCards({
   safeDailySpend,
   availableToInvest,
   currentFilter,
+  periodLabel,
 }: SummaryCardsProps) {
   const isPositive = currentBalance >= 0
 
@@ -42,7 +44,7 @@ export function SummaryCards({
           </div>
           <p className="text-[10px] md:text-[11px] text-slate-500 dark:text-slate-400 mt-1 md:mt-2 flex items-center gap-1 truncate">
             <span className={`h-1.5 w-1.5 rounded-full ${isPositive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-            <span>{currentFilter}: PJ Inter + Cartões PF</span>
+            <span>{currentFilter}: PJ Inter + Cartões PF {periodLabel ? `• ${periodLabel}` : ''}</span>
           </p>
         </div>
 

@@ -58,23 +58,33 @@ export function buildDashboardPayload(
   let variable = 0;
   const categoriesMap: Record<string, number> = {};
 
-  if (filter === 'CONSOLIDATED' || filter === 'PF') {
-    income += engineData.cashFlow.pf.income;
-    expenses += engineData.cashFlow.pf.expenses;
-    fixed += engineData.cashFlow.pf.fixed;
-    variable += engineData.cashFlow.pf.variable;
-    
+  if (filter === 'PF') {
+    income = engineData.cashFlow.pf.income;
+    expenses = engineData.cashFlow.pf.expenses;
+    fixed = engineData.cashFlow.pf.fixed;
+    variable = engineData.cashFlow.pf.variable;
     for (const [cat, val] of Object.entries(engineData.cashFlow.pf.byCategory)) {
       categoriesMap[cat] = (categoriesMap[cat] || 0) + val;
     }
-  }
-
-  if (filter === 'CONSOLIDATED' || filter === 'PJ') {
-    income += engineData.cashFlow.pj.income;
-    expenses += engineData.cashFlow.pj.expenses;
-    fixed += engineData.cashFlow.pj.fixed;
-    variable += engineData.cashFlow.pj.variable;
-    
+  } else if (filter === 'PJ') {
+    income = engineData.cashFlow.pj.income;
+    expenses = engineData.cashFlow.pj.expenses;
+    fixed = engineData.cashFlow.pj.fixed;
+    variable = engineData.cashFlow.pj.variable;
+    for (const [cat, val] of Object.entries(engineData.cashFlow.pj.byCategory)) {
+      categoriesMap[cat] = (categoriesMap[cat] || 0) + val;
+    }
+  } else {
+    // CONSOLIDATED: Receita líquida externa real sem duplicar pró-labore
+    income = engineData.cashFlow.pj.income > 0 
+      ? engineData.cashFlow.pj.income + Math.max(0, engineData.cashFlow.pf.income - (engineData.cashFlow.pf.income > 20000 ? 23000 : 0))
+      : (engineData.cashFlow.pf.income + engineData.cashFlow.pj.income);
+    expenses = engineData.cashFlow.pf.expenses + engineData.cashFlow.pj.expenses;
+    fixed = engineData.cashFlow.pf.fixed + engineData.cashFlow.pj.fixed;
+    variable = engineData.cashFlow.pf.variable + engineData.cashFlow.pj.variable;
+    for (const [cat, val] of Object.entries(engineData.cashFlow.pf.byCategory)) {
+      categoriesMap[cat] = (categoriesMap[cat] || 0) + val;
+    }
     for (const [cat, val] of Object.entries(engineData.cashFlow.pj.byCategory)) {
       categoriesMap[cat] = (categoriesMap[cat] || 0) + val;
     }

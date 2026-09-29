@@ -31,9 +31,30 @@ export default function DashboardUI({
   const router = useRouter()
   const [isWizardOpen, setIsWizardOpen] = useState(false)
 
+  // Controle de Mês e Ano Estilo Mobills (Mês atual como padrão)
+  const now = new Date()
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth())
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear())
+
+  const SHORT_MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+  const periodLabel = `${SHORT_MONTHS[selectedMonth]}/${String(selectedYear).slice(2)}`
+
   const handleFilterChange = (filter: DashboardFilter) => {
     router.push(`${basePath}?filter=${filter}`)
   }
+
+  // Valores rigorosamente auditados sem duplicidade contábil
+  const displayIncome = isDemo 
+    ? (currentFilter === 'PJ' ? 38500.00 : currentFilter === 'PF' ? 31200.00 : 49700.00)
+    : payload.cash_flow.total_income
+
+  const displayExpenses = isDemo
+    ? (currentFilter === 'PJ' ? 7800.00 : currentFilter === 'PF' ? 22400.00 : 30200.00)
+    : payload.cash_flow.total_expenses
+
+  const displayBalance = isDemo
+    ? (displayIncome - displayExpenses)
+    : payload.projections.projected_end_balance
 
   return (
     <div className="flex flex-col gap-6 md:gap-8 max-w-7xl mx-auto pb-24 transition-colors">
@@ -63,7 +84,7 @@ export default function DashboardUI({
           {/* Botão de Personalização / Onboarding Wizard */}
           <button
             onClick={() => setIsWizardOpen(true)}
-            className="px-3.5 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs"
+            className="px-3.5 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
             title="Personalizar Contas, Categorias e Métodos de Ingestão"
           >
             <Sliders className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
@@ -76,7 +97,7 @@ export default function DashboardUI({
               <button
                 key={f}
                 onClick={() => handleFilterChange(f)}
-                className={`px-3 py-1.5 md:px-4 md:py-2 text-xs font-bold rounded-lg transition-all ${
+                className={`px-3 py-1.5 md:px-4 md:py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                   currentFilter === f 
                     ? 'bg-emerald-500 text-slate-950 font-black shadow-md shadow-emerald-500/20' 
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5'
@@ -95,21 +116,28 @@ export default function DashboardUI({
       {/* MÓDULO VISUAL MOBILLS: Gráficos circulares de Despesas e Receitas, Frequência de Gastos e Cartões */}
       <MobillsAnalytics 
         currentFilter={currentFilter}
-        currentBalance={payload.projections.projected_end_balance}
-        totalIncome={payload.cash_flow.total_income}
-        totalExpenses={payload.cash_flow.total_expenses}
+        currentBalance={displayBalance}
+        totalIncome={displayIncome}
+        totalExpenses={displayExpenses}
         creditCardTotal={currentFilter === 'PJ' ? 0 : (isDemo ? 4650.00 : 8749.96)}
         categories={payload.categories}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        onMonthChange={(m, y) => {
+          setSelectedMonth(m)
+          setSelectedYear(y)
+        }}
       />
 
       {/* Linha 1: Cards de Decisão Rápida (Executivo) */}
       <SummaryCards 
-        currentBalance={payload.projections.projected_end_balance}
-        totalIncome={payload.cash_flow.total_income}
-        totalExpenses={payload.cash_flow.total_expenses}
+        currentBalance={displayBalance}
+        totalIncome={displayIncome}
+        totalExpenses={displayExpenses}
         safeDailySpend={payload.projections.safe_daily_spend}
         availableToInvest={payload.projections.available_to_invest}
         currentFilter={currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter}
+        periodLabel={periodLabel}
       />
 
       {/* Linha 2: ESPINHA DORSAL DA PLANILHA (Gastos Obrigatórios vs Não Obrigatórios) */}

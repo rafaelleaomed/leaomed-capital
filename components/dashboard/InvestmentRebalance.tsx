@@ -43,7 +43,9 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
     'Internacional': 25,
   })
 
-  const [activeTab, setActiveTab] = useState<'REBALANCE' | 'TABLE'>('REBALANCE')
+  const [activeTab, setActiveTab] = useState<'REBALANCE' | 'TABLE' | 'EMERGENCY'>('REBALANCE')
+  const [emergencyMonths, setEmergencyMonths] = useState<number>(10)
+  const [fixedCostInput, setFixedCostInput] = useState<number>(23000.00)
 
   // Portfólio demonstrativo sanitizado para visualização de portfólio
   const demoAssets: AssetRow[] = [
@@ -258,6 +260,17 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
               >
                 13 Ativos Detalhados
               </button>
+              <button
+                onClick={() => setActiveTab('EMERGENCY')}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                  activeTab === 'EMERGENCY' 
+                    ? 'bg-emerald-600 text-white font-bold shadow-xs' 
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Reserva de Emergência</span>
+              </button>
             </div>
           </div>
         </div>
@@ -460,6 +473,235 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
                 </tr>
               </tfoot>
             </table>
+          </div>
+        )}
+
+        {/* Visualização 3: Calculadora de Reserva de Emergência Sugerida (6 a 12x Custo Fixo) */}
+        {activeTab === 'EMERGENCY' && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Bloco de Seleção de Perfil / Multiplicador */}
+            <div className="p-5 md:p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950/40 space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                    Calculadora de Reserva de Emergência Sugerida
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Defina quantos meses de custo fixo garantem a segurança total da sua família ou da sua clínica médica.
+                  </p>
+                </div>
+
+                {/* Input de Custo Fixo Mensal */}
+                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 px-3 py-1.5 rounded-xl shadow-xs">
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Custo Fixo Mensal:</span>
+                  <div className="flex items-center">
+                    <span className="text-xs font-bold text-slate-400 mr-1">R$</span>
+                    <input 
+                      type="number"
+                      value={fixedCostInput}
+                      onChange={(e) => setFixedCostInput(Math.max(0, parseFloat(e.target.value) || 0))}
+                      className="w-24 text-xs font-mono font-bold bg-transparent border-none text-slate-900 dark:text-white focus:outline-none tabular-nums"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Seletor de Perfis Médicos (6x, 8x, 10x, 12x) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+                {[
+                  {
+                    months: 6,
+                    title: '6 Meses',
+                    profile: 'Concursado / Renda Fixa',
+                    desc: 'Estabilidade máxima com vencimentos previsíveis e sem variação.',
+                    badge: 'Mínimo Seguro'
+                  },
+                  {
+                    months: 8,
+                    title: '8 Meses',
+                    profile: 'CLT / Contrato Longo',
+                    desc: 'Previsibilidade com aviso prévio e segurança contratual intermediária.',
+                    badge: 'Equilibrado'
+                  },
+                  {
+                    months: 10,
+                    title: '10 Meses',
+                    profile: 'Médico Autônomo / Plantões',
+                    desc: 'Ideal para quem atua em escalas, plantões extras e consultório particular.',
+                    badge: 'Recomendado para Você'
+                  },
+                  {
+                    months: 12,
+                    title: '12 Meses',
+                    profile: 'Clínica Própria / Empresário PJ',
+                    desc: 'Máxima blindagem: cobre custos fixos pessoais e folha/insumos da clínica.',
+                    badge: 'Blindagem Total'
+                  }
+                ].map(item => {
+                  const isSelected = emergencyMonths === item.months
+                  return (
+                    <button
+                      key={item.months}
+                      onClick={() => setEmergencyMonths(item.months)}
+                      className={`p-4 rounded-xl text-left border transition-all flex flex-col justify-between ${
+                        isSelected
+                          ? 'border-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/15 shadow-md shadow-emerald-500/10'
+                          : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-white/20'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className={`text-base font-black font-display ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                            {item.title}
+                          </span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            isSelected 
+                              ? 'bg-emerald-500 text-slate-950 font-black' 
+                              : 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400'
+                          }`}>
+                            {item.badge}
+                          </span>
+                        </div>
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                          {item.profile}
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                          {item.desc}
+                        </p>
+                      </div>
+
+                      <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/10 flex items-center justify-between text-xs">
+                        <span className="text-[11px] text-slate-500">Meta:</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white tabular-nums">
+                          R$ {(fixedCostInput * item.months).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Diagnóstico da Reserva Atual vs Meta */}
+            {(() => {
+              const targetReserve = fixedCostInput * emergencyMonths
+              const currentReserve = emergencyReserve > 0 ? emergencyReserve : 43450.00
+              const progressPct = Math.min(100, (currentReserve / targetReserve) * 100)
+              const shortfall = Math.max(0, targetReserve - currentReserve)
+              const monthsCovered = fixedCostInput > 0 ? (currentReserve / fixedCostInput).toFixed(1) : '0'
+
+              return (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {/* Card 1: Termômetro e Barra de Progresso */}
+                  <div className="lg:col-span-2 p-5 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          Progresso da Blindagem Patrimonial
+                        </span>
+                        <div className="text-xl font-black font-display text-slate-900 dark:text-white mt-0.5">
+                          {progressPct.toFixed(1)}% da Reserva Meta Concluída
+                        </div>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        progressPct >= 100 
+                          ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40' 
+                          : progressPct >= 60
+                          ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40'
+                          : 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/40'
+                      }`}>
+                        {progressPct >= 100 ? 'Blindagem Concluída' : progressPct >= 60 ? 'Em Consolidação' : 'Construção Inicial'}
+                      </span>
+                    </div>
+
+                    {/* Barra de Progresso */}
+                    <div className="w-full bg-slate-100 dark:bg-white/10 h-3.5 rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-white/10">
+                      <div 
+                        className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-700 shadow-xs"
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+
+                    {/* Métricas lado a lado */}
+                    <div className="grid grid-cols-3 gap-3 pt-2 text-center">
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-white/5">
+                        <span className="text-[10px] text-slate-400 font-bold block mb-1">RESERVA ATUAL</span>
+                        <span className="font-mono text-base font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                          R$ {currentReserve.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                        <span className="text-[10px] text-slate-500 block mt-0.5">
+                          ({monthsCovered} meses de cobertura)
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-white/5">
+                        <span className="text-[10px] text-slate-400 font-bold block mb-1">META SUGERIDA ({emergencyMonths}x)</span>
+                        <span className="font-mono text-base font-black text-slate-900 dark:text-white tabular-nums">
+                          R$ {targetReserve.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                        <span className="text-[10px] text-slate-500 block mt-0.5">
+                          ({emergencyMonths} meses de custo fixo)
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-white/5">
+                        <span className="text-[10px] text-slate-400 font-bold block mb-1">DÉFICIT / FALTAM</span>
+                        <span className={`font-mono text-base font-black tabular-nums ${shortfall === 0 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                          {shortfall === 0 ? 'Meta Atingida!' : `R$ ${shortfall.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                        </span>
+                        <span className="text-[10px] text-slate-500 block mt-0.5">
+                          {shortfall === 0 ? 'Proteção 100%' : 'Para fechar a reserva'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Estratégia de Alocação da Reserva Sugerida */}
+                  <div className="p-5 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950/60 space-y-3.5">
+                    <h4 className="font-display text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-emerald-500" />
+                      Onde Alocar a Reserva Sugerida
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      A reserva de emergência nunca deve buscar risco de mercado. A regra de ouro é **Liquidez Imediata (D+0)** e **Risco Zero**.
+                    </p>
+
+                    <div className="space-y-2.5 pt-1 text-xs">
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+                        <div>
+                          <div className="font-bold text-slate-800 dark:text-slate-200">Tesouro Selic (50%)</div>
+                          <div className="text-[10px] text-slate-500">Risco soberano Brasil • Resgate D+1</div>
+                        </div>
+                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          R$ {(targetReserve * 0.5).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+                        <div>
+                          <div className="font-bold text-slate-800 dark:text-slate-200">CDB 100% a 105% CDI (40%)</div>
+                          <div className="text-[10px] text-slate-500">Bancos sólidos • Liquidez Diária D+0</div>
+                        </div>
+                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          R$ {(targetReserve * 0.4).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+                        <div>
+                          <div className="font-bold text-slate-800 dark:text-slate-200">Conta Remunerada (10%)</div>
+                          <div className="text-[10px] text-slate-500">Resgate 24/7 incluindo fins de semana</div>
+                        </div>
+                        <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          R$ {(targetReserve * 0.1).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )}
       </div>
