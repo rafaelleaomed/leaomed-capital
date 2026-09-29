@@ -89,9 +89,10 @@ export default function DashboardUI({
       selectedYear,
       currentFilter,
       investmentTargetPct,
-      obligatoryExpenses
+      obligatoryExpenses,
+      isDemo
     )
-  }, [selectedMonth, selectedYear, currentFilter, investmentTargetPct, obligatoryExpenses])
+  }, [selectedMonth, selectedYear, currentFilter, investmentTargetPct, obligatoryExpenses, isDemo])
 
   const displayIncome = monthlyData.totalIncome
   const displayExpenses = monthlyData.totalExpenses
