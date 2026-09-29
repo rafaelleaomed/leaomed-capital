@@ -55,12 +55,12 @@ export function HistoricalOverview({ isDemo = false }: { isDemo?: boolean }) {
   }, [isDemo])
 
   return (
-    <div id="historico" className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 p-6 shadow-sm">
+    <div id="historico-mensal" className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 p-6 shadow-sm scroll-mt-24">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
         <div>
           <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <History className="h-4 w-4 text-blue-500" />
-            Série Temporal Financeira (Dezembro/25 a Julho/26)
+            Série Temporal Financeira & Histórico Mensal (Dezembro/25 a Julho/26)
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Evolução histórica de receitas brutas, impostos, pró-labore e fluxo líquido PF/PJ.
@@ -77,7 +77,7 @@ export function HistoricalOverview({ isDemo = false }: { isDemo?: boolean }) {
             onClick={() => setSelectedView('PJ')} 
             className={`px-3 py-1.5 rounded-lg transition-all ${selectedView === 'PJ' ? 'bg-emerald-500 text-slate-950 font-black shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
           >
-            Inter PJ
+            Pessoa Jurídica
           </button>
           <button 
             onClick={() => setSelectedView('PF')} 
@@ -116,26 +116,26 @@ export function HistoricalOverview({ isDemo = false }: { isDemo?: boolean }) {
                 {(selectedView === 'ALL' || selectedView === 'PJ') && (
                   <>
                     <td className="py-3 px-3.5 text-right text-emerald-600 dark:text-emerald-400 font-semibold font-mono tabular-nums">
-                      R$ {row.pjGross.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {row.pjGross.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="py-3 px-3.5 text-right text-rose-600 dark:text-rose-400 font-mono tabular-nums">
-                      - R$ {row.pjTaxes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      - R$ {row.pjTaxes.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="py-3 px-3.5 text-right font-medium text-slate-700 dark:text-slate-300 font-mono tabular-nums">
-                      R$ {row.pjProlabore.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {row.pjProlabore.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                   </>
                 )}
                 {(selectedView === 'ALL' || selectedView === 'PF') && (
                   <>
                     <td className="py-3 px-3.5 text-right text-emerald-600 dark:text-emerald-400 font-semibold font-mono tabular-nums">
-                      R$ {row.pfIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {row.pfIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="py-3 px-3.5 text-right text-rose-600 dark:text-rose-400 font-semibold font-mono tabular-nums">
-                      - R$ {row.pfExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      - R$ {row.pfExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className={`py-3 px-3.5 text-right font-black font-mono tabular-nums ${row.balance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                      {row.balance >= 0 ? '+' : ''} R$ {row.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {row.balance >= 0 ? '+' : ''} R$ {row.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                   </>
                 )}

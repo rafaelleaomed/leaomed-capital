@@ -56,6 +56,12 @@ export function SidebarNavigation({ isDemo = false }: SidebarNavigationProps) {
     setActiveSection(id)
     if (id === 'consolidado-anual') {
       window.dispatchEvent(new CustomEvent('leaomed_open_annual_consolidated'))
+    } else if (id === 'historico-mensal') {
+      window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
+      setTimeout(() => {
+        const el = document.getElementById('historico-mensal')
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 50)
     }
   }
 
@@ -105,7 +111,7 @@ export function SidebarNavigation({ isDemo = false }: SidebarNavigationProps) {
           <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/5 text-xs text-slate-700 dark:text-slate-300">
             <span className="flex items-center gap-2 font-medium">
               <Building2 className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
-              Inter PJ (Clínica)
+              Pessoa Jurídica
             </span>
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">Ativa</span>
           </div>

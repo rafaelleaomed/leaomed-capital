@@ -160,7 +160,7 @@ export default function DashboardUI({
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5'
                 }`}
               >
-                {f === 'CONSOLIDATED' ? 'Consolidado' : f === 'PJ' ? 'Inter PJ' : 'Pessoa Física'}
+                {f === 'CONSOLIDATED' ? 'Consolidado' : f === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}
               </button>
             ))}
           </div>

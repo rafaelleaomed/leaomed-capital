@@ -20,7 +20,7 @@ interface AccountSettingsModalProps {
 }
 
 const DEFAULT_ACCOUNTS: UserAccountItem[] = [
-  { id: 'inter-pj', name: 'Inter PJ', institution: 'Banco Inter', type: 'PJ', category: 'CHECKING', status: 'ACTIVE' },
+  { id: 'pj', name: 'Pessoa Jurídica', institution: 'Banco Inter', type: 'PJ', category: 'CHECKING', status: 'ACTIVE' },
   { id: 'c6-carbon', name: 'C6 Carbon Black', institution: 'C6 Bank', type: 'PF', category: 'CREDIT_CARD', status: 'ACTIVE' },
   { id: 'itau-pf', name: 'Itaú Uniclass', institution: 'Banco Itaú', type: 'PF', category: 'CHECKING', status: 'ACTIVE' },
   { id: 'nu-pf', name: 'Nubank', institution: 'Nubank', type: 'PF', category: 'CHECKING', status: 'ACTIVE' },

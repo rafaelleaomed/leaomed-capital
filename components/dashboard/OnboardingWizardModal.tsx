@@ -41,7 +41,7 @@ export function OnboardingWizardModal({
 
   // Etapa 1: Contas e Vínculos
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([
-    'Banco Inter PJ',
+    'Pessoa Jurídica',
     'Itaú Personnalité PF',
     'Nubank PF',
     'Cartão C6 Carbon Black PF'

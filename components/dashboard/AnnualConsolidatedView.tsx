@@ -107,7 +107,7 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
                 <p className="text-xs text-slate-300">
                   Jan a Set de 2026 (9 meses auditados) • {
                     currentFilter === 'CONSOLIDATED' ? 'Visão Consolidada Integral (PJ + PF)' :
-                    currentFilter === 'PJ' ? 'Faturamento & Custos da Clínica (Inter PJ)' : 'Orçamento Pessoal & Familiar (PF)'
+                    currentFilter === 'PJ' ? 'Faturamento & Custos da Clínica (Pessoa Jurídica)' : 'Orçamento Pessoal & Familiar (PF)'
                   }
                 </p>
               </div>
@@ -126,23 +126,23 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
           <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
             <span className="text-[11px] font-semibold text-slate-400 block mb-1">Faturamento Anual Bruto</span>
             <div className="text-xl sm:text-2xl font-black font-mono text-emerald-400 tabular-nums">
-              R$ {totalAnnualIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {totalAnnualIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <span className="text-[10px] text-slate-400 mt-1 block">Média: R$ {(totalAnnualIncome / 9).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}/mês</span>
+            <span className="text-[10px] text-slate-400 mt-1 block">Média: R$ {(totalAnnualIncome / 9).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mês</span>
           </div>
 
           <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
             <span className="text-[11px] font-semibold text-slate-400 block mb-1">Despesas Totais Anuais</span>
             <div className="text-xl sm:text-2xl font-black font-mono text-rose-400 tabular-nums">
-              R$ {totalAnnualExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {totalAnnualExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <span className="text-[10px] text-slate-400 mt-1 block">Média: R$ {(totalAnnualExpenses / 9).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}/mês</span>
+            <span className="text-[10px] text-slate-400 mt-1 block">Média: R$ {(totalAnnualExpenses / 9).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mês</span>
           </div>
 
           <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
             <span className="text-[11px] font-semibold text-slate-400 block mb-1">Saldo Acumulado no Ano</span>
             <div className={`text-xl sm:text-2xl font-black font-mono tabular-nums ${annualBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {annualBalance >= 0 ? '+' : ''} R$ {annualBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              {annualBalance >= 0 ? '+' : ''} R$ {annualBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <span className="text-[10px] text-slate-400 mt-1 block">Superávit total retido</span>
           </div>
@@ -150,7 +150,7 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
           <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
             <span className="text-[11px] font-semibold text-slate-400 block mb-1">Sobra Média Mensal</span>
             <div className="text-xl sm:text-2xl font-black font-mono text-indigo-400 tabular-nums">
-              R$ {averageMonthlySurplus.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {averageMonthlySurplus.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <span className="text-[10px] text-slate-400 mt-1 block">Capacidade média de aporte</span>
           </div>
@@ -200,10 +200,10 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
                 {isSelected && (
                   <div className="absolute -top-24 z-30 p-2.5 rounded-xl bg-slate-900 dark:bg-slate-950 text-white text-[11px] shadow-xl border border-white/20 whitespace-nowrap pointer-events-none animate-in fade-in duration-150">
                     <span className="font-bold text-white block mb-1">{m.fullName} / 2026</span>
-                    <div className="text-emerald-400 font-mono">Receitas: R$ {m.income.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                    <div className="text-rose-400 font-mono">Despesas: R$ {m.expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                    <div className="text-emerald-400 font-mono">Receitas: R$ {m.income.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div className="text-rose-400 font-mono">Despesas: R$ {m.expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     <div className={`font-mono font-bold mt-1 pt-1 border-t border-white/10 ${m.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      Saldo: {m.balance >= 0 ? '+' : ''} R$ {m.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      Saldo: {m.balance >= 0 ? '+' : ''} R$ {m.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
                 )}
@@ -278,7 +278,7 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
 
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1">
             <span>Saldo acumulado total retido em Set/26</span>
-            <span className="font-black text-indigo-600 dark:text-indigo-400 font-mono">+ R$ {annualBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            <span className="font-black text-indigo-600 dark:text-indigo-400 font-mono">+ R$ {annualBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
 

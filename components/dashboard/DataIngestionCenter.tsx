@@ -19,8 +19,10 @@ import {
   CreditCard,
   FileCheck2,
   Trash2,
-  Layers
+  Layers,
+  BrainCircuit
 } from 'lucide-react'
+import { SmartCategorizationModal, IncomingTransaction } from './SmartCategorizationModal'
 
 export interface ProcessedBatch {
   id: string
@@ -46,6 +48,10 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
   const [processedBatches, setProcessedBatches] = useState<ProcessedBatch[]>([])
   const [selectedBatchId, setSelectedBatchId] = useState<string>('ALL')
 
+  // Modal de Categorização Inteligente e Aprendizado de Regras
+  const [isSmartCatModalOpen, setIsSmartCatModalOpen] = useState(false)
+  const [pendingReviewTransactions, setPendingReviewTransactions] = useState<IncomingTransaction[]>([])
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
 
@@ -65,7 +71,7 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
     if (lower.includes('c6')) institution = 'C6 Carbon Black Mastercard'
     else if (lower.includes('nu') || lower.includes('nubank')) institution = 'Nubank Ultravioleta'
     else if (lower.includes('itau') || lower.includes('personnalite')) institution = 'Itaú Personnalité Black'
-    else if (lower.includes('inter')) institution = 'Banco Inter PJ'
+    else if (lower.includes('inter') || lower.includes('pj') || lower.includes('juridica')) institution = 'Pessoa Jurídica'
     else if (lower.includes('bradesco')) institution = 'Bradesco Prime'
     else if (lower.includes('santander')) institution = 'Santander Select'
     else if (lower.includes('safra')) institution = 'Banco Safra'
@@ -150,7 +156,22 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
       setProcessedBatches(prev => [...newBatches, ...prev])
       setIsProcessing(false)
       const totalTxs = newBatches.reduce((acc, b) => acc + b.transactionCount, 0)
-      setFeedback(`✅ ${newBatches.length} arquivo(s) importado(s) com sucesso! Total de ${totalTxs} transações categorizadas e integradas.`)
+      setFeedback(`✅ ${newBatches.length} arquivo(s) importado(s) com sucesso! Total de ${totalTxs} transações detectadas. Abrindo tela de categorização inteligente...`)
+
+      // Extrai transações para revisão inteligente com IA e regras contínuas
+      const extractedTxs: IncomingTransaction[] = newBatches.flatMap(b => b.transactions.map(t => ({
+        date: t.date,
+        description: t.desc,
+        amount: t.val,
+        accountOrCard: b.institution,
+        category: t.cat,
+        entityType: (b.institution.toLowerCase().includes('jurídica') || b.institution.toLowerCase().includes('pj')) ? 'PJ' : 'PF'
+      })))
+
+      setPendingReviewTransactions(extractedTxs)
+      setTimeout(() => {
+        setIsSmartCatModalOpen(true)
+      }, 500)
     }, 1200)
   }
 
@@ -195,9 +216,9 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
       setIsProcessing(false)
       const mockPrintBatch: ProcessedBatch = {
         id: `batch-print-${Date.now()}`,
-        fileName: 'Screenshot_Extrato_Inter_Plantao.png',
+        fileName: 'Screenshot_Extrato_PJ_Plantao.png',
         fileSize: '420 KB',
-        institution: 'Banco Inter PJ (Extrato via Print)',
+        institution: 'Pessoa Jurídica (Extrato via Print)',
         period: 'Junho/2026',
         totalAmount: 14700.00,
         transactionCount: 4,
@@ -209,7 +230,17 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
         ]
       }
       setProcessedBatches(prev => [mockPrintBatch, ...prev])
-      setFeedback('✅ Print do extrato reconhecido com sucesso via OCR! 4 lançamentos integrados.')
+      setFeedback('✅ Print do extrato reconhecido com sucesso via OCR! Abrindo categorização inteligente...')
+      
+      setPendingReviewTransactions([
+        { date: '2026-06-05', description: 'Plantão Hospital 01', amount: 8500.00, accountOrCard: 'Pessoa Jurídica', category: 'Receitas Médicas', entityType: 'PJ' },
+        { date: '2026-06-10', description: 'Honorários Convênio 01', amount: 6200.00, accountOrCard: 'Pessoa Jurídica', category: 'Receitas Médicas', entityType: 'PJ' },
+        { date: '2026-06-15', description: 'DARF Imposto PJ', amount: -2150.00, accountOrCard: 'Pessoa Jurídica', category: 'Empresa Médica PJ', entityType: 'PJ' },
+        { date: '2026-06-18', description: 'Contabilidade Mensal', amount: -850.00, accountOrCard: 'Pessoa Jurídica', category: 'Empresa Médica PJ', entityType: 'PJ' }
+      ])
+      setTimeout(() => {
+        setIsSmartCatModalOpen(true)
+      }, 500)
     }, 1200)
   }
 
@@ -341,11 +372,11 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
 
               <div className="inline-flex items-center gap-2 mt-4 px-3.5 py-1.5 rounded-full bg-slate-200/60 dark:bg-white/10 text-[11px] font-bold text-slate-700 dark:text-slate-300">
                 <FileCheck2 className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Multi-arquivo ativo: Nubank, C6 Black, Inter PJ, Itaú, Santander</span>
+                <span>Multi-arquivo ativo: Nubank, C6 Black, Pessoa Jurídica, Itaú, Santander</span>
               </div>
             </div>
 
-            {/* Atalhos Rápidos para Simulação de Demonstração */}
+            {/* Atalhos Rápidos para Simulação de Demonstração e Aprendizado */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
               <span className="text-slate-500 dark:text-slate-400 font-medium">Ou teste com faturas simuladas:</span>
               <div className="flex flex-wrap gap-2">
@@ -364,11 +395,28 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
                   + Fatura Nubank
                 </button>
                 <button
-                  onClick={() => handleSimulatedInvoiceUpload('Inter PJ')}
+                  onClick={() => handleSimulatedInvoiceUpload('Pessoa Jurídica')}
                   disabled={isProcessing}
                   className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-white/10"
                 >
-                  + Extrato Inter PJ
+                  + Extrato Pessoa Jurídica
+                </button>
+                <button
+                  onClick={() => {
+                    const sampleTxs: IncomingTransaction[] = [
+                      { date: '2026-06-25', description: "McDonald's Lanches Fim de Turno", amount: -145.90, accountOrCard: 'Cartão C6 Carbon Black', category: 'Alimentação' },
+                      { date: '2026-06-21', description: 'Posto Ipiranga Combustível', amount: -340.50, accountOrCard: 'Cartão C6 Carbon Black', category: 'Transporte' },
+                      { date: '2026-06-18', description: 'Drogaria Araújo Medicamentos', amount: -220.00, accountOrCard: 'Cartão C6 Carbon Black', category: 'Saúde' },
+                      { date: '2026-06-20', description: 'DARF Simples Nacional PJ', amount: -550.00, accountOrCard: 'Pessoa Jurídica', category: 'Empresa Médica PJ', entityType: 'PJ' }
+                    ]
+                    setPendingReviewTransactions(sampleTxs)
+                    setIsSmartCatModalOpen(true)
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold transition-all border border-indigo-500/30 flex items-center gap-1.5"
+                  title="Abrir tela de categorização inteligente para definir regras personalizadas"
+                >
+                  <BrainCircuit className="w-3.5 h-3.5" />
+                  <span>🧠 Treinar Regras de Categorização</span>
                 </button>
               </div>
             </div>
@@ -497,7 +545,7 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
                   Conexão Automática Open Finance (Banco Central do Brasil)
                 </h4>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
-                  Conecte com segurança suas contas PJ e PF (Banco Inter PJ, Itaú, Nubank, C6 Bank). O sistema atualiza saldos, faturas e investimentos continuamente sem intervenção manual.
+                  Conecte com segurança suas contas PJ e PF (Pessoa Jurídica, Itaú, Nubank, C6 Bank). O sistema atualiza saldos, faturas e investimentos continuamente sem intervenção manual.
                 </p>
                 <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                   <ShieldCheck className="w-4 h-4" />
@@ -632,6 +680,15 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
           </div>
         )}
 
+      {/* Modal de Categorização Inteligente com Aprendizado de Regras */}
+      <SmartCategorizationModal
+        isOpen={isSmartCatModalOpen}
+        onClose={() => setIsSmartCatModalOpen(false)}
+        transactions={pendingReviewTransactions}
+        onCompleted={(count) => {
+          setFeedback(`🎉 ${count} lançamentos categorizados e integrados à planilha orçamentária e extrato!`)
+        }}
+      />
       </div>
     </div>
   )

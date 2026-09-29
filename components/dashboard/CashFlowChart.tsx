@@ -18,7 +18,7 @@ export function CashFlowChart({ totalIncome, totalExpenses }: CashFlowChartProps
         <div>
           <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Activity className="h-4 w-4 text-emerald-500" />
-            Fluxo de Caixa Mensal (Inter PJ & PF)
+            Fluxo de Caixa Mensal (Pessoa Jurídica & PF)
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Comparativo volumétrico de entradas vs saídas</p>
         </div>

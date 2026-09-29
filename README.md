@@ -55,19 +55,29 @@ A plataforma adota a arquitetura **A.N.T. (Architecture, Navigation, Tools)** co
 ## ✨ Funcionalidades Principais do App
 
 ### 1. Visão Consolidada & Segregação Rigorosa PF / PJ
-- Alternância instantânea entre **Consolidado**, **Pessoa Física (PF)** e **Pessoa Jurídica (Inter PJ)**.
+- Alternância instantânea entre **Consolidado**, **Pessoa Física (PF)** e **Pessoa Jurídica**.
 - Despesas e receitas são segregadas no banco de dados e unificadas sem duplicidade contábil na visão executiva (pró-labore não bitributa faturamento).
 
-### 2. Navegação Temporal Dinâmica Mês a Mês (Estilo Mobills)
+### 2. Categorização Inteligente com Memória de Regras
+- **IA Preditiva & Heurística Médica:** Sugere a categoria e subcategoria exata para cada lançamento ao importar faturas de cartões ou extratos.
+- **Aprendizado Contínuo:** Opção de memorizar *"Sempre categorizar lançamentos contendo '[Nome]' nesta categoria"* (ex: McDonald's em Alimentação, DARF em Impostos PJ, Drogaria em Saúde).
+- **Zero Trabalho Repetitivo:** Nos meses seguintes ou em novos uploads, o sistema aplica automaticamente as regras aprendidas sem exigir revisão manual item a item.
+
+### 3. Extrato Item a Item & Prevenção Antiduplicação (Cartão vs Conta)
+- **Auditoria Granular:** Aba dedicada na planilha com extrato completo transação por transação (data, estabelecimento, conta/cartão, categoria e valor).
+- **Edição & Exclusão Individual:** Possibilidade de editar ou excluir qualquer lançamento individual com 1 clique.
+- **Detecção de Duplicidades Contábeis:** Identifica débitos de pagamento de fatura em conta corrente quando as despesas individuais do cartão já estão discriminadas, oferecendo deduplicação automática com 1 clique (conforme Seção 2 do `GEMINI.md`).
+
+### 4. Navegação Temporal Dinâmica Mês a Mês (Estilo Mobills)
 - Seletor de mês/ano com setas rápidas e modal de calendário completo (Dezembro/25 a Dezembro/26).
 - **Recálculo instantâneo:** receitas brutas, despesas totais, fatura de cartão de crédito principal, saldo líquido, gráficos Donut e distribuição de picos diários se adaptam automaticamente ao mês selecionado.
 
-### 3. Edição e Exclusão Inline na Planilha Oficial
+### 5. Edição e Exclusão Inline na Planilha Oficial
 - **Edição Clicável:** Qualquer subcategoria de despesa ou receita pode ser clicada para editar o valor monetário, nome ou classificação (fixa/obrigatória vs. variável).
 - **Exclusão de Inconsistências:** Botão de lixeira rápida e opção de exclusão com confirmação em duas etapas no modal para remover linhas com inconsistências.
 - **Persistência Reativa:** As alterações são salvas localmente e recalculam na hora a categoria pai, despesas obrigatórias e cálculos de reserva.
 
-### 4. Simulador do Teto Diário Seguro & Meta de Aporte (10% Padrão)
+### 6. Simulador do Teto Diário Seguro & Meta de Aporte (10% Padrão)
 - **Engenharia de Saúde Financeira:** Responde à pergunta central: *"Quanto posso gastar hoje sem comprometer minhas contas fixas e meus investimentos?"*.
 - **Fórmula Matemática Contábil:**
   $$\text{Teto Diário Seguro} = \frac{\text{Faturamento} - \text{Custos Fixos Blindados} - \text{Meta de Novos Aportes}}{\text{Dias Restantes ou Ciclo Total}}$$
@@ -76,7 +86,7 @@ A plataforma adota a arquitetura **A.N.T. (Architecture, Navigation, Tools)** co
   - Demonstração em cascata transparente: Faturamento (-) Custos Fixos (-) Meta de Aportes (=) Orçamento Livre (÷) Dias (=) Teto Seguro Diário.
   - Alternância entre dias restantes do mês ou ciclo cheio de 30 dias.
 
-### 5. Calculadora de Reserva de Emergência Sugerida (6 a 12x Custo Fixo)
+### 7. Calculadora de Reserva de Emergência Sugerida (6 a 12x Custo Fixo)
 - **Sincronização Automática:** Campo de custo fixo mensal alimentado diretamente pelo **somatório das despesas obrigatórias da planilha** (R$ 25.528,57).
 - **Perfis Médicos Estruturados:**
   - **10 Meses (Recomendado):** Médico autônomo, plantonista e consultório particular.
@@ -85,9 +95,9 @@ A plataforma adota a arquitetura **A.N.T. (Architecture, Navigation, Tools)** co
   - **6 Meses:** Servidor público concursado.
 - Diagnóstico em tempo real com barra de progresso, déficit patrimonial e meses cobertos.
 
-### 6. Central Multicanal de Ingestão de Dados (Drag & Drop Múltiplo)
+### 8. Central Multicanal de Ingestão de Dados (Drag & Drop Múltiplo)
 - **Arrastar e Soltar Múltiplo:** Suporte a upload simultâneo de vários arquivos (PDFs de faturas de meses ou cartões distintos, planilhas Excel `.xlsx` ou extratos `.csv`).
-- **Pré-visualização & Parsing:** Validação de faturas, identificação automática do emissor (Itaú, Inter, C6, Nubank, XP) e conciliação bancária.
+- **Pré-visualização & Parsing:** Validação de faturas, identificação automática do emissor (Itaú, Pessoa Jurídica, C6, Nubank, XP) e conciliação bancária.
 - **Open Finance:** Conexão direta via Pluggy com atualização automática de saldos e lançamentos.
 
 ### 7. Lançamento Rápido Manual (Header & Botão Flutuante FAB)

@@ -351,7 +351,7 @@ export function QuickTransactionModal({
                 <option value="C6 Carbon Black">C6 Carbon Black (PF)</option>
                 <option value="Nubank Ultravioleta">Nubank Ultravioleta (PF)</option>
                 <option value="Itaú Personnalité">Itaú Personnalité (PF)</option>
-                <option value="Banco Inter PJ">Banco Inter PJ (Empresa)</option>
+                <option value="Pessoa Jurídica">Pessoa Jurídica (Empresa)</option>
                 <option value="Conta Corrente Safra">Banco Safra</option>
                 <option value="Pix / Dinheiro">Pix / Transferência Direta</option>
               </select>

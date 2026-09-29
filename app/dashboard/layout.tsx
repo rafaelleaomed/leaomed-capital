@@ -35,7 +35,7 @@ export default function DashboardLayout({
 
             <div className="hidden lg:flex items-center gap-2 rounded-full border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 px-3 py-1 text-xs text-slate-600 dark:text-slate-300">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Inter PJ + Itaú + Nubank + C6</span>
+              <span>Pessoa Jurídica + Itaú + Nubank + C6</span>
             </div>
 
             {/* Cabeçalho Interativo do Usuário com Mini Registro e Configurações */}

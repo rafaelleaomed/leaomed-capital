@@ -46,6 +46,7 @@ import {
   Check
 } from 'lucide-react'
 import { QuickTransactionModal } from './QuickTransactionModal'
+import { GranularExpenseAuditor } from './GranularExpenseAuditor'
 
 export interface PjMonthTaxData {
   month: string
@@ -93,7 +94,7 @@ interface BudgetBreakdownProps {
   initialTab?: string
 }
 
-export type BudgetScopeTab = 'EXPENSE_PF' | 'EXPENSE_PJ' | 'INCOME_PJ' | 'INCOME_PF'
+export type BudgetScopeTab = 'EXPENSE_PF' | 'EXPENSE_PJ' | 'INCOME_PJ' | 'INCOME_PF' | 'GRANULAR_AUDIT'
 
 export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialTab }: BudgetBreakdownProps) {
   // Determina a aba inicial de acordo com o filtro global
@@ -389,7 +390,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
       is_obligatory: true,
       subcategories: [
         { name: 'Mensalidade Contabilidade PJ', value: 491.21, is_fixed: true },
-        { name: 'Tarifas Bancárias Inter PJ', value: 0.00, is_fixed: true },
+        { name: 'Tarifas Bancárias Pessoa Jurídica', value: 0.00, is_fixed: true },
         { name: 'Taxas & Certidões PJ', value: 0.00, is_fixed: false }
       ]
     }
@@ -1081,6 +1082,25 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                 R$ {totalIncomePF.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
             </button>
+
+            {/* Aba 5: Extrato Item a Item & Auditoria */}
+            <button
+              onClick={() => setActiveScopeTab('GRANULAR_AUDIT')}
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
+                activeScopeTab === 'GRANULAR_AUDIT'
+                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30 scale-[1.02]'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
+              }`}
+              title="Auditar despesa por despesa individualmente e prevenir duplicidade com cartões"
+            >
+              <Receipt className={`w-4 h-4 ${activeScopeTab === 'GRANULAR_AUDIT' ? 'text-slate-950' : 'text-amber-500'}`} />
+              <span>Extrato Item a Item & Auditoria</span>
+              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
+                activeScopeTab === 'GRANULAR_AUDIT' ? 'bg-black/20 text-slate-950 font-black' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+              }`}>
+                Anti-Duplicidade
+              </span>
+            </button>
           </div>
 
           <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 px-2 flex items-center gap-1.5">
@@ -1090,8 +1110,12 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
         </div>
 
         {/* ========================================================================= */}
-        {/* BANNER INFORMATIVO ESPECÍFICO DO ESCOPO SELECIONADO */}
+        {/* BANNER INFORMATIVO ESPECÍFICO DO ESCOPO SELECIONADO OU AUDITORIA */}
         {/* ========================================================================= */}
+        {activeScopeTab === 'GRANULAR_AUDIT' ? (
+          <GranularExpenseAuditor currentFilter={currentFilter} isDemo={isDemo} />
+        ) : (
+          <>
         {activeScopeTab === 'EXPENSE_PF' && (
           <div className="mb-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950/80 p-4 md:p-5 relative z-10 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs mb-3">
@@ -1165,7 +1189,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       Controle Tributário & Operacional da Empresa PJ
                     </h3>
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
-                      Banco Inter PJ • 100% Débito em Conta
+                      Pessoa Jurídica • 100% Débito em Conta
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-3xl leading-relaxed">
@@ -1989,6 +2013,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
             )
           })}
         </div>
+        </>
+      )}
       </div>
 
       {/* ========================================================================= */}

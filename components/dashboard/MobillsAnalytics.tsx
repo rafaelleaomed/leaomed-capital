@@ -96,14 +96,17 @@ export function MobillsAnalytics({
       }
     }
     const handleAnnualEvent = () => setViewMode('ANNUAL_CONSOLIDATED')
+    const handleCloseAnnualEvent = () => setViewMode('MONTHLY')
     window.addEventListener('hashchange', handleHash)
     window.addEventListener('leaomed_open_annual_consolidated', handleAnnualEvent)
+    window.addEventListener('leaomed_close_annual_consolidated', handleCloseAnnualEvent)
     if (typeof window !== 'undefined' && window.location.hash === '#consolidado-anual') {
       setViewMode('ANNUAL_CONSOLIDATED')
     }
     return () => {
       window.removeEventListener('hashchange', handleHash)
       window.removeEventListener('leaomed_open_annual_consolidated', handleAnnualEvent)
+      window.removeEventListener('leaomed_close_annual_consolidated', handleCloseAnnualEvent)
     }
   }, [])
 
@@ -502,7 +505,7 @@ export function MobillsAnalytics({
           </div>
 
           <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline font-medium">
-            {currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter === 'PJ' ? 'Inter PJ' : 'PF'}
+            {currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter === 'PJ' ? 'Pessoa Jurídica' : 'PF'}
           </span>
         </div>
       </div>
@@ -525,7 +528,7 @@ export function MobillsAnalytics({
             {isSurplus ? '+' : ''} R$ {calculatedBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
           <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1.5">
-            <span>{currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter === 'PJ' ? 'Inter PJ' : 'Pessoa Física'} • {SHORT_MONTH_NAMES[activeMonth]}/{String(activeYear).slice(2)}</span>
+            <span>{currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'} • {SHORT_MONTH_NAMES[activeMonth]}/{String(activeYear).slice(2)}</span>
           </div>
         </div>
 
@@ -595,7 +598,7 @@ export function MobillsAnalytics({
             R$ {creditCardTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
-            {currentFilter === 'PJ' ? 'Inter PJ: 100% Débito em Conta' : 'C6 Carbon + Itaú + Nubank'}
+            {currentFilter === 'PJ' ? 'Pessoa Jurídica: 100% Débito em Conta' : 'C6 Carbon + Itaú + Nubank'}
           </div>
         </div>
       </div>
@@ -774,7 +777,7 @@ export function MobillsAnalytics({
                 Cartões de Crédito (Compromissos Reais)
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {currentFilter === 'PJ' ? 'Conta Inter PJ sem cartão de crédito corporativo' : 'Faturas auditadas dos cartões PF'}
+                {currentFilter === 'PJ' ? 'Pessoa Jurídica sem cartão de crédito corporativo' : 'Faturas auditadas dos cartões PF'}
               </p>
             </div>
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -786,7 +789,7 @@ export function MobillsAnalytics({
             <div className="p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-800/30 text-xs text-slate-700 dark:text-slate-300 space-y-2 my-auto">
               <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-bold">
                 <Building2 className="w-4 h-4 shrink-0" />
-                <span>Inter PJ Opera Exclusivamente via Conta Corrente</span>
+                <span>Pessoa Jurídica Opera Exclusivamente via Conta Corrente</span>
               </div>
               <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
                 A empresa não possui cartão de crédito corporativo emitido. Todas as saídas da PJ (DAS Simples Nacional, contador, tarifas bancárias e pró-labore) são movimentadas diretamente por débito em conta corrente, Pix e boletos bancários.
@@ -827,7 +830,7 @@ export function MobillsAnalytics({
           )}
 
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-white/5">
-            <span>{currentFilter === 'PJ' ? 'Inter PJ: 100% Débito em Conta' : 'Faturas auditadas do mês'}</span>
+            <span>{currentFilter === 'PJ' ? 'Pessoa Jurídica: 100% Débito em Conta' : 'Faturas auditadas do mês'}</span>
             <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Auditado & Conectado</span>
           </div>
         </div>
