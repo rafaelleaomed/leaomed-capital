@@ -1,9 +1,9 @@
 # 🦁 LeãoMed Capital — Private Wealth & Financial Intelligence Platform
 
-> Plataforma moderna de inteligência financeira e consolidação patrimonial com gestão unificada PJ + PF, rebalanceamento multi-ativos, projeção contratual de fluxo de caixa e integração Open Finance.
+> Plataforma moderna de inteligência financeira e consolidação patrimonial com gestão unificada PJ + PF, rebalanceamento multi-ativos, projeção contratual de fluxo de caixa, simulação de teto diário seguro e integração Open Finance.
 
-[![Deploy](https://img.shields.io/badge/Deploy-Vercel_Production-black?logo=vercel&style=for-the-badge)](https://leaomed-capital.vercel.app)
-[![Demo](https://img.shields.io/badge/Live_Demo-Disponível-10B981?style=for-the-badge&logo=safari)](https://leaomed-capital.vercel.app/demo)
+[![Deploy](https://img.shields.io/badge/Deploy-Vercel_Production-black?logo=vercel&style=for-the-badge)](https://leaomed-capital-rafael-leaos-projects-e3cb079d.vercel.app)
+[![Demo](https://img.shields.io/badge/Live_Demo-Disponível-10B981?style=for-the-badge&logo=safari)](https://leaomed-capital-rafael-leaos-projects-e3cb079d.vercel.app/demo)
 [![Next.js](https://img.shields.io/badge/Next.js_16-Turbopack-000000?style=for-the-badge&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript_5-Strict_Mode-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
 [![PostgreSQL](https://img.shields.io/badge/Database-Neon_Serverless-00E599?style=for-the-badge&logo=postgresql)](https://neon.tech)
@@ -16,8 +16,8 @@
 
 | Ambiente | URL | Descrição / Dados |
 |---|---|---|
-| 🟢 **Demonstração Pública (Portfólio)** | [**leaomed-capital.vercel.app/demo**](https://leaomed-capital.vercel.app/demo) | **Acesso Livre**: Dados 100% sintéticos e modelados para demonstração de portfólio. Nenhuma credencial ou dado privado é exigido. |
-| 🔒 **Ambiente Privado Autenticado** | [**leaomed-capital.vercel.app/dashboard**](https://leaomed-capital.vercel.app/dashboard) | **Acesso Restrito**: Protegido por Supabase Auth, middleware SSR e isolamento rigoroso por `user_id` no Neon PostgreSQL. |
+| 🟢 **Demonstração Pública (Portfólio)** | [**leaomed-capital.vercel.app/demo**](https://leaomed-capital-rafael-leaos-projects-e3cb079d.vercel.app/demo) | **Acesso Livre**: Dados 100% sintéticos e modelados para demonstração de portfólio. Nenhuma credencial ou dado privado é exigido. |
+| 🔒 **Ambiente Privado Autenticado** | [**leaomed-capital.vercel.app/dashboard**](https://leaomed-capital-rafael-leaos-projects-e3cb079d.vercel.app/dashboard) | **Acesso Restrito**: Protegido por Supabase Auth, middleware SSR e isolamento rigoroso por `user_id` no Neon PostgreSQL. |
 | 📦 **Repositório GitHub** | [**github.com/rafaelleaomed/leaomed-capital**](https://github.com/rafaelleaomed/leaomed-capital) | Código-fonte auditado, sem segredos e pronto para auditoria técnica. |
 
 ---
@@ -52,64 +52,93 @@ A plataforma adota a arquitetura **A.N.T. (Architecture, Navigation, Tools)** co
 
 ---
 
-## ✨ Funcionalidades Principais
+## ✨ Funcionalidades Principais do App
 
 ### 1. Visão Consolidada & Segregação Rigorosa PF / PJ
-- Alternância instantânea entre **Consolidado**, **Pessoa Física** e **Pessoa Jurídica (Inter PJ)**.
-- Despesas e receitas são segregadas no banco de dados e unificadas apenas sob demanda na visualização executiva.
+- Alternância instantânea entre **Consolidado**, **Pessoa Física (PF)** e **Pessoa Jurídica (Inter PJ)**.
+- Despesas e receitas são segregadas no banco de dados e unificadas sem duplicidade contábil na visão executiva (pró-labore não bitributa faturamento).
 
-### 2. Painel Executivo & Métricas Acionáveis (Bento Grid)
-- **Saldo Projetado ao Fim do Período**: Considera histórico, despesas fixas recorrentes e parcelas contratadas.
-- **Teto Seguro de Gasto Diário**: Calculado dinamicamente para preservar metas de poupança.
-- **Capacidade Real de Investimento**: Excedente líquido projetado para aportes.
+### 2. Navegação Temporal Dinâmica Mês a Mês (Estilo Mobills)
+- Seletor de mês/ano com setas rápidas e modal de calendário completo (Dezembro/25 a Dezembro/26).
+- **Recálculo instantâneo:** receitas brutas, despesas totais, fatura de cartão de crédito principal, saldo líquido, gráficos Donut e distribuição de picos diários se adaptam automaticamente ao mês selecionado.
 
-### 3. Matriz Orçamentária (Gastos Obrigatórios vs. Não Obrigatórios)
-- Classificação automática de despesas fixas essenciais (moradia, transporte, tributos, saúde) versus variáveis e estilo de vida.
-- Sistema de busca em tempo real, visualização colapsável e cálculo de peso percentual no orçamento total.
+### 3. Edição e Exclusão Inline na Planilha Oficial
+- **Edição Clicável:** Qualquer subcategoria de despesa ou receita pode ser clicada para editar o valor monetário, nome ou classificação (fixa/obrigatória vs. variável).
+- **Exclusão de Inconsistências:** Botão de lixeira rápida e opção de exclusão com confirmação em duas etapas no modal para remover linhas com inconsistências.
+- **Persistência Reativa:** As alterações são salvas localmente e recalculam na hora a categoria pai, despesas obrigatórias e cálculos de reserva.
 
-### 4. Rebalanceamento Estratégico de Carteira (13 Ativos Multi-Mercado)
-- Matriz de alocação por classes de ativos: **Ações (25%)**, **Internacional (25%)**, **Caixa (30%)**, **Real Estate/FIIs (15%)** e **Criptoativos (5%)**.
-- Isolamento contábil da **Reserva de Emergência** (não entra no cálculo de risco da carteira).
-- Algoritmo de sugestão de aportes prioritários com cálculo de déficit/superávit por classe.
+### 4. Simulador do Teto Diário Seguro & Meta de Aporte (10% Padrão)
+- **Engenharia de Saúde Financeira:** Responde à pergunta central: *"Quanto posso gastar hoje sem comprometer minhas contas fixas e meus investimentos?"*.
+- **Fórmula Matemática Contábil:**
+  $$\text{Teto Diário Seguro} = \frac{\text{Faturamento} - \text{Custos Fixos Blindados} - \text{Meta de Novos Aportes}}{\text{Dias Restantes ou Ciclo Total}}$$
+- **Simulador Interativo (`DailySpendModal`):**
+  - Slider de percentual de aporte mensal (0% a 40%, com presets de 5%, 10%, 15%, 20%).
+  - Demonstração em cascata transparente: Faturamento (-) Custos Fixos (-) Meta de Aportes (=) Orçamento Livre (÷) Dias (=) Teto Seguro Diário.
+  - Alternância entre dias restantes do mês ou ciclo cheio de 30 dias.
 
-### 5. Previsibilidade de Parcelamentos & Alívio de Caixa
-- Linha do tempo de descompressão financeira com monitoramento de quitação de parcelas de longo prazo.
-- Suporte a reajuste acumulado de **IPCA** e encargos contínuos.
+### 5. Calculadora de Reserva de Emergência Sugerida (6 a 12x Custo Fixo)
+- **Sincronização Automática:** Campo de custo fixo mensal alimentado diretamente pelo **somatório das despesas obrigatórias da planilha** (R$ 25.528,57).
+- **Perfis Médicos Estruturados:**
+  - **10 Meses (Recomendado):** Médico autônomo, plantonista e consultório particular.
+  - **12 Meses (Blindagem Total):** Clínica médica própria / PJ com folha e insumos.
+  - **8 Meses:** CLT / Contratos longos.
+  - **6 Meses:** Servidor público concursado.
+- Diagnóstico em tempo real com barra de progresso, déficit patrimonial e meses cobertos.
 
-### 6. IA Consultiva & Alertas Proativos
-- Recomendações determinísticas baseadas em regras e saúde financeira real, sem respostas genéricas.
+### 6. Central Multicanal de Ingestão de Dados (Drag & Drop Múltiplo)
+- **Arrastar e Soltar Múltiplo:** Suporte a upload simultâneo de vários arquivos (PDFs de faturas de meses ou cartões distintos, planilhas Excel `.xlsx` ou extratos `.csv`).
+- **Pré-visualização & Parsing:** Validação de faturas, identificação automática do emissor (Itaú, Inter, C6, Nubank, XP) e conciliação bancária.
+- **Open Finance:** Conexão direta via Pluggy com atualização automática de saldos e lançamentos.
+
+### 7. Lançamento Rápido Manual (Header & Botão Flutuante FAB)
+- Modal acessível pelo botão executivo no topo ou pelo FAB flutuante no canto inferior direito.
+- Registro de despesas e receitas com seleção de conta de origem, PF/PJ e tipo de gasto:
+  - **À Vista / Pontual**
+  - **Despesa Fixa / Obrigatória**
+  - **Parcelada:** Seletor de 2x a 48x com cálculo em tempo real do valor da parcela mensal e data da 1ª parcela.
+
+### 8. Rebalanceamento Estratégico de Carteira (13 Ativos Multi-Mercado)
+- Alocação estratégica: **Ações (25%)**, **Internacional (25%)**, **Caixa (30%)**, **Real Estate/FIIs (15%)** e **Criptoativos (5%)**.
+- Isolamento contábil da **Reserva de Emergência** (não afeta o perfil de risco de investimento).
+- Motor de cálculo de superávit/déficit para direcionar novos aportes.
+
+### 9. Previsibilidade de Parcelamentos & Alívio de Caixa
+- Monitoramento de parcelas de financiamentos e contratos de longo prazo (veículos, equipamentos médicos, reformas).
+- Linha do tempo de descompressão financeira ao longo dos meses.
+
+### 10. Onboarding Wizard & Personalização para Novos Usuários
+- Modal completo para configuração de novas contas, personalização de categorias médicas, definição de metas de aporte e métodos preferidos de ingestão de dados.
 
 ---
 
 ## 🎨 Design System & UI/UX (5D Framework)
 
-Inspirado nas melhores práticas de produtos de luxo e fintechs institucionais:
+Inspirado nas melhores práticas de fintechs institucionais de alto padrão:
 
+- **Modo Claro (Light Mode) Nativo**: Interface limpa, profissional e de alta legibilidade como padrão, com alternância para Dark Mode.
 - **Pattern & Layout**: Bento Grid modular de alta densidade informativa, cards com hierarquia clara e mobile quick navigation.
-- **Style & Aesthetic**: Dark Mode *Linear/Vercel-inspired* com bordas sutis (`border-slate-800`), cards `bg-slate-900/60` e `backdrop-blur-md`.
-- **Palette**: Fundo Slate Profundo (`#0A0F1D`), Dourado Leão (`#EAB308` / `#F59E0B`), Verde Esmeralda institucional (`#10B981`) para liquidez positiva.
-- **Typography**: `Plus Jakarta Sans` (interface limpa e escalável) + `Outfit` (títulos e pesos display).
+- **Palette**: Esmeralda Financeiro (`#10B981`), Azul Royal (`#3B82F6`), Âmbar (`#F59E0B`), ardósia neutra e superfícies translúcidas com `backdrop-blur`.
+- **Typography**: `Plus Jakarta Sans` (interface limpa e escalável) + `Outfit` (títulos e display) + monoespaçado tabular para números.
 - **Interactions**: Micro-interações táteis (scale 1.02, elevação em hover, transições a 200ms com aceleração por GPU).
 
 ---
 
 ## 🛡️ Segurança & Auditoria Técnica (Zero Trust)
 
-O projeto foi auditado segundo as diretrizes das skills `code-reviewer` e `security-reviewer`:
+O projeto segue rigorosamente os padrões de segurança e Clean Architecture:
 
-- ✅ **Zero Secrets em Repositório**: Nenhuma credencial, token ou string de conexão está versionada. Todas as variáveis são injetadas via `.env.local` / ambiente seguro Vercel.
-- ✅ **Proteção contra IDOR / BOLA**: Endpoints sensíveis (como `/api/connect-token`) validam a sessão server-side e forçam o `userId` autenticado, rejeitando parâmetros forjados pelo cliente.
-- ✅ **Sanitização de PII**: A rota pública `/demo` opera exclusivamente com dados sintéticos mockados de alta fidelidade; dados reais e contratos privados permanecem restritos à conta autenticada.
+- ✅ **Zero Secrets no Código**: Nenhuma chave, credencial ou string de conexão versionada. Variáveis injetadas via `.env.local` e ambiente seguro de produção na Vercel.
+- ✅ **Isolamento e Sanitização de PII**: A rota pública `/demo` opera exclusivamente com dados sintéticos sanitizados; dados reais e contratos privados permanecem restritos à conta autenticada do Dr. Rafael no Neon PostgreSQL.
+- ✅ **Proteção contra IDOR / BOLA**: Endpoints autenticados validam a sessão server-side e forçam o `user_id` criptografado via cookie HTTP-Only.
 - ✅ **Sessões Seguras**: Autenticação gerenciada via `@supabase/ssr` com cookies criptografados, `httpOnly`, `sameSite: lax` e renovação automática de sliding session.
-- ✅ **Defesa em Profundidade contra SQL Injection**: Todas as interações com o banco utilizam tagged template literals com queries parametrizadas via `@neondatabase/serverless`.
-- ✅ **Padronização de Erros**: Rotas de API não expõem stack traces ou mensagens internas do banco de dados em respostas HTTP.
+- ✅ **Defesa em Profundidade contra SQL Injection**: Consultas parametrizadas via tagged template literals do `@neondatabase/serverless`.
 
 ---
 
 ## 🚀 Como Executar Localmente
 
 ### Pré-requisitos
-- Node.js 18+ ou 20+
+- Node.js 18+, 20+ ou 24+
 - Conta no [Neon](https://neon.tech) (PostgreSQL)
 - Projeto no [Supabase](https://supabase.com) (Auth)
 
@@ -144,7 +173,7 @@ PLUGGY_CLIENT_SECRET="seu-pluggy-client-secret"
 ```bash
 npm run dev
 ```
-Acesse `http://localhost:3000` (ou `http://localhost:3000/demo` para ver a demonstração).
+Acesse `http://localhost:3000` (ou `http://localhost:3000/demo` para ver a demonstração pública).
 
 ### 5. Build de produção
 ```bash
