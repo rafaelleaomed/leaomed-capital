@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, CreditCard, Check, Trash2, Plus, Sparkles, Building2 } from 'lucide-react'
 import { CreditCardItem, CreditCardStore } from '@/utils/creditCardStore'
 
@@ -52,6 +53,11 @@ export default function CreditCardModal({
   onSaved
 }: CreditCardModalProps) {
   const isEditing = Boolean(cardToEdit)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const [name, setName] = useState('')
   const [institution, setInstitution] = useState('C6 Bank')
@@ -101,7 +107,7 @@ export default function CreditCardModal({
     setIsDeleting(false)
   }, [cardToEdit, isOpen])
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
@@ -157,8 +163,11 @@ export default function CreditCardModal({
     setLimit(prev => Math.max(1000, prev + delta))
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 overflow-y-auto animate-in fade-in duration-200">
+  return createPortal(
+    <div 
+      onClick={onClose}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-md p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
+    >
       <div 
         className="w-full max-w-xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
@@ -529,6 +538,7 @@ export default function CreditCardModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

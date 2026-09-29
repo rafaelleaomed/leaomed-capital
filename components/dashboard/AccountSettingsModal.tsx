@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, User, KeyRound, Building2, Trash2, Plus, ShieldCheck, CheckCircle2, AlertCircle, RefreshCw, CreditCard } from 'lucide-react'
 import { createSupabaseBrowserClient } from '@/utils/supabase-client'
 
@@ -27,7 +28,12 @@ const DEFAULT_ACCOUNTS: UserAccountItem[] = [
 ]
 
 export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: AccountSettingsModalProps) {
+  const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'accounts'>('profile')
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Perfil
   const [fullName, setFullName] = useState('Dr. Rafael Leão')
@@ -101,7 +107,7 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
     }
   }, [isDemo])
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
   // Salvar Perfil
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -210,10 +216,13 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
     setTimeout(() => setAccountSuccessMsg(''), 4000)
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+  return createPortal(
+    <div 
+      onClick={onClose}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
+    >
       <div 
-        className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header do Modal */}
@@ -610,6 +619,7 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
