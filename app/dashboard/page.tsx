@@ -77,10 +77,10 @@ function getBaselinePayload(filter: DashboardFilter, period: string): DeliveryPa
 
   // Receitas reais auditadas da planilha:
   // - PJ: Faturamento bruto dos contratos = R$ 26.500,00
-  // - PF: Pró-labore (R$ 23.000,00) + Reembolsos/Entradas extras (R$ 2.979,99) = R$ 25.979,99
-  // - Consolidado: Faturamento PJ (R$ 26.500,00) + Entradas extras PF (R$ 2.979,99) = R$ 29.479,99
+  // - PF: Pró-labore (R$ 23.000,00) + Reembolsos (R$ 2.650,00) + Rendimentos (R$ 329,99) + Presentes (R$ 40,00) = R$ 26.019,99
+  // - Consolidado: Faturamento PJ (R$ 26.500,00) + Entradas extras PF (R$ 3.019,99) = R$ 29.519,99
   //   (NÃO somar o pró-labore no consolidado para evitar bitributação/duplicidade contábil!)
-  const income = isPj ? 26500.00 : isPf ? 25979.99 : 29479.99
+  const income = isPj ? 26500.00 : isPf ? 26019.99 : 29519.99
 
   // Despesas reais auditadas da planilha:
   // - PJ: Impostos Simples Nacional (R$ 2.764,77) + Tarifas bancárias Inter (R$ 491,21) = R$ 3.255,98
@@ -147,7 +147,7 @@ function getBaselinePayload(filter: DashboardFilter, period: string): DeliveryPa
       },
       {
         type: 'warning',
-        message: 'Aviso de Fluxo PF: Em Junho as despesas PF (R$ 28.729,65) superaram os rendimentos líquidos (R$ 25.979,99) em R$ 2.749,66.',
+        message: 'Aviso de Fluxo PF: Em Junho as despesas PF (R$ 28.729,65) superaram os rendimentos líquidos (R$ 26.019,99) em R$ 2.709,66.',
         impact: 'medium'
       },
       {

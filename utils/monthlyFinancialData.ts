@@ -69,10 +69,10 @@ const REAL_USER_MONTHLY_DATA: Record<string, {
     pj: { income: 25700.00, expenses: 3393.32, card: 0, fixed: 3393.32 },
     pf: { income: 23398.91, expenses: 27004.93, card: 7800.00, fixed: 22941.07 }
   },
-  '2026-05': { // Jun/26 (Mês Base Completo da Planilha)
-    consolidated: { income: 29479.99, expenses: 31985.63, card: 8749.96, fixed: 26865.80 },
+  '2026-05': { // Jun/26 (Mês Base Completo da Planilha Oficial)
+    consolidated: { income: 29519.99, expenses: 31985.63, card: 7405.92, fixed: 26865.80 },
     pj: { income: 26500.00, expenses: 3255.98, card: 0, fixed: 3255.98 },
-    pf: { income: 25979.99, expenses: 28729.65, card: 8749.96, fixed: 23609.82 }
+    pf: { income: 26019.99, expenses: 28729.65, card: 7405.92, fixed: 23609.82 }
   },
   '2026-06': { // Jul/26
     consolidated: { income: 26720.00, expenses: 17475.76, card: 7200.00, fixed: 16178.45 },
@@ -305,30 +305,84 @@ export function getMonthlyFinancialData(
     ]
   }
 
-  // 2. Fontes de Receita
+  // 2. Fontes de Receita com Dados 100% Auditados da Planilha (Sem frações artificiais)
+  const EXACT_MONTHLY_INCOME_PF: Record<string, { name: string; value: number; color?: string }[]> = {
+    '2025-11': [
+      { name: 'Camarinha (Pró-labore PJ)', value: 10000.00, color: '#06B6D4' },
+      { name: 'Aeronáutica', value: 11199.86, color: '#3B82F6' },
+      { name: 'Dividendos & Rendimentos', value: 2.38, color: '#8B5CF6' }
+    ],
+    '2026-00': [
+      { name: 'Camarinha (Pró-labore PJ)', value: 19000.00, color: '#06B6D4' }
+    ],
+    '2026-01': [
+      { name: 'Camarinha (Pró-labore PJ)', value: 23500.00, color: '#06B6D4' }
+    ],
+    '2026-02': [
+      { name: 'Camarinha (Pró-labore PJ)', value: 22000.00, color: '#06B6D4' }
+    ],
+    '2026-03': [
+      { name: 'Camarinha (Pró-labore PJ)', value: 22500.00, color: '#06B6D4' },
+      { name: 'Reembolsos Médicos', value: 150.00, color: '#10B981' },
+      { name: 'Rendimento de Investimentos', value: 229.69, color: '#8B5CF6' }
+    ],
+    '2026-04': [
+      { name: 'Camarinha (Pró-labore PJ)', value: 23000.00, color: '#06B6D4' },
+      { name: 'Reembolsos Médicos', value: 150.00, color: '#10B981' },
+      { name: 'Rendimento de Investimentos', value: 248.91, color: '#8B5CF6' }
+    ],
+    '2026-05': [
+      { name: 'Camarinha (Pró-labore da PJ)', value: 23000.00, color: '#06B6D4' },
+      { name: 'Reembolsos Médicos', value: 2650.00, color: '#10B981' },
+      { name: 'Rendimento de Investimentos', value: 329.99, color: '#8B5CF6' },
+      { name: 'Presentes / Prêmios', value: 40.00, color: '#F59E0B' }
+    ],
+    '2026-06': [
+      { name: 'Camarinha (Pró-labore PJ)', value: 23500.00, color: '#06B6D4' },
+      { name: 'Reembolsos Médicos', value: 420.00, color: '#10B981' }
+    ],
+    '2026-07': [
+      { name: 'Camarinha (Pró-labore PJ)', value: 24000.00, color: '#06B6D4' }
+    ],
+    '2026-08': [
+      { name: 'Camarinha (Pró-labore PJ)', value: 24500.00, color: '#06B6D4' },
+      { name: 'Reembolsos Médicos', value: 2454.00, color: '#10B981' },
+      { name: 'Rendimento de Investimentos', value: 346.00, color: '#8B5CF6' }
+    ]
+  }
+
   let incomeSources: MonthlyIncomeSource[] = []
 
   if (!isDemo) {
-    // DADOS REAIS DO DR. RAFAEL LEÃO (base Junho de 2026)
     if (filter === 'PJ') {
       incomeSources = [
-        { name: 'Camarinha BRUTO', value: totalIncome, percentage: 100.0, color: '#06B6D4' }
+        { name: 'Camarinha BRUTO (Faturamento PJ)', value: totalIncome, percentage: 100.0, color: '#06B6D4' }
       ]
     } else if (filter === 'PF') {
-      const incomeRatio = totalIncome / 25979.99
-      incomeSources = [
-        { name: 'Camarinha (Pró-labore PJ)', value: 23000.00 * incomeRatio, percentage: 88.5, color: '#06B6D4' },
-        { name: 'Reembolsos Médicos', value: 2650.00 * incomeRatio, percentage: 10.2, color: '#10B981' },
-        { name: 'Rendimento de Investimentos', value: 329.99 * incomeRatio, percentage: 1.3, color: '#8B5CF6' }
-      ]
+      const sources = EXACT_MONTHLY_INCOME_PF[monthKey] || EXACT_MONTHLY_INCOME_PF['2026-05']
+      const sum = sources.reduce((acc, s) => acc + s.value, 0) || 1
+      incomeSources = sources.map(s => ({
+        name: s.name,
+        value: s.value,
+        percentage: Number(((s.value / sum) * 100).toFixed(1)),
+        color: s.color
+      }))
     } else {
-      // CONSOLIDADO REAL (Faturamento Bruto PJ + Entradas Externas PF, sem duplicar pró-labore)
-      const incomeRatio = totalIncome / 29479.99
-      incomeSources = [
-        { name: 'Faturamento PJ (Camarinha BRUTO)', value: 26500.00 * incomeRatio, percentage: 89.9, color: '#06B6D4' },
-        { name: 'Reembolsos Médicos (PF)', value: 2650.00 * incomeRatio, percentage: 9.0, color: '#10B981' },
-        { name: 'Rendimento Investimentos (PF)', value: 329.99 * incomeRatio, percentage: 1.1, color: '#8B5CF6' }
+      // CONSOLIDADO REAL (Faturamento Bruto PJ + Entradas Externas PF sem duplicar pró-labore)
+      const pfSources = EXACT_MONTHLY_INCOME_PF[monthKey] || EXACT_MONTHLY_INCOME_PF['2026-05']
+      const externalPf = pfSources.filter(s => !s.name.includes('Camarinha') && !s.name.includes('Pró-labore'))
+      const pjGross = baseFallback.pj.income
+      const items = [
+        { name: 'Faturamento PJ (Camarinha BRUTO)', value: pjGross, color: '#06B6D4' },
+        ...externalPf.map(s => ({ name: `${s.name} (PF)`, value: s.value, color: s.color }))
       ]
+      const sum = items.reduce((acc, i) => acc + i.value, 0) || 1
+      incomeSources = items.map(s => ({
+        name: s.name,
+        value: s.value,
+        percentage: Number(((s.value / sum) * 100).toFixed(1)),
+        color: s.color
+      }))
     }
   } else {
     // DEMO GENÉRICA

@@ -36,9 +36,41 @@ import {
   Repeat,
   Trash2,
   Building2,
-  UserCheck
+  UserCheck,
+  UploadCloud,
+  FileText,
+  Percent,
+  Calculator,
+  RotateCcw,
+  FileCheck,
+  Check
 } from 'lucide-react'
 import { QuickTransactionModal } from './QuickTransactionModal'
+
+export interface PjMonthTaxData {
+  month: string
+  label: string
+  faturamento: number
+  irpj: number
+  csll: number
+  cofins: number
+  pis: number
+  inss: number
+  iss: number
+  darf: number
+  outras: number
+  contabilidade: number
+}
+
+export const INITIAL_PJ_HISTORY: PjMonthTaxData[] = [
+  { month: 'dez', label: 'Dez/25', faturamento: 16500.00, irpj: 25.84, csll: 22.61, cofins: 90.77, pis: 19.70, inss: 280.38, iss: 206.73, darf: 58.84, outras: 0.00, contabilidade: 427.88 },
+  { month: 'jan', label: 'Jan/26', faturamento: 23500.00, irpj: 72.29, csll: 63.25, cofins: 253.90, pis: 55.12, inss: 784.30, iss: 578.29, darf: 2216.82, outras: 0.00, contabilidade: 460.00 },
+  { month: 'fev', label: 'Fev/26', faturamento: 29300.00, irpj: 95.06, csll: 83.18, cofins: 333.90, pis: 72.48, inss: 1031.40, iss: 760.48, darf: 2242.19, outras: 0.00, contabilidade: 491.21 },
+  { month: 'mar', label: 'Mar/26', faturamento: 24600.00, irpj: 81.10, csll: 70.96, cofins: 284.86, pis: 61.84, inss: 879.92, iss: 648.79, darf: 495.00, outras: 0.00, contabilidade: 491.21 },
+  { month: 'abr', label: 'Abr/26', faturamento: 26600.00, irpj: 87.89, csll: 76.90, cofins: 308.71, pis: 67.02, inss: 953.60, iss: 703.12, darf: 586.35, outras: 0.00, contabilidade: 491.21 },
+  { month: 'mai', label: 'Mai/26', faturamento: 25700.00, irpj: 85.83, csll: 75.10, cofins: 301.47, pis: 65.44, inss: 931.23, iss: 686.62, darf: 550.00, outras: 206.42, contabilidade: 491.21 },
+  { month: 'jun', label: 'Jun/26', faturamento: 26500.00, irpj: 88.59, csll: 77.52, cofins: 311.17, pis: 67.55, inss: 961.21, iss: 708.73, darf: 550.00, outras: 0.00, contabilidade: 491.21 }
+]
 
 export interface SubcategoryItem {
   name: string
@@ -101,6 +133,30 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
   const [editNameInput, setEditNameInput] = useState<string>('')
   const [editIsFixedInput, setEditIsFixedInput] = useState<boolean>(true)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
+
+  // Estados de Controle Tributário da PJ, Alíquotas e Boletos
+  const [pjTaxHistory, setPjTaxHistory] = useState<PjMonthTaxData[]>(INITIAL_PJ_HISTORY)
+  const [taxRateViewMode, setTaxRateViewMode] = useState<'SEM_CONTABILIDADE' | 'COM_CONTABILIDADE'>('COM_CONTABILIDADE')
+  const [selectedPjMonthKey, setSelectedPjMonthKey] = useState<string>('jun')
+  const [isUploadingBoleto, setIsUploadingBoleto] = useState<boolean>(false)
+  const [boletoSuccessMsg, setBoletoSuccessMsg] = useState<string | null>(null)
+  const [isDraggingBoleto, setIsDraggingBoleto] = useState<boolean>(false)
+  const [editingPjCell, setEditingPjCell] = useState<{
+    month: string
+    monthLabel: string
+    field: keyof PjMonthTaxData
+    fieldLabel: string
+    value: number
+  } | null>(null)
+  const [editPjValueInput, setEditPjValueInput] = useState<string>('')
+  const [uploadedBoletos, setUploadedBoletos] = useState<{
+    id: string
+    name: string
+    taxType: string
+    amount: number
+    month: string
+    date: string
+  }[]>([])
 
   // Acordeões expandidos
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
@@ -355,21 +411,25 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
     }
   ], [])
 
-  const realIncomePFCategories: CategoryGroup[] = useMemo(() => [
-    {
-      name: 'Pró-Labore & Entradas PF',
-      icon: Briefcase,
-      total: 25979.99,
-      color: 'from-purple-500 to-indigo-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Camarinha (Pró-labore da PJ)', value: 23000.00, is_fixed: true },
-        { name: 'Reembolsos Médicos', value: 2650.00, is_fixed: false },
-        { name: 'Rendimento de Investimentos', value: 329.99, is_fixed: false },
-        { name: 'Presentes / Prêmios', value: 40.00, is_fixed: false }
-      ]
-    }
-  ], [])
+  const realIncomePFCategories: CategoryGroup[] = useMemo(() => {
+    const subs = [
+      { name: 'Camarinha (Pró-labore da PJ)', value: 23000.00, is_fixed: true },
+      { name: 'Reembolsos Médicos', value: 2650.00, is_fixed: false },
+      { name: 'Rendimento de Investimentos', value: 329.99, is_fixed: false },
+      { name: 'Presentes / Prêmios', value: 40.00, is_fixed: false }
+    ]
+    const totalSum = Number(subs.reduce((acc, s) => acc + s.value, 0).toFixed(2))
+    return [
+      {
+        name: 'Pró-Labore & Entradas PF',
+        icon: Briefcase,
+        total: totalSum,
+        color: 'from-purple-500 to-indigo-600',
+        is_obligatory: true,
+        subcategories: subs
+      }
+    ]
+  }, [])
 
   // 2. DATASETS GENÉRICOS DEMONSTRATIVOS (apenas para /demo)
   const demoExpensePFCategories: CategoryGroup[] = useMemo(() => [
@@ -542,6 +602,19 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
       setExpensePJCats(prev => applyUpdates(prev, 'EXPENSE_PJ'))
       setIncomePJCats(prev => applyUpdates(prev, 'INCOME_PJ'))
       setIncomePFCats(prev => applyUpdates(prev, 'INCOME_PF'))
+
+      const storedPjTax = localStorage.getItem('leaomed_pj_tax_history_v2')
+      if (storedPjTax) {
+        try {
+          setPjTaxHistory(JSON.parse(storedPjTax))
+        } catch (_) {}
+      }
+      const storedBoletos = localStorage.getItem('leaomed_pj_uploaded_boletos')
+      if (storedBoletos) {
+        try {
+          setUploadedBoletos(JSON.parse(storedBoletos))
+        } catch (_) {}
+      }
     } catch (_) {}
   }, [])
 
@@ -688,6 +761,189 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
     setIsConfirmingDelete(false)
   }
 
+  // Cálculos do Mês Selecionado da PJ
+  const currentPjMonthData = useMemo(() => {
+    return pjTaxHistory.find(m => m.month === selectedPjMonthKey) || pjTaxHistory[pjTaxHistory.length - 1]
+  }, [pjTaxHistory, selectedPjMonthKey])
+
+  const pjMonthMetrics = useMemo(() => {
+    const d = currentPjMonthData
+    const tributosPuros = d.irpj + d.csll + d.cofins + d.pis + d.inss + d.iss + d.darf + d.outras
+    const custoOperacionalTotal = tributosPuros + d.contabilidade
+    const pctTributosPuros = d.faturamento > 0 ? (tributosPuros / d.faturamento) * 100 : 0
+    const pctCargaTotal = d.faturamento > 0 ? (custoOperacionalTotal / d.faturamento) * 100 : 0
+    const proLaborePf = 23000.00
+    const sobraCaixaPj = Math.max(0, d.faturamento - custoOperacionalTotal - proLaborePf)
+
+    return {
+      tributosPuros,
+      custoOperacionalTotal,
+      pctTributosPuros,
+      pctCargaTotal,
+      proLaborePf,
+      sobraCaixaPj
+    }
+  }, [currentPjMonthData])
+
+  // Handler para Upload / Arraste de múltiplos boletos PJ
+  const handlePjBoletoUpload = (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    setIsUploadingBoleto(true)
+
+    setTimeout(() => {
+      const newItems: {
+        id: string
+        name: string
+        taxType: string
+        amount: number
+        month: string
+        date: string
+      }[] = []
+      const fileArr = Array.from(files)
+
+      let updatedHistory = [...pjTaxHistory]
+      const currentMonthIndex = updatedHistory.findIndex(m => m.month === selectedPjMonthKey)
+      const targetIdx = currentMonthIndex >= 0 ? currentMonthIndex : updatedHistory.length - 1
+      const targetMonthData = { ...updatedHistory[targetIdx] }
+
+      fileArr.forEach((file, idx) => {
+        const lower = file.name.toLowerCase()
+        let taxType = 'Guia Tributária DAS / DARF'
+        let amount = 550.00
+
+        if (lower.includes('darf')) {
+          taxType = 'DARF Federal (IRPJ / CSLL / Retenções)'
+          amount = 550.00
+          targetMonthData.darf = amount
+        } else if (lower.includes('das') || lower.includes('simples')) {
+          taxType = 'DAS Simples Nacional Médico'
+          amount = 1250.00
+          targetMonthData.iss = 708.73
+        } else if (lower.includes('inss') || lower.includes('gps') || lower.includes('previd')) {
+          taxType = 'INSS Patronal / Pró-labore'
+          amount = 961.21
+          targetMonthData.inss = amount
+        } else if (lower.includes('iss') || lower.includes('prefeitura') || lower.includes('bh')) {
+          taxType = 'ISSQN Municipal'
+          amount = 708.73
+          targetMonthData.iss = amount
+        } else if (lower.includes('contabil') || lower.includes('contador') || lower.includes('honor')) {
+          taxType = 'Mensalidade Contabilidade PJ'
+          amount = 491.21
+          targetMonthData.contabilidade = amount
+        } else {
+          taxType = `Boleto Operacional PJ (${file.name.slice(0, 18)})`
+          amount = 491.21
+          targetMonthData.contabilidade = amount
+        }
+
+        newItems.push({
+          id: `${Date.now()}-${idx}`,
+          name: file.name,
+          taxType,
+          amount,
+          month: targetMonthData.label,
+          date: new Date().toLocaleDateString('pt-BR')
+        })
+      })
+
+      updatedHistory[targetIdx] = targetMonthData
+      setPjTaxHistory(updatedHistory)
+      setUploadedBoletos(prev => {
+        const merged = [...newItems, ...prev]
+        try {
+          localStorage.setItem('leaomed_pj_uploaded_boletos', JSON.stringify(merged))
+        } catch (_) {}
+        return merged
+      })
+
+      try {
+        localStorage.setItem('leaomed_pj_tax_history_v2', JSON.stringify(updatedHistory))
+      } catch (_) {}
+
+      // Sincronizar com as categorias ativas de PJ
+      setExpensePJCats(prev => prev.map(cat => {
+        if (cat.name === 'Tributos Simples Nacional & Federais') {
+          const updatedSubs = cat.subcategories.map(sub => {
+            if (sub.name === 'DARF Tributário') return { ...sub, value: targetMonthData.darf }
+            if (sub.name === 'INSS Patronal / Pró-labore') return { ...sub, value: targetMonthData.inss }
+            if (sub.name === 'ISS Municipal') return { ...sub, value: targetMonthData.iss }
+            return sub
+          })
+          const newTot = updatedSubs.reduce((acc, s) => acc + s.value, 0)
+          return { ...cat, total: newTot, subcategories: updatedSubs }
+        }
+        if (cat.name === 'Serviços Contábeis & Administrativos') {
+          const updatedSubs = cat.subcategories.map(sub => {
+            if (sub.name === 'Mensalidade Contabilidade PJ') return { ...sub, value: targetMonthData.contabilidade }
+            return sub
+          })
+          const newTot = updatedSubs.reduce((acc, s) => acc + s.value, 0)
+          return { ...cat, total: newTot, subcategories: updatedSubs }
+        }
+        return cat
+      }))
+
+      setIsUploadingBoleto(false)
+      setBoletoSuccessMsg(`${files.length} boleto(s) PJ conciliado(s) com sucesso na competência ${targetMonthData.label}!`)
+      setTimeout(() => setBoletoSuccessMsg(null), 6000)
+    }, 900)
+  }
+
+  // Handler para Salvar Célula da Tabela da PJ
+  const handleSavePjCell = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingPjCell) return
+    const parsedVal = parseFloat(editPjValueInput.replace(',', '.'))
+    if (isNaN(parsedVal) || parsedVal < 0) return
+
+    const { month, field } = editingPjCell
+    const updated = pjTaxHistory.map(row => {
+      if (row.month === month) {
+        return {
+          ...row,
+          [field]: parsedVal
+        }
+      }
+      return row
+    })
+
+    setPjTaxHistory(updated)
+    try {
+      localStorage.setItem('leaomed_pj_tax_history_v2', JSON.stringify(updated))
+    } catch (_) {}
+
+    // Sincronizar com subcategorias se for o mês ativo
+    if (month === 'jun') {
+      setExpensePJCats(prev => prev.map(cat => {
+        const updatedSubs = cat.subcategories.map(sub => {
+          if (field === 'darf' && sub.name.includes('DARF')) return { ...sub, value: parsedVal }
+          if (field === 'inss' && sub.name.includes('INSS')) return { ...sub, value: parsedVal }
+          if (field === 'iss' && sub.name.includes('ISS')) return { ...sub, value: parsedVal }
+          if (field === 'cofins' && sub.name.includes('COFINS')) return { ...sub, value: parsedVal }
+          if (field === 'irpj' && sub.name.includes('IRPJ')) return { ...sub, value: parsedVal }
+          if (field === 'csll' && sub.name.includes('CSLL')) return { ...sub, value: parsedVal }
+          if (field === 'pis' && sub.name.includes('PIS')) return { ...sub, value: parsedVal }
+          if (field === 'contabilidade' && sub.name.includes('Contabilidade')) return { ...sub, value: parsedVal }
+          return sub
+        })
+        const newTot = updatedSubs.reduce((acc, s) => acc + s.value, 0)
+        return { ...cat, total: newTot, subcategories: updatedSubs }
+      }))
+    }
+
+    setEditingPjCell(null)
+  }
+
+  const handleResetPjHistory = () => {
+    if (window.confirm('Deseja restaurar os valores originais da planilha oficial para todas as competências da PJ?')) {
+      setPjTaxHistory(INITIAL_PJ_HISTORY)
+      try {
+        localStorage.removeItem('leaomed_pj_tax_history_v2')
+      } catch (_) {}
+    }
+  }
+
   const expandAll = () => {
     const allExp: Record<string, boolean> = {}
     currentCategoryList.forEach(c => { allExp[c.name] = true })
@@ -754,85 +1010,77 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
         {/* ========================================================================= */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-2 rounded-2xl bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-white/10 shadow-inner relative z-10">
           <div className="flex flex-wrap items-center gap-2">
-            {/* Aba 1: Despesas PF (Exibida no filtro PF ou Consolidado) */}
-            {(currentFilter === 'CONSOLIDATED' || currentFilter === 'PF') && (
-              <button
-                onClick={() => setActiveScopeTab('EXPENSE_PF')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
-                  activeScopeTab === 'EXPENSE_PF'
-                    ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30 scale-[1.02]'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
-                }`}
-              >
-                <TrendingDown className="w-4 h-4 text-white" />
-                <span>Despesas PF (Pessoa Física)</span>
-                <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ${
-                  activeScopeTab === 'EXPENSE_PF' ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300'
-                }`}>
-                  R$ {totalExpensePF.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
-              </button>
-            )}
+            {/* Aba 1: Despesas PF */}
+            <button
+              onClick={() => setActiveScopeTab('EXPENSE_PF')}
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
+                activeScopeTab === 'EXPENSE_PF'
+                  ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30 scale-[1.02]'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
+              }`}
+            >
+              <TrendingDown className="w-4 h-4 text-white" />
+              <span>Despesas PF (Pessoa Física)</span>
+              <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ${
+                activeScopeTab === 'EXPENSE_PF' ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300'
+              }`}>
+                R$ {totalExpensePF.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </span>
+            </button>
 
-            {/* Aba 2: Despesas PJ (Exibida no filtro PJ ou Consolidado) */}
-            {(currentFilter === 'CONSOLIDATED' || currentFilter === 'PJ') && (
-              <button
-                onClick={() => setActiveScopeTab('EXPENSE_PJ')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
-                  activeScopeTab === 'EXPENSE_PJ'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 scale-[1.02]'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
-                }`}
-              >
-                <Building2 className="w-4 h-4 text-white" />
-                <span>Despesas PJ (Empresa)</span>
-                <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ${
-                  activeScopeTab === 'EXPENSE_PJ' ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300'
-                }`}>
-                  R$ {totalExpensePJ.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
-              </button>
-            )}
+            {/* Aba 2: Despesas PJ */}
+            <button
+              onClick={() => setActiveScopeTab('EXPENSE_PJ')}
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
+                activeScopeTab === 'EXPENSE_PJ'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 scale-[1.02]'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
+              }`}
+            >
+              <Building2 className="w-4 h-4 text-white" />
+              <span>Empresa PJ (Impostos & Contabilidade)</span>
+              <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ${
+                activeScopeTab === 'EXPENSE_PJ' ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300'
+              }`}>
+                R$ {totalExpensePJ.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </span>
+            </button>
 
-            {/* Aba 3: Receitas PJ (Exibida no filtro PJ ou Consolidado) */}
-            {(currentFilter === 'CONSOLIDATED' || currentFilter === 'PJ') && (
-              <button
-                onClick={() => setActiveScopeTab('INCOME_PJ')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
-                  activeScopeTab === 'INCOME_PJ'
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 scale-[1.02]'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
-                }`}
-              >
-                <TrendingUp className="w-4 h-4 text-white" />
-                <span>Receitas PJ (Faturamento)</span>
-                <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ${
-                  activeScopeTab === 'INCOME_PJ' ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300'
-                }`}>
-                  R$ {totalIncomePJ.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
-              </button>
-            )}
+            {/* Aba 3: Receitas PJ */}
+            <button
+              onClick={() => setActiveScopeTab('INCOME_PJ')}
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
+                activeScopeTab === 'INCOME_PJ'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 scale-[1.02]'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 text-white" />
+              <span>Receitas PJ (Faturamento Camarinha)</span>
+              <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ${
+                activeScopeTab === 'INCOME_PJ' ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300'
+              }`}>
+                R$ {totalIncomePJ.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </span>
+            </button>
 
-            {/* Aba 4: Receitas PF (Exibida no filtro PF ou Consolidado) */}
-            {(currentFilter === 'CONSOLIDATED' || currentFilter === 'PF') && (
-              <button
-                onClick={() => setActiveScopeTab('INCOME_PF')}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
-                  activeScopeTab === 'INCOME_PF'
-                    ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30 scale-[1.02]'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
-                }`}
-              >
-                <Coins className="w-4 h-4 text-white" />
-                <span>Receitas PF (Pró-labore & Entradas)</span>
-                <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ${
-                  activeScopeTab === 'INCOME_PF' ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300'
-                }`}>
-                  R$ {totalIncomePF.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
-              </button>
-            )}
+            {/* Aba 4: Receitas PF */}
+            <button
+              onClick={() => setActiveScopeTab('INCOME_PF')}
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
+                activeScopeTab === 'INCOME_PF'
+                  ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30 scale-[1.02]'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
+              }`}
+            >
+              <Coins className="w-4 h-4 text-white" />
+              <span>Receitas PF (Pró-labore & Entradas)</span>
+              <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ${
+                activeScopeTab === 'INCOME_PF' ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300'
+              }`}>
+                R$ {totalIncomePF.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </span>
+            </button>
           </div>
 
           <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 px-2 flex items-center gap-1.5">
@@ -904,20 +1152,555 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
         )}
 
         {activeScopeTab === 'EXPENSE_PJ' && (
-          <div className="mb-6 rounded-2xl border border-indigo-500/20 bg-indigo-50/40 dark:bg-indigo-950/20 p-4 md:p-5 relative z-10 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300 block">
-                Custos Operacionais & Tributários da Empresa Médica PJ
-              </span>
-              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                Impostos do Simples Nacional / DAS (INSS, ISS, DARF, COFINS, IRPJ, CSLL, PIS) e Mensalidade Contábil.
-              </p>
+          <div className="space-y-6 mb-8 relative z-10">
+            {/* 1. Header & Alíquota Efetiva PJ com Seletor */}
+            <div className="rounded-3xl border border-indigo-500/20 bg-gradient-to-br from-indigo-50/50 via-white to-blue-50/30 dark:from-indigo-950/30 dark:via-slate-900/80 dark:to-slate-950 p-5 md:p-6 shadow-xs">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-indigo-100 dark:border-white/10">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="p-2 rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-600/30">
+                      <Building2 className="w-5 h-5" />
+                    </span>
+                    <h3 className="font-display text-lg md:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                      Controle Tributário & Operacional da Empresa PJ
+                    </h3>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
+                      Banco Inter PJ • 100% Débito em Conta
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-3xl leading-relaxed">
+                    Fluxo médico: o faturamento hospitalar (Camarinha) entra na conta da PJ, são pagos os impostos federais/municipais e a contabilidade, e o saldo líquido é transferido para a Pessoa Física como pró-labore.
+                  </p>
+                </div>
+
+                {/* Seletor de Competência da PJ */}
+                <div className="flex items-center gap-2 self-start lg:self-auto bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-indigo-200 dark:border-white/10 shadow-xs">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 pl-2">Competência:</span>
+                  <select
+                    value={selectedPjMonthKey}
+                    onChange={(e) => setSelectedPjMonthKey(e.target.value)}
+                    aria-label="Selecionar competência da PJ"
+                    className="text-xs font-black text-indigo-600 dark:text-indigo-400 bg-transparent py-1 px-2.5 rounded-xl border border-indigo-300 dark:border-white/20 focus:outline-none cursor-pointer"
+                  >
+                    {pjTaxHistory.map((m) => (
+                      <option key={m.month} value={m.month} className="text-slate-900 dark:text-white bg-white dark:bg-slate-900">
+                        {m.label} ({m.month.toUpperCase()})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Grid de Cards de Carga Tributária e Pró-Labore */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-5">
+                {/* Card 1: Faturamento Bruto */}
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-white/5 shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">
+                    Faturamento Bruto PJ (Camarinha)
+                  </span>
+                  <div className="font-mono text-lg md:text-xl font-black text-cyan-600 dark:text-cyan-400 tabular-nums">
+                    R$ {currentPjMonthData.faturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </div>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block">
+                    100% Contratos Hospitalares
+                  </span>
+                </div>
+
+                {/* Card 2: Total Impostos (Simples/Federais) */}
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-white/5 shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">
+                    Impostos Federais & Municipais
+                  </span>
+                  <div className="font-mono text-lg md:text-xl font-black text-rose-600 dark:text-rose-400 tabular-nums">
+                    R$ {pjMonthMetrics.tributosPuros.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </div>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block">
+                    DARF, INSS, ISS, COFINS, IRPJ, CSLL, PIS
+                  </span>
+                </div>
+
+                {/* Card 3: Mensalidade Contabilidade */}
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-white/5 shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">
+                    Mensalidade Contabilidade
+                  </span>
+                  <div className="font-mono text-lg md:text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                    R$ {currentPjMonthData.contabilidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </div>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block">
+                    Honorários Contábeis Especializados
+                  </span>
+                </div>
+
+                {/* Card 4: Alíquota e Seletor de Carga */}
+                <div className="p-3.5 rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-600/20 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-200">
+                        {taxRateViewMode === 'SEM_CONTABILIDADE' ? 'Alíquota Pura de Impostos' : 'Carga Operacional Total'}
+                      </span>
+                      <Percent className="w-3.5 h-3.5 text-indigo-200" />
+                    </div>
+                    <div className="font-mono text-2xl font-black tabular-nums tracking-tight">
+                      {taxRateViewMode === 'SEM_CONTABILIDADE' 
+                        ? `${pjMonthMetrics.pctTributosPuros.toFixed(1)}%` 
+                        : `${pjMonthMetrics.pctCargaTotal.toFixed(1)}%`}
+                    </div>
+                  </div>
+
+                  {/* Alternador / Toggle de Alíquota */}
+                  <div className="pt-2">
+                    <div className="inline-flex w-full rounded-xl bg-indigo-950/60 p-0.5 text-[9px] font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setTaxRateViewMode('SEM_CONTABILIDADE')}
+                        className={`flex-1 py-1 rounded-lg transition-all cursor-pointer text-center ${
+                          taxRateViewMode === 'SEM_CONTABILIDADE'
+                            ? 'bg-white text-indigo-900 font-black shadow-xs'
+                            : 'text-indigo-200 hover:text-white'
+                        }`}
+                      >
+                        Sem Contador ({pjMonthMetrics.pctTributosPuros.toFixed(1)}%)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTaxRateViewMode('COM_CONTABILIDADE')}
+                        className={`flex-1 py-1 rounded-lg transition-all cursor-pointer text-center ${
+                          taxRateViewMode === 'COM_CONTABILIDADE'
+                            ? 'bg-white text-indigo-900 font-black shadow-xs'
+                            : 'text-indigo-200 hover:text-white'
+                        }`}
+                      >
+                        Com Contador ({pjMonthMetrics.pctCargaTotal.toFixed(1)}%)
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informação do Pró-labore repassado */}
+              <div className="mt-3.5 p-3 rounded-2xl bg-indigo-50 dark:bg-white/5 border border-indigo-100 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <span className="text-slate-700 dark:text-slate-300">
+                    <strong>Pró-Labore Transferido para PF:</strong> R$ 23.000,00 (origem do "Salário Pró-Labore Camarinha" na PF).
+                  </span>
+                </div>
+                <div className="text-right text-[11px] text-slate-500 dark:text-slate-400">
+                  Saldo de caixa retido na PJ: <strong className="text-slate-900 dark:text-white font-mono">R$ {pjMonthMetrics.sobraCaixaPj.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                </div>
+              </div>
             </div>
-            <div className="text-right">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Despesas PJ</span>
-              <span className="font-mono text-base md:text-lg font-black text-indigo-700 dark:text-indigo-300 tabular-nums">
-                R$ {totalExpensePJ.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </span>
+
+            {/* 2. Central de Ingestão de Boletos e Guias PJ ("Jogar Boletos PJ no Sistema") */}
+            <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 p-5 md:p-6 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h4 className="font-display font-bold text-sm md:text-base text-slate-900 dark:text-white flex items-center gap-2">
+                    <UploadCloud className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    Central de Conciliação Automática de Boletos PJ
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Jogue aqui seus boletos bancários da PJ (DAS, DARF, INSS, ISS, Mensalidade Contábil) para conciliação automática mês a mês.
+                  </p>
+                </div>
+                {uploadedBoletos.length > 0 && (
+                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-xl border border-emerald-500/20 self-start sm:self-auto">
+                    {uploadedBoletos.length} boleto(s) auditado(s)
+                  </span>
+                )}
+              </div>
+
+              {/* Dropzone de Boletos PJ */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setIsDraggingBoleto(true) }}
+                onDragLeave={() => setIsDraggingBoleto(false)}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  setIsDraggingBoleto(false)
+                  handlePjBoletoUpload(e.dataTransfer.files)
+                }}
+                className={`relative border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer ${
+                  isDraggingBoleto 
+                    ? 'border-indigo-500 bg-indigo-500/10 scale-[1.01]' 
+                    : 'border-slate-300 dark:border-white/20 hover:border-indigo-500 hover:bg-slate-50 dark:hover:bg-white/5'
+                }`}
+                onClick={() => document.getElementById('pj-boleto-file-input')?.click()}
+              >
+                <input
+                  id="pj-boleto-file-input"
+                  type="file"
+                  multiple
+                  accept=".pdf,.png,.jpg,.jpeg,.xml"
+                  className="hidden"
+                  onChange={(e) => handlePjBoletoUpload(e.target.files)}
+                />
+
+                <div className="flex flex-col items-center gap-2">
+                  <div className="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="text-xs md:text-sm font-black text-slate-900 dark:text-white block">
+                      Arraste seus boletos e guias PJ aqui (ou clique para selecionar)
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 block">
+                      Suporta múltiplos arquivos PDF (DARF, DAS Simples, GPS INSS, ISS e Boleto do Contador)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="mt-2 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all pointer-events-none"
+                  >
+                    + Selecionar Boletos do Computador
+                  </button>
+                </div>
+
+                {isUploadingBoleto && (
+                  <div className="absolute inset-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xs rounded-2xl flex flex-col items-center justify-center gap-2 z-20">
+                    <div className="h-6 w-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 animate-pulse">
+                      Lendo código de barras, OCR e conciliando com a competência {currentPjMonthData.label}...
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Mensagem Toast de Sucesso */}
+              {boletoSuccessMsg && (
+                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>{boletoSuccessMsg}</span>
+                </div>
+              )}
+
+              {/* Lista de Boletos Recentes Conciliados */}
+              {uploadedBoletos.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                    Últimos Boletos Conciliados Automaticamente:
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {uploadedBoletos.slice(0, 6).map((b) => (
+                      <div key={b.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 flex items-center justify-between text-xs">
+                        <div className="min-w-0 pr-2">
+                          <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">
+                            {b.taxType}
+                          </span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate">
+                            {b.name} • {b.month}
+                          </span>
+                        </div>
+                        <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                          R$ {b.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 3. Tabela Oficial Idêntica à Planilha (Imagem 4 - "Empresa - Despesas Fixas") */}
+            <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 p-5 md:p-6 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/10">
+                <div>
+                  <h4 className="font-display font-extrabold text-base md:text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    Empresa - Despesas Fixas (Tabela Oficial da Planilha)
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Histórico consolidado mês a mês (Dez/25 a Jun/26). Clique sobre qualquer valor para editar diretamente.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleResetPjHistory}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all self-start sm:self-auto cursor-pointer"
+                  title="Restaurar valores de fábrica da planilha oficial"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Restaurar Planilha Original</span>
+                </button>
+              </div>
+
+              {/* Tabela Responsiva Estilo Planilha Excel */}
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-white/10">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-800 text-white font-bold text-[11px] uppercase tracking-wider">
+                      <th className="p-3 border-r border-slate-700 whitespace-nowrap min-w-[200px]">
+                        Tributo / Custo Fixo PJ
+                      </th>
+                      {pjTaxHistory.map((col) => (
+                        <th 
+                          key={col.month} 
+                          className={`p-3 text-right border-r border-slate-700 min-w-[95px] whitespace-nowrap ${
+                            col.month === selectedPjMonthKey ? 'bg-indigo-700 text-white font-black' : ''
+                          }`}
+                        >
+                          {col.month}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-white/5 font-mono">
+                    {/* Linha 1: IRPJ */}
+                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                        IRPJ
+                      </td>
+                      {pjTaxHistory.map((col) => (
+                        <td
+                          key={col.month}
+                          onClick={() => {
+                            setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'irpj', fieldLabel: 'IRPJ da PJ', value: col.irpj })
+                            setEditPjValueInput(col.irpj.toString())
+                          }}
+                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                          title="Clique para editar"
+                        >
+                          {col.irpj > 0 ? col.irpj.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Linha 2: CSLL */}
+                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                        CSLL
+                      </td>
+                      {pjTaxHistory.map((col) => (
+                        <td
+                          key={col.month}
+                          onClick={() => {
+                            setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'csll', fieldLabel: 'CSLL da PJ', value: col.csll })
+                            setEditPjValueInput(col.csll.toString())
+                          }}
+                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                          title="Clique para editar"
+                        >
+                          {col.csll > 0 ? col.csll.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Linha 3: COFINS */}
+                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                        COFINS
+                      </td>
+                      {pjTaxHistory.map((col) => (
+                        <td
+                          key={col.month}
+                          onClick={() => {
+                            setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'cofins', fieldLabel: 'COFINS da PJ', value: col.cofins })
+                            setEditPjValueInput(col.cofins.toString())
+                          }}
+                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                          title="Clique para editar"
+                        >
+                          {col.cofins > 0 ? col.cofins.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Linha 4: PIS */}
+                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                        PIS
+                      </td>
+                      {pjTaxHistory.map((col) => (
+                        <td
+                          key={col.month}
+                          onClick={() => {
+                            setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'pis', fieldLabel: 'PIS da PJ', value: col.pis })
+                            setEditPjValueInput(col.pis.toString())
+                          }}
+                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                          title="Clique para editar"
+                        >
+                          {col.pis > 0 ? col.pis.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Linha 5: INSS */}
+                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                        INSS
+                      </td>
+                      {pjTaxHistory.map((col) => (
+                        <td
+                          key={col.month}
+                          onClick={() => {
+                            setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'inss', fieldLabel: 'INSS Patronal / Pró-labore', value: col.inss })
+                            setEditPjValueInput(col.inss.toString())
+                          }}
+                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                          title="Clique para editar"
+                        >
+                          {col.inss > 0 ? col.inss.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Linha 6: ISS */}
+                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                        ISS
+                      </td>
+                      {pjTaxHistory.map((col) => (
+                        <td
+                          key={col.month}
+                          onClick={() => {
+                            setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'iss', fieldLabel: 'ISS Municipal', value: col.iss })
+                            setEditPjValueInput(col.iss.toString())
+                          }}
+                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                          title="Clique para editar"
+                        >
+                          {col.iss > 0 ? col.iss.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Linha 7: DARF */}
+                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                        DARF
+                      </td>
+                      {pjTaxHistory.map((col) => (
+                        <td
+                          key={col.month}
+                          onClick={() => {
+                            setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'darf', fieldLabel: 'DARF Tributário Federal', value: col.darf })
+                            setEditPjValueInput(col.darf.toString())
+                          }}
+                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                          title="Clique para editar"
+                        >
+                          {col.darf > 0 ? col.darf.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Linha 8: Outras taxas */}
+                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                        Outras taxas
+                      </td>
+                      {pjTaxHistory.map((col) => (
+                        <td
+                          key={col.month}
+                          onClick={() => {
+                            setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'outras', fieldLabel: 'Outras Taxas da PJ', value: col.outras })
+                            setEditPjValueInput(col.outras.toString())
+                          }}
+                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                          title="Clique para editar"
+                        >
+                          {col.outras > 0 ? col.outras.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Linha 9: Mensalidade Contabilidade */}
+                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                        Mensalidade Contabilidade
+                      </td>
+                      {pjTaxHistory.map((col) => (
+                        <td
+                          key={col.month}
+                          onClick={() => {
+                            setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'contabilidade', fieldLabel: 'Mensalidade Contabilidade', value: col.contabilidade })
+                            setEditPjValueInput(col.contabilidade.toString())
+                          }}
+                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                          title="Clique para editar"
+                        >
+                          {col.contabilidade > 0 ? col.contabilidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* LINHA DE TOTAL: EMPRESA - DESPESAS FIXAS */}
+                    <tr className="bg-rose-50/60 dark:bg-rose-950/30 font-black text-rose-700 dark:text-rose-400 border-t-2 border-slate-300 dark:border-white/20">
+                      <td className="p-3 font-sans uppercase tracking-wider border-r border-slate-200 dark:border-white/10">
+                        Empresa - Despesas Fixas (Total)
+                      </td>
+                      {pjTaxHistory.map((col) => {
+                        const totalCol = col.irpj + col.csll + col.cofins + col.pis + col.inss + col.iss + col.darf + col.outras + col.contabilidade
+                        return (
+                          <td key={col.month} className="p-3 text-right border-r border-slate-200 dark:border-white/10">
+                            {totalCol.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </td>
+                        )
+                      })}
+                    </tr>
+
+                    {/* LINHA: PERCENTUAL DE IMPOSTO (SEM CONTABILIDADE) */}
+                    <tr className={`transition-colors ${
+                      taxRateViewMode === 'SEM_CONTABILIDADE' 
+                        ? 'bg-indigo-50 dark:bg-indigo-950/40 font-black text-indigo-700 dark:text-indigo-300' 
+                        : 'text-slate-600 dark:text-slate-400 font-semibold'
+                    }`}>
+                      <td className="p-2.5 font-sans border-r border-slate-100 dark:border-white/5">
+                        % Impostos (Sem Contabilidade)
+                      </td>
+                      {pjTaxHistory.map((col) => {
+                        const tributos = col.irpj + col.csll + col.cofins + col.pis + col.inss + col.iss + col.darf + col.outras
+                        const pct = col.faturamento > 0 ? ((tributos / col.faturamento) * 100).toFixed(1) : '0.0'
+                        return (
+                          <td key={col.month} className="p-2.5 text-right border-r border-slate-100 dark:border-white/5">
+                            {pct}%
+                          </td>
+                        )
+                      })}
+                    </tr>
+
+                    {/* LINHA: PERCENTUAL DE IMPOSTO (COM CONTABILIDADE - PLANILHA OFICIAL) */}
+                    <tr className={`border-b-2 border-slate-300 dark:border-white/20 transition-colors ${
+                      taxRateViewMode === 'COM_CONTABILIDADE' 
+                        ? 'bg-indigo-600 text-white font-black' 
+                        : 'bg-indigo-50/40 dark:bg-indigo-950/20 text-slate-800 dark:text-slate-200 font-bold'
+                    }`}>
+                      <td className="p-3 font-sans uppercase tracking-wider border-r border-slate-200 dark:border-white/10">
+                        Percentual de imposto (Com Contador - Planilha)
+                      </td>
+                      {pjTaxHistory.map((col) => {
+                        const totalCol = col.irpj + col.csll + col.cofins + col.pis + col.inss + col.iss + col.darf + col.outras + col.contabilidade
+                        const pct = col.faturamento > 0 ? Math.round((totalCol / col.faturamento) * 100) : 0
+                        return (
+                          <td key={col.month} className="p-3 text-right border-r border-slate-200 dark:border-white/10">
+                            {pct}%
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -1339,6 +2122,74 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                     <span>Salvar Alteração</span>
                   </button>
                 </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edição de Célula da Planilha PJ */}
+      {editingPjCell && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl p-5 md:p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-sm md:text-base text-slate-900 dark:text-white">
+                    Editar Custo PJ • {editingPjCell.monthLabel}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {editingPjCell.fieldLabel}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingPjCell(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePjCell} className="space-y-4 pt-1">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Valor Pago (R$)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">R$</span>
+                  <input
+                    type="text"
+                    value={editPjValueInput}
+                    onChange={(e) => setEditPjValueInput(e.target.value)}
+                    placeholder="0,00"
+                    autoFocus
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 font-mono text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  Valor anterior na planilha: R$ {editingPjCell.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setEditingPjCell(null)}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl text-xs font-black bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Salvar na Planilha</span>
+                </button>
               </div>
             </form>
           </div>

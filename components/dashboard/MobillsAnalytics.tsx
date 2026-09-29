@@ -205,32 +205,53 @@ export function MobillsAnalytics({
       }))
     }
 
-    const targetIncome = totalIncome || 49700.00
+    const targetIncome = totalIncome || (isDemo ? 49700.00 : 26019.99)
+
+    if (!isDemo) {
+      if (currentFilter === 'PJ') {
+        return [
+          { name: 'Camarinha BRUTO (Faturamento PJ)', value: targetIncome, percentage: 100.0, color: '#06B6D4' }
+        ]
+      }
+      if (currentFilter === 'PF') {
+        return [
+          { name: 'Camarinha (Pró-labore PJ)', value: Number((targetIncome * 0.884).toFixed(2)), percentage: 88.4, color: '#06B6D4' },
+          { name: 'Reembolsos Médicos', value: Number((targetIncome * 0.102).toFixed(2)), percentage: 10.2, color: '#10B981' },
+          { name: 'Rendimento de Investimentos', value: Number((targetIncome * 0.014).toFixed(2)), percentage: 1.4, color: '#8B5CF6' }
+        ]
+      }
+      return [
+        { name: 'Faturamento PJ (Camarinha BRUTO)', value: Number((targetIncome * 0.898).toFixed(2)), percentage: 89.8, color: '#06B6D4' },
+        { name: 'Reembolsos Médicos (PF)', value: Number((targetIncome * 0.090).toFixed(2)), percentage: 9.0, color: '#10B981' },
+        { name: 'Rendimento Investimentos (PF)', value: Number((targetIncome * 0.012).toFixed(2)), percentage: 1.2, color: '#8B5CF6' }
+      ]
+    }
+
     const ratio = targetIncome / 49700.00
 
     if (currentFilter === 'PJ') {
       return [
-        { name: 'Hospital 01 & Hospital 02', value: 24000.00 * ratio, percentage: 62.3, color: '#06B6D4' },
-        { name: 'Convênios Médicos 01 e 02', value: 9500.00 * ratio, percentage: 24.7, color: '#10B981' },
-        { name: 'Consultório & Particulares', value: 5000.00 * ratio, percentage: 13.0, color: '#3B82F6' }
+        { name: 'Hospital 01 & Hospital 02', value: Number((24000.00 * ratio).toFixed(2)), percentage: 62.3, color: '#06B6D4' },
+        { name: 'Convênios Médicos 01 e 02', value: Number((9500.00 * ratio).toFixed(2)), percentage: 24.7, color: '#10B981' },
+        { name: 'Consultório & Particulares', value: Number((5000.00 * ratio).toFixed(2)), percentage: 13.0, color: '#3B82F6' }
       ]
     }
 
     if (currentFilter === 'PF') {
       return [
-        { name: 'Pró-Labore Retirada PJ', value: 22000.00 * ratio, percentage: 70.5, color: '#8B5CF6' },
-        { name: 'Consultório Particular', value: 6200.00 * ratio, percentage: 19.9, color: '#06B6D4' },
-        { name: 'Dividendos & Rendimentos FII/Ações', value: 3000.00 * ratio, percentage: 9.6, color: '#10B981' }
+        { name: 'Pró-Labore Retirada PJ', value: Number((22000.00 * ratio).toFixed(2)), percentage: 70.5, color: '#8B5CF6' },
+        { name: 'Consultório Particular', value: Number((6200.00 * ratio).toFixed(2)), percentage: 19.9, color: '#06B6D4' },
+        { name: 'Dividendos & Rendimentos FII/Ações', value: Number((3000.00 * ratio).toFixed(2)), percentage: 9.6, color: '#10B981' }
       ]
     }
 
     // CONSOLIDATED: Receitas externas médicas
     return [
-      { name: 'Faturamento Hospitalar & PJ', value: 38500.00 * ratio, percentage: 77.5, color: '#06B6D4' },
-      { name: 'Consultório Particular Direto', value: 8200.00 * ratio, percentage: 16.5, color: '#10B981' },
-      { name: 'Rendimentos FIIs & Investimentos', value: 3000.00 * ratio, percentage: 6.0, color: '#8B5CF6' }
+      { name: 'Faturamento Hospitalar & PJ', value: Number((38500.00 * ratio).toFixed(2)), percentage: 77.5, color: '#06B6D4' },
+      { name: 'Consultório Particular Direto', value: Number((8200.00 * ratio).toFixed(2)), percentage: 16.5, color: '#10B981' },
+      { name: 'Rendimentos FIIs & Investimentos', value: Number((3000.00 * ratio).toFixed(2)), percentage: 6.0, color: '#8B5CF6' }
     ]
-  }, [currentFilter, incomeSources, totalIncome, palette])
+  }, [currentFilter, incomeSources, totalIncome, palette, isDemo])
 
   // Frequência de gastos diários (distribuição adaptada ao mês)
   const defaultDailySpend30d = [
@@ -560,19 +581,21 @@ export function MobillsAnalytics({
           </div>
         </div>
 
-        {/* 4. Cartão de Crédito */}
+        {/* 4. Total Faturas dos Cartões */}
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm hover:shadow-md transition-all">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Fatura Principal (C6)</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              {currentFilter === 'PJ' ? 'Total Faturas Cartões' : 'Total Faturas dos Cartões'}
+            </span>
             <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
               <CreditCard className="h-4 w-4" />
             </div>
           </div>
           <div className="font-mono text-xl sm:text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
-            R$ {creditCardTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            R$ {creditCardTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
-            Inclui Parcela T-Cross Cartão
+            {currentFilter === 'PJ' ? 'Inter PJ: 100% Débito em Conta' : 'C6 Carbon + Itaú + Nubank'}
           </div>
         </div>
       </div>
@@ -659,7 +682,7 @@ export function MobillsAnalytics({
               </svg>
               <div className="absolute text-center">
                 <span className="font-mono text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums block">
-                  R$ {calculatedTotalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {calculatedTotalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-emerald-500 transition-colors">
                   Ver Planilha
@@ -676,7 +699,7 @@ export function MobillsAnalytics({
                     <span className="font-semibold text-slate-800 dark:text-slate-200">{cat.name}</span>
                   </div>
                   <div className="font-mono tabular-nums text-right">
-                    <div className="font-black text-slate-900 dark:text-white">R$ {cat.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                    <div className="font-black text-slate-900 dark:text-white">R$ {cat.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold font-sans">{cat.percentage.toFixed(1)}% do faturamento</div>
                   </div>
                 </div>
