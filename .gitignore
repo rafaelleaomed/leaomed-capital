@@ -47,6 +47,7 @@ Screenshot_*.png
 
 # Dados temporários
 .tmp/
+scratch/
 
 # Executáveis locais
 cloudflared.exe

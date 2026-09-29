@@ -53,6 +53,7 @@ export interface PjMonthTaxData {
   month: string
   label: string
   faturamento: number
+  simples?: number
   irpj: number
   csll: number
   cofins: number
@@ -65,14 +66,33 @@ export interface PjMonthTaxData {
 }
 
 export const INITIAL_PJ_HISTORY: PjMonthTaxData[] = [
-  { month: 'dez', label: 'Dez/25', faturamento: 16500.00, irpj: 25.84, csll: 22.61, cofins: 90.77, pis: 19.70, inss: 280.38, iss: 206.73, darf: 58.84, outras: 0.00, contabilidade: 427.88 },
-  { month: 'jan', label: 'Jan/26', faturamento: 23500.00, irpj: 72.29, csll: 63.25, cofins: 253.90, pis: 55.12, inss: 784.30, iss: 578.29, darf: 2216.82, outras: 0.00, contabilidade: 460.00 },
-  { month: 'fev', label: 'Fev/26', faturamento: 29300.00, irpj: 95.06, csll: 83.18, cofins: 333.90, pis: 72.48, inss: 1031.40, iss: 760.48, darf: 2242.19, outras: 0.00, contabilidade: 491.21 },
-  { month: 'mar', label: 'Mar/26', faturamento: 24600.00, irpj: 81.10, csll: 70.96, cofins: 284.86, pis: 61.84, inss: 879.92, iss: 648.79, darf: 495.00, outras: 0.00, contabilidade: 491.21 },
-  { month: 'abr', label: 'Abr/26', faturamento: 26600.00, irpj: 87.89, csll: 76.90, cofins: 308.71, pis: 67.02, inss: 953.60, iss: 703.12, darf: 586.35, outras: 0.00, contabilidade: 491.21 },
-  { month: 'mai', label: 'Mai/26', faturamento: 25700.00, irpj: 85.83, csll: 75.10, cofins: 301.47, pis: 65.44, inss: 931.23, iss: 686.62, darf: 550.00, outras: 206.42, contabilidade: 491.21 },
-  { month: 'jun', label: 'Jun/26', faturamento: 26500.00, irpj: 88.59, csll: 77.52, cofins: 311.17, pis: 67.55, inss: 961.21, iss: 708.73, darf: 550.00, outras: 0.00, contabilidade: 491.21 }
+  { month: 'set_24', label: 'Set/24', faturamento: 12600.00, simples: 0.00, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 293.65, outras: 0.00, contabilidade: 0.00 },
+  { month: 'out_24', label: 'Out/24', faturamento: 0.00, simples: 857.80, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 58.84, outras: 0.00, contabilidade: 427.88 },
+  { month: 'nov_24', label: 'Nov/24', faturamento: 12400.00, simples: 804.28, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 58.84, outras: 0.00, contabilidade: 427.88 },
+  { month: 'dez_24', label: 'Dez/24', faturamento: 10400.00, simples: 0.00, irpj: 25.84, csll: 22.61, cofins: 90.77, pis: 19.70, inss: 280.38, iss: 206.73, darf: 58.84, outras: 0.00, contabilidade: 427.88 },
+  { month: 'jan_25', label: 'Jan/25', faturamento: 15900.00, simples: 0.00, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 0.00, outras: 0.00, contabilidade: 427.88 },
+  { month: 'fev_25', label: 'Fev/25', faturamento: 22600.00, simples: 954.00, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 60.39, outras: 0.00, contabilidade: 460.00 },
+  { month: 'mar_25', label: 'Mar/25', faturamento: 0.00, simples: 1356.00, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 183.56, outras: 36.25, contabilidade: 460.00 },
+  { month: 'abr_25', label: 'Abr/25', faturamento: 16700.00, simples: 1002.01, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 651.84, outras: 0.00, contabilidade: 460.00 },
+  { month: 'mai_25', label: 'Mai/25', faturamento: 24700.00, simples: 1482.00, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 1250.24, outras: 161.36, contabilidade: 460.00 },
+  { month: 'jun_25', label: 'Jun/25', faturamento: 30900.00, simples: 1854.00, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 1929.27, outras: 0.00, contabilidade: 460.00 },
+  { month: 'jul_25', label: 'Jul/25', faturamento: 24900.00, simples: 1603.99, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 1397.15, outras: 0.00, contabilidade: 460.00 },
+  { month: 'ago_25', label: 'Ago/25', faturamento: 27800.00, simples: 1832.41, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 1751.90, outras: 0.00, contabilidade: 460.00 },
+  { month: 'set_25', label: 'Set/25', faturamento: 33500.00, simples: 2304.34, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 2148.07, outras: 0.00, contabilidade: 460.00 },
+  { month: 'out_25', label: 'Out/25', faturamento: 30000.00, simples: 2151.74, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 2354.32, outras: 0.00, contabilidade: 0.00 },
+  { month: 'nov_25', label: 'Nov/25', faturamento: 28100.00, simples: 2094.29, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 2216.82, outras: 0.00, contabilidade: 460.00 },
+  { month: 'dez_25', label: 'Dez/25', faturamento: 24900.00, simples: 1910.96, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 2216.82, outras: 0.00, contabilidade: 460.00 },
+  { month: 'jan_26', label: 'Jan/26', faturamento: 23000.00, simples: 0.00, irpj: 72.29, csll: 63.25, cofins: 253.90, pis: 55.12, inss: 784.30, iss: 578.29, darf: 2216.82, outras: 0.00, contabilidade: 460.00 },
+  { month: 'fev_26', label: 'Fev/26', faturamento: 29300.00, simples: 0.00, irpj: 95.06, csll: 83.18, cofins: 333.90, pis: 72.48, inss: 1031.40, iss: 760.48, darf: 2242.19, outras: 0.00, contabilidade: 491.21 },
+  { month: 'mar_26', label: 'Mar/26', faturamento: 24600.00, simples: 0.00, irpj: 81.10, csll: 70.96, cofins: 284.86, pis: 61.84, inss: 879.92, iss: 648.79, darf: 495.00, outras: 0.00, contabilidade: 491.21 },
+  { month: 'abr_26', label: 'Abr/26', faturamento: 26600.00, simples: 0.00, irpj: 87.89, csll: 76.90, cofins: 308.71, pis: 67.02, inss: 953.60, iss: 703.12, darf: 0.00, outras: 0.00, contabilidade: 491.21 },
+  { month: 'mai_26', label: 'Mai/26', faturamento: 25700.00, simples: 0.00, irpj: 85.83, csll: 75.10, cofins: 301.47, pis: 65.44, inss: 931.23, iss: 686.62, darf: 1136.35, outras: 206.42, contabilidade: 491.21 },
+  { month: 'jun_26', label: 'Jun/26', faturamento: 26500.00, simples: 0.00, irpj: 88.59, csll: 77.52, cofins: 311.17, pis: 67.55, inss: 961.21, iss: 708.73, darf: 550.00, outras: 0.00, contabilidade: 491.21 },
+  { month: 'jul_26', label: 'Jul/26', faturamento: 26300.00, simples: 2187.93, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 1040.02, outras: 0.00, contabilidade: 491.21 },
+  { month: 'ago_26', label: 'Ago/26', faturamento: 27100.00, simples: 2257.83, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 1283.97, outras: 0.00, contabilidade: 491.21 },
+  { month: 'set_26', label: 'Set/26', faturamento: 23300.00, simples: 1939.78, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 1040.02, outras: 0.00, contabilidade: 491.21 }
 ]
+
 
 export interface SubcategoryItem {
   name: string
@@ -155,7 +175,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
   // Estados de Controle Tributário da PJ, Alíquotas e Boletos
   const [pjTaxHistory, setPjTaxHistory] = useState<PjMonthTaxData[]>(INITIAL_PJ_HISTORY)
   const [taxRateViewMode, setTaxRateViewMode] = useState<'SEM_CONTABILIDADE' | 'COM_CONTABILIDADE'>('COM_CONTABILIDADE')
-  const [selectedPjMonthKey, setSelectedPjMonthKey] = useState<string>('jun')
+  const [selectedPjMonthKey, setSelectedPjMonthKey] = useState<string>('set_26')
+  const [pjYearFilter, setPjYearFilter] = useState<'ALL' | '2026' | '2025' | '2024'>('ALL')
   const [isUploadingBoleto, setIsUploadingBoleto] = useState<boolean>(false)
   const [boletoSuccessMsg, setBoletoSuccessMsg] = useState<string | null>(null)
   const [isDraggingBoleto, setIsDraggingBoleto] = useState<boolean>(false)
@@ -779,6 +800,15 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
     setIsConfirmingDelete(false)
   }
 
+  // Filtro de Anos para a Tabela Histórica PJ
+  const filteredPjHistory = useMemo(() => {
+    if (pjYearFilter === 'ALL') return pjTaxHistory
+    if (pjYearFilter === '2026') return pjTaxHistory.filter(m => m.month.endsWith('_26'))
+    if (pjYearFilter === '2025') return pjTaxHistory.filter(m => m.month.endsWith('_25'))
+    if (pjYearFilter === '2024') return pjTaxHistory.filter(m => m.month.endsWith('_24'))
+    return pjTaxHistory
+  }, [pjTaxHistory, pjYearFilter])
+
   // Cálculos do Mês Selecionado da PJ
   const currentPjMonthData = useMemo(() => {
     return pjTaxHistory.find(m => m.month === selectedPjMonthKey) || pjTaxHistory[pjTaxHistory.length - 1]
@@ -786,7 +816,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
   const pjMonthMetrics = useMemo(() => {
     const d = currentPjMonthData
-    const tributosPuros = d.irpj + d.csll + d.cofins + d.pis + d.inss + d.iss + d.darf + d.outras
+    const tributosPuros = (d.simples || 0) + d.irpj + d.csll + d.cofins + d.pis + d.inss + d.iss + d.darf + d.outras
     const custoOperacionalTotal = tributosPuros + d.contabilidade
     const pctTributosPuros = d.faturamento > 0 ? (tributosPuros / d.faturamento) * 100 : 0
     const pctCargaTotal = d.faturamento > 0 ? (custoOperacionalTotal / d.faturamento) * 100 : 0
@@ -1450,26 +1480,77 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
             {/* 3. Tabela Oficial Idêntica à Planilha (Imagem 4 - "Empresa - Despesas Fixas") */}
             <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 p-5 md:p-6 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/10">
+              {/* Cabeçalho da Tabela e Ações */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/10">
                 <div>
                   <h4 className="font-display font-extrabold text-base md:text-lg text-slate-900 dark:text-white flex items-center gap-2">
                     <Receipt className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                     Empresa - Despesas Fixas (Tabela Oficial da Planilha)
                   </h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Histórico consolidado mês a mês (Dez/25 a Jun/26). Clique sobre qualquer valor para editar diretamente.
+                    Histórico consolidado dos últimos 2 anos (Set/24 a Set/26). Clique sobre qualquer valor para editar diretamente.
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleResetPjHistory}
-                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all self-start sm:self-auto cursor-pointer"
-                  title="Restaurar valores de fábrica da planilha oficial"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Restaurar Planilha Original</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                  {/* Filtro por Ano */}
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-xl border border-slate-200 dark:border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setPjYearFilter('ALL')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                        pjYearFilter === 'ALL'
+                          ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                      }`}
+                    >
+                      Todos (24M)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPjYearFilter('2026')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                        pjYearFilter === '2026'
+                          ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                      }`}
+                    >
+                      2026
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPjYearFilter('2025')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                        pjYearFilter === '2025'
+                          ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                      }`}
+                    >
+                      2025
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPjYearFilter('2024')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                        pjYearFilter === '2024'
+                          ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                      }`}
+                    >
+                      2024
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleResetPjHistory}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                    title="Restaurar valores de fábrica da planilha oficial"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Restaurar</span>
+                  </button>
+                </div>
               </div>
 
               {/* Tabela Responsiva Estilo Planilha Excel */}
@@ -1480,25 +1561,47 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       <th className="p-3 border-r border-slate-700 whitespace-nowrap min-w-[200px]">
                         Tributo / Custo Fixo PJ
                       </th>
-                      {pjTaxHistory.map((col) => (
+                      {filteredPjHistory.map((col) => (
                         <th 
                           key={col.month} 
                           className={`p-3 text-right border-r border-slate-700 min-w-[95px] whitespace-nowrap ${
                             col.month === selectedPjMonthKey ? 'bg-indigo-700 text-white font-black' : ''
                           }`}
                         >
-                          {col.month}
+                          {col.label}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-white/5 font-mono">
+                    {/* Linha 0: Simples Nacional (Guia Única quando não destrinchado) */}
+                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                        Simples Nacional (Guia Única)
+                      </td>
+                      {filteredPjHistory.map((col) => (
+                        <td
+                          key={col.month}
+                          onClick={() => {
+                            setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'simples' as any, fieldLabel: 'Simples Nacional (Guia Única)', value: col.simples || 0 })
+                            setEditPjValueInput((col.simples || 0).toString())
+                          }}
+                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          }`}
+                          title="Clique para editar"
+                        >
+                          {col.simples && col.simples > 0 ? col.simples.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}
+                        </td>
+                      ))}
+                    </tr>
+
                     {/* Linha 1: IRPJ */}
                     <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                       <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
                         IRPJ
                       </td>
-                      {pjTaxHistory.map((col) => (
+                      {filteredPjHistory.map((col) => (
                         <td
                           key={col.month}
                           onClick={() => {
@@ -1520,7 +1623,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
                         CSLL
                       </td>
-                      {pjTaxHistory.map((col) => (
+                      {filteredPjHistory.map((col) => (
                         <td
                           key={col.month}
                           onClick={() => {
@@ -1542,7 +1645,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
                         COFINS
                       </td>
-                      {pjTaxHistory.map((col) => (
+                      {filteredPjHistory.map((col) => (
                         <td
                           key={col.month}
                           onClick={() => {
@@ -1564,7 +1667,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
                         PIS
                       </td>
-                      {pjTaxHistory.map((col) => (
+                      {filteredPjHistory.map((col) => (
                         <td
                           key={col.month}
                           onClick={() => {
@@ -1586,7 +1689,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
                         INSS
                       </td>
-                      {pjTaxHistory.map((col) => (
+                      {filteredPjHistory.map((col) => (
                         <td
                           key={col.month}
                           onClick={() => {
@@ -1608,7 +1711,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
                         ISS
                       </td>
-                      {pjTaxHistory.map((col) => (
+                      {filteredPjHistory.map((col) => (
                         <td
                           key={col.month}
                           onClick={() => {
@@ -1630,7 +1733,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
                         DARF
                       </td>
-                      {pjTaxHistory.map((col) => (
+                      {filteredPjHistory.map((col) => (
                         <td
                           key={col.month}
                           onClick={() => {
@@ -1652,7 +1755,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
                         Outras taxas
                       </td>
-                      {pjTaxHistory.map((col) => (
+                      {filteredPjHistory.map((col) => (
                         <td
                           key={col.month}
                           onClick={() => {
@@ -1674,7 +1777,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
                         Mensalidade Contabilidade
                       </td>
-                      {pjTaxHistory.map((col) => (
+                      {filteredPjHistory.map((col) => (
                         <td
                           key={col.month}
                           onClick={() => {
@@ -1696,8 +1799,9 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       <td className="p-3 font-sans uppercase tracking-wider border-r border-slate-200 dark:border-white/10">
                         Empresa - Despesas Fixas (Total)
                       </td>
-                      {pjTaxHistory.map((col) => {
-                        const totalCol = col.irpj + col.csll + col.cofins + col.pis + col.inss + col.iss + col.darf + col.outras + col.contabilidade
+                      {filteredPjHistory.map((col) => {
+                        const tributos = (col.simples || 0) + col.irpj + col.csll + col.cofins + col.pis + col.inss + col.iss + col.darf + col.outras
+                        const totalCol = tributos + col.contabilidade
                         return (
                           <td key={col.month} className="p-3 text-right border-r border-slate-200 dark:border-white/10">
                             {totalCol.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -1715,8 +1819,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       <td className="p-2.5 font-sans border-r border-slate-100 dark:border-white/5">
                         % Impostos (Sem Contabilidade)
                       </td>
-                      {pjTaxHistory.map((col) => {
-                        const tributos = col.irpj + col.csll + col.cofins + col.pis + col.inss + col.iss + col.darf + col.outras
+                      {filteredPjHistory.map((col) => {
+                        const tributos = (col.simples || 0) + col.irpj + col.csll + col.cofins + col.pis + col.inss + col.iss + col.darf + col.outras
                         const pct = col.faturamento > 0 ? ((tributos / col.faturamento) * 100).toFixed(1) : '0.0'
                         return (
                           <td key={col.month} className="p-2.5 text-right border-r border-slate-100 dark:border-white/5">
@@ -1735,8 +1839,9 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       <td className="p-3 font-sans uppercase tracking-wider border-r border-slate-200 dark:border-white/10">
                         Percentual de imposto (Com Contador - Planilha)
                       </td>
-                      {pjTaxHistory.map((col) => {
-                        const totalCol = col.irpj + col.csll + col.cofins + col.pis + col.inss + col.iss + col.darf + col.outras + col.contabilidade
+                      {filteredPjHistory.map((col) => {
+                        const tributos = (col.simples || 0) + col.irpj + col.csll + col.cofins + col.pis + col.inss + col.iss + col.darf + col.outras
+                        const totalCol = tributos + col.contabilidade
                         const pct = col.faturamento > 0 ? Math.round((totalCol / col.faturamento) * 100) : 0
                         return (
                           <td key={col.month} className="p-3 text-right border-r border-slate-200 dark:border-white/10">
@@ -1748,6 +1853,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                   </tbody>
                 </table>
               </div>
+
             </div>
           </div>
         )}

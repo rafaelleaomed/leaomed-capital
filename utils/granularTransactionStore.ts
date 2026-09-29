@@ -1,4 +1,5 @@
 import { CategoryRulesEngine } from './categoryRulesEngine'
+import { PJ_REAL_TRANSACTIONS } from './pjTransactionsHistory'
 
 export interface GranularTransaction {
   id: string
@@ -20,7 +21,7 @@ export interface GranularTransaction {
   source: 'INITIAL_AUDIT' | 'MANUAL' | 'INVOICE' | 'OCR' | 'OPEN_FINANCE'
 }
 
-const STORAGE_KEY = 'leaomed_granular_transactions_v3'
+const STORAGE_KEY = 'leaomed_granular_transactions_v4'
 
 // Base inicial auditada do Dr. Rafael Leão (Junho/2026)
 const INITIAL_TRANSACTIONS: GranularTransaction[] = [
@@ -332,59 +333,8 @@ const INITIAL_TRANSACTIONS: GranularTransaction[] = [
     source: 'INITIAL_AUDIT'
   },
 
-  // 5. Pessoa Jurídica (Débitos em Conta Corrente PJ - 100% Débito sem Cartão)
-  {
-    id: 'tx_pj_01',
-    entityType: 'PJ',
-    date: '2026-06-20',
-    description: 'DARF Simples Nacional PJ Competência 05/26',
-    amount: -550.00,
-    accountOrCard: 'Pessoa Jurídica',
-    category: 'Empresa Médica PJ',
-    subcategory: 'DARF Simples Nacional',
-    isFixed: true,
-    isIgnored: false,
-    source: 'INITIAL_AUDIT'
-  },
-  {
-    id: 'tx_pj_02',
-    entityType: 'PJ',
-    date: '2026-06-20',
-    description: 'GPS INSS Previdenciário Pró-Labore',
-    amount: -961.21,
-    accountOrCard: 'Pessoa Jurídica',
-    category: 'Empresa Médica PJ',
-    subcategory: 'Previdência INSS',
-    isFixed: true,
-    isIgnored: false,
-    source: 'INITIAL_AUDIT'
-  },
-  {
-    id: 'tx_pj_03',
-    entityType: 'PJ',
-    date: '2026-06-10',
-    description: 'ISSQN Municipal Clínica',
-    amount: -708.73,
-    accountOrCard: 'Pessoa Jurídica',
-    category: 'Empresa Médica PJ',
-    subcategory: 'ISSQN Municipal',
-    isFixed: true,
-    isIgnored: false,
-    source: 'INITIAL_AUDIT'
-  },
-  {
-    id: 'tx_pj_04',
-    entityType: 'PJ',
-    date: '2026-06-18',
-    description: 'Honorários Mensalidade Contabilidade Médica',
-    amount: -491.21,
-    accountOrCard: 'Pessoa Jurídica',
-    category: 'Empresa Médica PJ',
-    subcategory: 'Assessoria Contábil',
-    isFixed: true,
-    isIgnored: false,
-    source: 'INITIAL_AUDIT'
-  }
+  // 5. Pessoa Jurídica Real (Extrato Banco Inter dos Últimos 2 Anos - 132 Lançamentos Reais)
+  ...(PJ_REAL_TRANSACTIONS as unknown as GranularTransaction[])
 ]
 
 export class GranularTransactionStore {
@@ -394,12 +344,14 @@ export class GranularTransactionStore {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (!raw) {
-        // Se existir v2 antigo, preserva transações adicionadas e mescla com as novas
+        // Se existir v3 ou v2 antigo, preserva transações adicionadas e mescla com as novas
+        const oldV3 = localStorage.getItem('leaomed_granular_transactions_v3')
         const oldV2 = localStorage.getItem('leaomed_granular_transactions_v2')
         let initialList = INITIAL_TRANSACTIONS
-        if (oldV2) {
+        const candidateOld = oldV3 || oldV2
+        if (candidateOld) {
           try {
-            const parsedOld = JSON.parse(oldV2) as GranularTransaction[]
+            const parsedOld = JSON.parse(candidateOld) as GranularTransaction[]
             // Adiciona transações customizadas que o usuário possa ter criado
             const customUserTxs = parsedOld.filter(t => !INITIAL_TRANSACTIONS.some(init => init.id === t.id))
             initialList = [...INITIAL_TRANSACTIONS, ...customUserTxs]
