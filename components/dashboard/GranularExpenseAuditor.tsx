@@ -146,6 +146,20 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
   const [bulkLearnRule, setBulkLearnRule] = useState<boolean>(true)
   const [bulkToast, setBulkToast] = useState<string | null>(null)
 
+  // Ordenação por Colunas do Extrato
+  type SortField = 'date' | 'description' | 'accountOrCard' | 'category' | 'amount' | 'isIgnored'
+  const [sortField, setSortField] = useState<SortField>('date')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortField(field)
+      setSortDirection('desc')
+    }
+  }
+
   // Modais de Edição e Criação
   const [editingTx, setEditingTx] = useState<GranularTransaction | null>(null)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -225,42 +239,54 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
     return uncategorizedItems.reduce((acc, t) => acc + (t.isIgnored ? 0 : Math.abs(t.amount)), 0)
   }, [uncategorizedItems])
 
-  // Estatísticas de Estacionamento & Hospitais (Subdivisão Nível 3)
-  const hospitalStats = useMemo(() => {
-    const parkItems = transactions.filter(t => 
-      !t.isIgnored && 
-      (t.subcategory?.toLowerCase().includes('estacionamento') || 
-       t.description?.toLowerCase().includes('estacionamento') || 
-       Boolean(t.subdivision))
-    )
+  // Subdivisão Nível 3 Dinâmica (Exibida SOMENTE quando uma Categoria, Subcategoria ou Tag está selecionada)
+  const level3Stats = useMemo(() => {
+    const hasActiveScope = selectedCategory !== 'ALL' || selectedSubdivision !== 'ALL' || searchTerm.trim().length > 0
+    if (!hasActiveScope) {
+      return { hasData: false, list: [], totalAmount: 0, title: '' }
+    }
+
+    const items = transactions.filter(t => {
+      if (t.isIgnored) return false
+      if (currentFilter === 'PF' && t.entityType !== 'PF') return false
+      if (currentFilter === 'PJ' && t.entityType !== 'PJ') return false
+      if (selectedCategory !== 'ALL' && t.category !== selectedCategory) return false
+      if (selectedAccount !== 'ALL' && t.accountOrCard !== selectedAccount) return false
+      return Boolean(t.subdivision && t.subdivision.trim())
+    })
+
+    if (items.length === 0) return { hasData: false, list: [], totalAmount: 0, title: '' }
 
     const map: Record<string, { total: number; count: number }> = {}
-    let overallParkingTotal = 0
+    let totalAmount = 0
 
-    parkItems.forEach(t => {
-      const hospitalName = t.subdivision || 'Outros / Sem Hospital'
+    items.forEach(t => {
+      const tag = t.subdivision!.trim()
       const val = Math.abs(t.amount)
-      overallParkingTotal += val
-      if (!map[hospitalName]) {
-        map[hospitalName] = { total: 0, count: 0 }
-      }
-      map[hospitalName].total += val
-      map[hospitalName].count += 1
+      totalAmount += val
+      if (!map[tag]) map[tag] = { total: 0, count: 0 }
+      map[tag].total += val
+      map[tag].count += 1
     })
 
     const list = Object.entries(map).map(([name, data]) => ({
       name,
       total: data.total,
       count: data.count,
-      pct: overallParkingTotal > 0 ? (data.total / overallParkingTotal) * 100 : 0
+      pct: totalAmount > 0 ? (data.total / totalAmount) * 100 : 0
     })).sort((a, b) => b.total - a.total)
 
+    const title = selectedCategory !== 'ALL' 
+      ? `Subdivisão Nível 3 em "${selectedCategory}"` 
+      : `Subdivisão Nível 3 (Discriminação por Local / Tag)`
+
     return {
+      hasData: list.length > 0,
       list,
-      overallParkingTotal,
-      hasData: list.length > 0
+      totalAmount,
+      title
     }
-  }, [transactions])
+  }, [transactions, selectedCategory, selectedAccount, selectedSubdivision, currentFilter, searchTerm])
 
   // Filtragem
   const filteredList = useMemo(() => {
@@ -300,6 +326,32 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
     })
   }, [transactions, currentFilter, onlyUncategorized, selectedAccount, selectedCategory, selectedSubdivision, showIgnored, searchTerm])
 
+  // Lista Ordenada para a Tabela
+  const sortedList = useMemo(() => {
+    return [...filteredList].sort((a, b) => {
+      let valA: any = a[sortField] || ''
+      let valB: any = b[sortField] || ''
+
+      if (sortField === 'amount') {
+        valA = Math.abs(a.amount)
+        valB = Math.abs(b.amount)
+      } else if (sortField === 'category') {
+        valA = `${a.category || ''} ${a.subcategory || ''} ${a.subdivision || ''}`.toLowerCase()
+        valB = `${b.category || ''} ${b.subcategory || ''} ${b.subdivision || ''}`.toLowerCase()
+      } else if (sortField === 'isIgnored') {
+        valA = a.isIgnored ? 1 : 0
+        valB = b.isIgnored ? 1 : 0
+      } else if (typeof valA === 'string') {
+        valA = valA.toLowerCase()
+        valB = valB.toLowerCase()
+      }
+
+      if (valA < valB) return sortDirection === 'asc' ? -1 : 1
+      if (valA > valB) return sortDirection === 'asc' ? 1 : -1
+      return 0
+    })
+  }, [filteredList, sortField, sortDirection])
+
   // Métricas do extrato granular
   const totalActive = useMemo(() => {
     return filteredList
@@ -313,29 +365,74 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
       .reduce((acc, t) => acc + Math.abs(t.amount), 0)
   }, [filteredList])
 
-  // Lista única de contas e categorias existentes
+  // Lista única de contas e cartões existentes (Sem omissão)
   const availableAccounts = useMemo(() => {
     const set = new Set<string>()
+    // Contas padrão de mercado
+    const defaults = [
+      'Itaú Personnalité PF',
+      'Cartão C6 Carbon Black PF',
+      'Conta PJ C6 Bank',
+      'Cartão C6 Carbon Black PJ',
+      'Safra Financ',
+      'Nubank PF'
+    ]
+    defaults.forEach(d => set.add(d))
     transactions.forEach(t => {
-      if (currentFilter === 'ALL' || t.entityType === currentFilter) {
-        set.add(t.accountOrCard)
+      if (t.accountOrCard && t.accountOrCard.trim()) {
+        set.add(t.accountOrCard.trim())
       }
     })
-    return Array.from(set)
-  }, [transactions, currentFilter])
+    return Array.from(set).sort()
+  }, [transactions])
 
   const availableCategories = useMemo(() => {
     const set = new Set<string>()
+    // Categorias padrão da taxonomia + categorias existentes nas transações
+    Object.keys(STANDARD_TAXONOMY).forEach(c => set.add(c))
     transactions.forEach(t => {
-      if (t.category && t.category.trim()) set.add(t.category)
+      if (t.category && t.category.trim()) set.add(t.category.trim())
     })
-    return Array.from(set)
+    return Array.from(set).sort()
   }, [transactions])
 
   const availableSubdivisions = useMemo(() => {
     const set = new Set<string>()
     transactions.forEach(t => {
-      if (t.subdivision && t.subdivision.trim()) set.add(t.subdivision)
+      if (t.subdivision && t.subdivision.trim()) set.add(t.subdivision.trim())
+    })
+    return Array.from(set).sort()
+  }, [transactions])
+
+  // Obtém subcategorias dinâmicas para a categoria selecionada
+  const getSubcategoriesForCategory = React.useCallback((catName: string) => {
+    const set = new Set<string>()
+    if (STANDARD_TAXONOMY[catName]) {
+      STANDARD_TAXONOMY[catName].forEach(s => set.add(s))
+    }
+    transactions.forEach(t => {
+      if (t.category === catName && t.subcategory && t.subcategory.trim()) {
+        set.add(t.subcategory.trim())
+      }
+    })
+    return Array.from(set)
+  }, [transactions])
+
+  // Obtém marcas e subdivisões Nível 3 dinâmicas para a categoria/subcategoria selecionada
+  const getSubdivisionsForScope = React.useCallback((catName: string, subcatName: string) => {
+    const set = new Set<string>()
+    if ((catName && catName.toLowerCase().includes('transporte')) || (subcatName && subcatName.toLowerCase().includes('estacionamento'))) {
+      BH_HOSPITALS.forEach(h => set.add(h))
+    }
+    transactions.forEach(t => {
+      if (
+        (!catName || t.category === catName) &&
+        (!subcatName || t.subcategory === subcatName) &&
+        t.subdivision && 
+        t.subdivision.trim()
+      ) {
+        set.add(t.subdivision.trim())
+      }
     })
     return Array.from(set)
   }, [transactions])
@@ -590,20 +687,20 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
     <div className="space-y-5 animate-in fade-in duration-200">
       {/* 1. BANNER DO DETECTOR INTELIGENTE DE DUPLICIDADES (Cartão vs Débito de Fatura em Conta) */}
       {duplicateReport.hasDuplicates && (
-        <div className="p-4 md:p-5 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-200">
+        <div className="p-4 md:p-5 rounded-3xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-amber-950 dark:text-amber-100">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
-              <span className="p-2 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 mt-0.5 shrink-0">
+              <span className="p-2 rounded-2xl bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 mt-0.5 shrink-0">
                 <AlertTriangle className="w-5 h-5" />
               </span>
               <div>
-                <h4 className="font-bold text-sm md:text-base text-amber-100 flex items-center gap-2">
+                <h4 className="font-bold text-sm md:text-base text-amber-950 dark:text-amber-100 flex items-center gap-2">
                   Prevenção de Duplicidade Ativa (Cartão vs Pagamento em Conta)
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-500/30">
                     Aviso Contábil
                   </span>
                 </h4>
-                <p className="text-xs text-amber-200/90 mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs text-amber-900 dark:text-amber-200/90 mt-1 max-w-2xl leading-relaxed">
                   Como você concentra seus gastos nos <strong>cartões de crédito</strong>, identificamos o débito do pagamento total da fatura na conta corrente concomitantemente aos lançamentos individuais do cartão. O sistema auto-deduplicou os débitos de fatura para não somar seus gastos duas vezes.
                 </p>
               </div>
@@ -625,20 +722,20 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
 
       {/* 2. BANNER DE LANÇAMENTOS SEM CATEGORIA OU SEM SUBCATEGORIA */}
       {uncategorizedItems.length > 0 && (
-        <div className="p-4 md:p-5 rounded-3xl bg-amber-500/15 border border-amber-500/35 text-amber-100">
+        <div className="p-4 md:p-5 rounded-3xl bg-amber-500/15 dark:bg-amber-500/20 border border-amber-500/35 text-amber-950 dark:text-amber-100">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
-              <span className="p-2 rounded-2xl bg-amber-500/25 text-amber-400 border border-amber-500/40 mt-0.5 shrink-0">
+              <span className="p-2 rounded-2xl bg-amber-500/25 text-amber-700 dark:text-amber-400 border border-amber-500/40 mt-0.5 shrink-0">
                 <HelpCircle className="w-5 h-5" />
               </span>
               <div>
-                <h4 className="font-bold text-sm md:text-base text-amber-100 flex items-center gap-2">
+                <h4 className="font-bold text-sm md:text-base text-amber-950 dark:text-amber-100 flex items-center gap-2">
                   {uncategorizedItems.length} Lançamento(s) Pendente(s) de Classificação
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-500/30">
                     Ação Necessária
                   </span>
                 </h4>
-                <p className="text-xs text-amber-200/90 mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs text-amber-900 dark:text-amber-200/90 mt-1 max-w-2xl leading-relaxed">
                   Identificamos <strong>{uncategorizedItems.length} despesa(s)</strong> (totalizando <strong>R$ {uncategorizedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>) sem categoria ou subcategoria definida. Classifique-as para manter a precisão contábil do orçamento.
                 </p>
               </div>
@@ -661,9 +758,9 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
         </div>
       )}
 
-      {/* 3. WIDGET INTERATIVO: ANÁLISE DETALHADA POR HOSPITAL (ESTACIONAMENTOS NO MÊS) */}
-      {hospitalStats.hasData && (
-        <div className="p-4 md:p-5 rounded-3xl bg-slate-900 border border-indigo-500/30 text-white space-y-3.5 shadow-md">
+      {/* 3. WIDGET INTERATIVO: SUBDIVISÃO NÍVEL 3 (Exibido SOMENTE quando houver filtro ativo de categoria ou subdivisão) */}
+      {level3Stats.hasData && (
+        <div className="p-4 md:p-5 rounded-3xl bg-slate-900 border border-indigo-500/30 text-white space-y-3.5 shadow-md animate-in fade-in duration-200">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
               <span className="p-2 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
@@ -671,13 +768,13 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
               </span>
               <div>
                 <h4 className="font-bold text-sm text-white flex items-center gap-2">
-                  Subdivisão Nível 3: Gastos com Estacionamento por Hospital
+                  {level3Stats.title}
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    Discriminação por Local
+                    Nível 3 (Tags & Locais)
                   </span>
                 </h4>
                 <p className="text-[11px] text-slate-400">
-                  Total de estacionamentos no mês: <strong className="text-white font-mono">R$ {hospitalStats.overallParkingTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                  Total acumulado no escopo: <strong className="text-white font-mono">R$ {level3Stats.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
                 </p>
               </div>
             </div>
@@ -692,36 +789,36 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
             )}
           </div>
 
-          {/* Grid de Hospitais */}
+          {/* Grid de Subdivisões */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-            {hospitalStats.list.map((hosp) => {
-              const isSelected = selectedSubdivision === hosp.name
+            {level3Stats.list.map((item) => {
+              const isSelected = selectedSubdivision === item.name
               return (
                 <div
-                  key={hosp.name}
-                  onClick={() => setSelectedSubdivision(isSelected ? 'ALL' : hosp.name)}
+                  key={item.name}
+                  onClick={() => setSelectedSubdivision(isSelected ? 'ALL' : item.name)}
                   className={`p-3 rounded-2xl border transition-all cursor-pointer ${
                     isSelected
                       ? 'border-indigo-400 bg-indigo-500/20 ring-2 ring-indigo-400/40 shadow-sm'
                       : 'border-slate-800 bg-slate-950/60 hover:border-slate-700'
                   }`}
-                  title={`Clique para filtrar lançamentos em ${hosp.name}`}
+                  title={`Clique para filtrar lançamentos em ${item.name}`}
                 >
                   <div className="flex items-center justify-between gap-1 mb-1">
-                    <span className="text-xs font-bold text-white truncate" title={hosp.name}>
-                      🏥 {hosp.name}
+                    <span className="text-xs font-bold text-white truncate" title={item.name}>
+                      🏷️ {item.name}
                     </span>
                     <span className="text-[10px] font-mono font-bold text-indigo-400">
-                      {hosp.pct.toFixed(1)}%
+                      {item.pct.toFixed(1)}%
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between text-xs mt-2">
                     <span className="font-mono font-bold text-sm text-indigo-300">
-                      R$ {hosp.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {item.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                     <span className="text-[10px] text-slate-400">
-                      {hosp.count} {hosp.count === 1 ? 'ida' : 'idas'}
+                      {item.count} {item.count === 1 ? 'item' : 'itens'}
                     </span>
                   </div>
 
@@ -729,7 +826,7 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
                   <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2">
                     <div
                       className="bg-gradient-to-r from-indigo-500 to-teal-400 h-full rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, hosp.pct)}%` }}
+                      style={{ width: `${Math.min(100, item.pct)}%` }}
                     />
                   </div>
                 </div>
@@ -851,7 +948,7 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
             )}
           </div>
           <span className="text-[11px] text-slate-400 hidden md:inline">
-            Clique no ícone de lápis para editar ou classificar qualquer transação individualmente.
+            Clique no cabeçalho de qualquer coluna para ordenar ou no ícone de lápis para editar.
           </span>
         </div>
       </div>
@@ -889,7 +986,7 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
+            <thead className="bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold select-none">
               <tr>
                 <th className="py-3 px-3 text-center w-10">
                   <input
@@ -901,24 +998,78 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
                     title="Selecionar / Desmarcar todos os visíveis"
                   />
                 </th>
-                <th className="py-3 px-4">Data</th>
-                <th className="py-3 px-4">Estabelecimento / Descrição</th>
-                <th className="py-3 px-4">Conta / Cartão</th>
-                <th className="py-3 px-4">Categoria / Subcategoria / Hospital</th>
-                <th className="py-3 px-4 text-right">Valor (R$)</th>
-                <th className="py-3 px-4 text-center">Status</th>
+                <th 
+                  onClick={() => handleSort('date')} 
+                  className="py-3 px-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
+                  title="Clique para ordenar por data"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Data</span>
+                    <span className="text-[11px]">{sortField === 'date' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+                  </div>
+                </th>
+                <th 
+                  onClick={() => handleSort('description')} 
+                  className="py-3 px-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
+                  title="Clique para ordenar por estabelecimento / descrição"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Estabelecimento / Descrição</span>
+                    <span className="text-[11px]">{sortField === 'description' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+                  </div>
+                </th>
+                <th 
+                  onClick={() => handleSort('accountOrCard')} 
+                  className="py-3 px-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
+                  title="Clique para ordenar por conta / cartão"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Conta / Cartão</span>
+                    <span className="text-[11px]">{sortField === 'accountOrCard' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+                  </div>
+                </th>
+                <th 
+                  onClick={() => handleSort('category')} 
+                  className="py-3 px-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
+                  title="Clique para ordenar por categoria"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Categoria / Subcategoria / Hospital</span>
+                    <span className="text-[11px]">{sortField === 'category' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+                  </div>
+                </th>
+                <th 
+                  onClick={() => handleSort('amount')} 
+                  className="py-3 px-4 text-right cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
+                  title="Clique para ordenar por valor"
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    <span>Valor (R$)</span>
+                    <span className="text-[11px]">{sortField === 'amount' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+                  </div>
+                </th>
+                <th 
+                  onClick={() => handleSort('isIgnored')} 
+                  className="py-3 px-4 text-center cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
+                  title="Clique para ordenar por status"
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span>Status</span>
+                    <span className="text-[11px]">{sortField === 'isIgnored' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
+                  </div>
+                </th>
                 <th className="py-3 px-4 text-center">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-              {filteredList.length === 0 ? (
+              {sortedList.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400">
                     Nenhum lançamento encontrado para os filtros selecionados.
                   </td>
                 </tr>
               ) : (
-                filteredList.map((tx) => {
+                sortedList.map((tx) => {
                   const isPositive = tx.amount > 0
                   const isUncat = GranularTransactionStore.isUncategorized(tx)
                   const isSelected = selectedTxIds.has(tx.id)
@@ -1132,29 +1283,46 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
                       <span>{editForm.investmentAsset ? 'Ativo OK' : 'Investimento?'}</span>
                     </button>
                   </div>
-                  <input 
-                    type="text"
-                    placeholder="Ex: Transporte, Alimentação, Saúde..."
+                  <select
                     value={editForm.category}
-                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  />
+                    onChange={(e) => {
+                      const newCat = e.target.value
+                      const availableSubs = getSubcategoriesForCategory(newCat)
+                      setEditForm(prev => ({
+                        ...prev,
+                        category: newCat,
+                        subcategory: availableSubs.length > 0 ? availableSubs[0] : prev.subcategory
+                      }))
+                    }}
+                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                  >
+                    <option value="">-- Selecione uma Categoria --</option>
+                    {availableCategories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
                     Subcategoria
                   </label>
-                  <input 
-                    type="text"
-                    placeholder="Ex: Estacionamentos, Combustível..."
+                  <select
                     value={editForm.subcategory}
-                    onChange={(e) => setEditForm({ ...editForm, subcategory: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  />
+                    onChange={(e) => setEditForm(prev => ({ ...prev, subcategory: e.target.value }))}
+                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                  >
+                    <option value="">-- Selecione uma Subcategoria --</option>
+                    {getSubcategoriesForCategory(editForm.category).map(sub => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                    {!getSubcategoriesForCategory(editForm.category).includes(editForm.subcategory) && editForm.subcategory && (
+                      <option value={editForm.subcategory}>{editForm.subcategory}</option>
+                    )}
+                  </select>
                 </div>
               </div>
 
-              {/* Subdivisão Nível 3 (Hospital / Local) */}
+              {/* Subdivisão Nível 3 (Hospital / Local / Tag) */}
               <div>
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400 block mb-1 flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
@@ -1162,34 +1330,35 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
                 </label>
                 <input 
                   type="text"
-                  placeholder="Ex: Hospital Madre Teresa, Hospital Mater Dei..."
+                  placeholder="Ex: Hospital Madre Teresa, Presente Casamento..."
                   value={editForm.subdivision}
                   onChange={(e) => setEditForm({ ...editForm, subdivision: e.target.value })}
                   className="w-full rounded-xl bg-slate-950 border border-indigo-500/30 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
                 />
 
-                {/* Chips de Hospitais Rápidos */}
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {BH_HOSPITALS.map((hosp) => (
-                    <button
-                      key={hosp}
-                      type="button"
-                      onClick={() => setEditForm(prev => ({
-                        ...prev,
-                        subdivision: hosp,
-                        category: prev.category || 'Transporte',
-                        subcategory: prev.subcategory || 'Estacionamentos'
-                      }))}
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
-                        editForm.subdivision === hosp
-                          ? 'bg-indigo-600 text-white border-indigo-600 font-bold'
-                          : 'bg-slate-950 text-slate-300 border-white/10 hover:border-indigo-400'
-                      }`}
-                    >
-                      🏥 {hosp}
-                    </button>
-                  ))}
-                </div>
+                {/* Chips e Sugestões Nível 3 para a categoria selecionada */}
+                {getSubdivisionsForScope(editForm.category, editForm.subcategory).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    <span className="text-[10px] text-indigo-300 font-semibold w-full block">Subdivisões Existentes:</span>
+                    {getSubdivisionsForScope(editForm.category, editForm.subcategory).map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => setEditForm(prev => ({
+                          ...prev,
+                          subdivision: tag
+                        }))}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
+                          editForm.subdivision === tag
+                            ? 'bg-indigo-600 text-white border-indigo-600 font-bold'
+                            : 'bg-slate-950 text-indigo-300 border-white/10 hover:border-indigo-400'
+                        }`}
+                      >
+                        🏷️ {tag}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Vínculo de Investimento */}
@@ -1331,12 +1500,11 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
                   <select
                     value={newForm.accountOrCard}
                     onChange={(e) => setNewForm({ ...newForm, accountOrCard: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
                   >
-                    <option value="Cartão C6 Carbon Black">Cartão C6 Carbon Black</option>
-                    <option value="Nubank PF">Nubank PF</option>
-                    <option value="Itaú Personnalité PF">Itaú Personnalité PF</option>
-                    <option value="Pessoa Jurídica">Pessoa Jurídica</option>
+                    {availableAccounts.map(acc => (
+                      <option key={acc} value={acc}>{acc}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -1354,12 +1522,24 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
                       <span>{newForm.investmentAsset ? 'Ativo OK' : 'Investimento?'}</span>
                     </button>
                   </div>
-                  <input 
-                    type="text"
+                  <select
                     value={newForm.category}
-                    onChange={(e) => setNewForm({ ...newForm, category: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  />
+                    onChange={(e) => {
+                      const newCat = e.target.value
+                      const availableSubs = getSubcategoriesForCategory(newCat)
+                      setNewForm(prev => ({
+                        ...prev,
+                        category: newCat,
+                        subcategory: availableSubs.length > 0 ? availableSubs[0] : prev.subcategory
+                      }))
+                    }}
+                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                  >
+                    <option value="">-- Selecione uma Categoria --</option>
+                    {availableCategories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -1368,22 +1548,29 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
                     Subcategoria
                   </label>
-                  <input 
-                    type="text"
+                  <select
                     value={newForm.subcategory}
-                    onChange={(e) => setNewForm({ ...newForm, subcategory: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  />
+                    onChange={(e) => setNewForm(prev => ({ ...prev, subcategory: e.target.value }))}
+                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                  >
+                    <option value="">-- Selecione uma Subcategoria --</option>
+                    {getSubcategoriesForCategory(newForm.category).map(sub => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                    {!getSubcategoriesForCategory(newForm.category).includes(newForm.subcategory) && newForm.subcategory && (
+                      <option value={newForm.subcategory}>{newForm.subcategory}</option>
+                    )}
+                  </select>
                 </div>
 
                 <div>
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400 block mb-1 flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
-                    Subdivisão (Hospital / Local)
+                    Subdivisão (Hospital / Local / Tag)
                   </label>
                   <input 
                     type="text"
-                    placeholder="Ex: Hospital Madre Teresa..."
+                    placeholder="Ex: Hospital Madre Teresa, Presente Casamento..."
                     value={newForm.subdivision}
                     onChange={(e) => setNewForm({ ...newForm, subdivision: e.target.value })}
                     className="w-full rounded-xl bg-slate-950 border border-indigo-500/30 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
@@ -1391,28 +1578,29 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
                 </div>
               </div>
 
-              {/* Chips de Hospitais Rápidos */}
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {BH_HOSPITALS.map((hosp) => (
-                  <button
-                    key={hosp}
-                    type="button"
-                    onClick={() => setNewForm(prev => ({
-                      ...prev,
-                      subdivision: hosp,
-                      category: prev.category || 'Transporte',
-                      subcategory: prev.subcategory || 'Estacionamentos'
-                    }))}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
-                      newForm.subdivision === hosp
-                        ? 'bg-indigo-600 text-white border-indigo-600 font-bold'
-                        : 'bg-slate-950 text-slate-300 border-white/10 hover:border-indigo-400'
-                    }`}
-                  >
-                    🏥 {hosp}
-                  </button>
-                ))}
-              </div>
+              {/* Chips e Sugestões Nível 3 para a nova despesa */}
+              {getSubdivisionsForScope(newForm.category, newForm.subcategory).length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  <span className="text-[10px] text-indigo-300 font-semibold w-full block">Subdivisões Existentes:</span>
+                  {getSubdivisionsForScope(newForm.category, newForm.subcategory).map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setNewForm(prev => ({
+                        ...prev,
+                        subdivision: tag
+                      }))}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
+                        newForm.subdivision === tag
+                          ? 'bg-indigo-600 text-white border-indigo-600 font-bold'
+                          : 'bg-slate-950 text-slate-300 border-white/10 hover:border-indigo-400'
+                      }`}
+                    >
+                      🏷️ {tag}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Vínculo de Investimento */}
               {newForm.investmentAsset && (
