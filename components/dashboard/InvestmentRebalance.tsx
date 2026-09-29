@@ -15,7 +15,8 @@ import {
   Landmark, 
   Coins,
   ChevronDown,
-  Info
+  Info,
+  RefreshCw
 } from 'lucide-react'
 
 interface AssetRow {
@@ -45,7 +46,11 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
 
   const [activeTab, setActiveTab] = useState<'REBALANCE' | 'TABLE' | 'EMERGENCY'>('REBALANCE')
   const [emergencyMonths, setEmergencyMonths] = useState<number>(10)
-  const [fixedCostInput, setFixedCostInput] = useState<number>(23000.00)
+  
+  // O custo fixo mensal estimado deve vir principalmente do somatório das despesas obrigatórias da planilha (R$ 25.528,57)
+  const [obligatoryBudgetTotal, setObligatoryBudgetTotal] = useState<number>(25528.57)
+  const [fixedCostInput, setFixedCostInput] = useState<number>(25528.57)
+  const [isSyncedWithBudget, setIsSyncedWithBudget] = useState<boolean>(true)
 
   // Portfólio demonstrativo sanitizado para visualização de portfólio
   const demoAssets: AssetRow[] = [
@@ -97,8 +102,30 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
       }
     }
 
+    // Carregar despesas obrigatórias da planilha (Base principal para reserva)
+    try {
+      const savedObligatory = localStorage.getItem('leaomed_obligatory_expenses')
+      if (savedObligatory) {
+        const val = parseFloat(savedObligatory)
+        if (!isNaN(val) && val > 0) {
+          setObligatoryBudgetTotal(val)
+          setFixedCostInput(val)
+        }
+      }
+    } catch (_) {}
+
+    const handleObligatoryUpdate = (e: any) => {
+      if (e.detail?.obligatoryTotal) {
+        const val = Number(e.detail.obligatoryTotal)
+        setObligatoryBudgetTotal(val)
+        setFixedCostInput(val)
+        setIsSyncedWithBudget(true)
+      }
+    }
+
     if (typeof window !== 'undefined') {
       window.addEventListener('leaomed_setup_updated', handleUpdate)
+      window.addEventListener('leaomed_budget_obligatory_updated', handleObligatoryUpdate)
     }
 
     if (isDemo) {
@@ -106,6 +133,7 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
       return () => {
         if (typeof window !== 'undefined') {
           window.removeEventListener('leaomed_setup_updated', handleUpdate)
+          window.removeEventListener('leaomed_budget_obligatory_updated', handleObligatoryUpdate)
         }
       }
     }
@@ -151,6 +179,7 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
       isMounted = false
       if (typeof window !== 'undefined') {
         window.removeEventListener('leaomed_setup_updated', handleUpdate)
+        window.removeEventListener('leaomed_budget_obligatory_updated', handleObligatoryUpdate)
       }
     }
   }, [isDemo, loadCustomTargets])
@@ -492,18 +521,44 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
                   </p>
                 </div>
 
-                {/* Input de Custo Fixo Mensal */}
-                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 px-3 py-1.5 rounded-xl shadow-xs">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Custo Fixo Mensal:</span>
-                  <div className="flex items-center">
-                    <span className="text-xs font-bold text-slate-400 mr-1">R$</span>
-                    <input 
-                      type="number"
-                      value={fixedCostInput}
-                      onChange={(e) => setFixedCostInput(Math.max(0, parseFloat(e.target.value) || 0))}
-                      className="w-24 text-xs font-mono font-bold bg-transparent border-none text-slate-900 dark:text-white focus:outline-none tabular-nums"
-                    />
+                {/* Input de Custo Fixo Mensal alimentado pelas despesas obrigatórias da planilha */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 px-3 py-1.5 rounded-xl shadow-xs">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Custo Fixo Estimado:</span>
+                    <div className="flex items-center">
+                      <span className="text-xs font-bold text-slate-400 mr-1">R$</span>
+                      <input 
+                        type="number"
+                        value={fixedCostInput}
+                        onChange={(e) => {
+                          const val = Math.max(0, parseFloat(e.target.value) || 0)
+                          setFixedCostInput(val)
+                          setIsSyncedWithBudget(Math.abs(val - obligatoryBudgetTotal) < 0.01)
+                        }}
+                        className="w-28 text-xs font-mono font-bold bg-transparent border-none text-slate-900 dark:text-white focus:outline-none tabular-nums"
+                      />
+                    </div>
                   </div>
+
+                  {isSyncedWithBudget ? (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Sincronizado com Despesas Obrigatórias da Planilha (R$ {obligatoryBudgetTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFixedCostInput(obligatoryBudgetTotal)
+                        setIsSyncedWithBudget(true)
+                      }}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-[11px] font-semibold text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
+                      title="Clique para restaurar o somatório das despesas obrigatórias da planilha"
+                    >
+                      <RefreshCw className="w-3 h-3 text-amber-500 shrink-0" />
+                      <span>Usar Despesas Obrigatórias (R$ {obligatoryBudgetTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})</span>
+                    </button>
+                  )}
                 </div>
               </div>
 

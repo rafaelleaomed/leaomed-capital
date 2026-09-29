@@ -311,6 +311,15 @@ export function MobillsAnalytics({
 
   const isSurplus = calculatedBalance >= 0
 
+  // Navegar diretamente para a aba da planilha com foco na conferência (Foto 2)
+  const navigateToBudget = (view: 'INCOME' | 'EXPENSE') => {
+    window.dispatchEvent(new CustomEvent('leaomed_switch_budget_view', { detail: { view } }))
+    const el = document.getElementById('categorias-planilha')
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   return (
     <section id="visao-geral-graficos" className="scroll-mt-24 space-y-5">
       {/* Barra de Navegação Temporal Estilo Mobills (Foto 3) */}
@@ -389,35 +398,55 @@ export function MobillsAnalytics({
           </div>
         </div>
 
-        {/* 2. Receitas */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm hover:shadow-md transition-all">
+        {/* 2. Receitas (Clicável: leva direto para conferência das receitas na planilha) */}
+        <div 
+          onClick={() => navigateToBudget('INCOME')}
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm hover:shadow-md hover:border-emerald-500/40 hover:bg-emerald-500/[0.02] transition-all cursor-pointer group"
+          title="Clique para conferir e editar a lista de receitas na planilha"
+        >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Receitas</span>
-            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Receitas</span>
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                (Conferir →)
+              </span>
+            </div>
+            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
               <TrendingUp className="h-4 w-4" />
             </div>
           </div>
           <div className="font-mono text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tight">
             R$ {calculatedTotalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
-            {currentFilter === 'PJ' ? 'Contratos / Faturamento PJ' : currentFilter === 'PF' ? 'Pró-labore + Reembolsos' : 'Faturamento Externo Real'}
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 flex items-center justify-between">
+            <span>{currentFilter === 'PJ' ? 'Contratos / Faturamento PJ' : currentFilter === 'PF' ? 'Pró-labore + Reembolsos' : 'Faturamento Externo Real'}</span>
+            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold group-hover:underline">Ver planilha</span>
           </div>
         </div>
 
-        {/* 3. Despesas */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm hover:shadow-md transition-all">
+        {/* 3. Despesas (Clicável: leva direto para conferência das despesas na planilha) */}
+        <div 
+          onClick={() => navigateToBudget('EXPENSE')}
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm hover:shadow-md hover:border-rose-500/40 hover:bg-rose-500/[0.02] transition-all cursor-pointer group"
+          title="Clique para conferir e editar a lista de despesas na planilha"
+        >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Despesas</span>
-            <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Despesas</span>
+              <span className="text-[10px] text-rose-600 dark:text-rose-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                (Conferir →)
+              </span>
+            </div>
+            <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform">
               <TrendingDown className="h-4 w-4" />
             </div>
           </div>
           <div className="font-mono text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tabular-nums tracking-tight">
             R$ {calculatedTotalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
-            {currentFilter === 'PJ' ? 'Simples Nacional + Tarifas' : 'Gastos Fixos + Cartões'}
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 flex items-center justify-between">
+            <span>{currentFilter === 'PJ' ? 'Simples Nacional + Tarifas' : 'Gastos Fixos + Cartões'}</span>
+            <span className="text-[10px] text-rose-600 dark:text-rose-400 font-bold group-hover:underline">Ver planilha</span>
           </div>
         </div>
 
@@ -447,23 +476,30 @@ export function MobillsAnalytics({
               <PieIcon className="h-4 w-4 text-rose-500" />
               Despesas por categoria (Planilha Oficial)
             </h3>
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer">
-              {expenseCategories.length} categorias
-            </span>
+            <button 
+              onClick={() => navigateToBudget('EXPENSE')}
+              className="text-xs text-rose-600 dark:text-rose-400 font-bold hover:underline cursor-pointer"
+            >
+              Conferir na Planilha →
+            </button>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-around gap-6 pt-2">
             {/* SVG Donut */}
-            <div className="relative w-48 h-48 flex items-center justify-center flex-shrink-0">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 180 180">
+            <div 
+              onClick={() => navigateToBudget('EXPENSE')} 
+              className="relative w-48 h-48 flex items-center justify-center flex-shrink-0 cursor-pointer group"
+              title="Clique para ir para a planilha de despesas"
+            >
+              <svg className="w-full h-full -rotate-90 group-hover:scale-105 transition-transform" viewBox="0 0 180 180">
                 {renderDonutSlices(expenseCategories, calculatedTotalExpenses)}
               </svg>
               <div className="absolute text-center">
                 <span className="font-mono text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums block">
                   R$ {calculatedTotalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Total
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-rose-500 transition-colors">
+                  Ver Planilha
                 </span>
               </div>
             </div>
@@ -493,23 +529,30 @@ export function MobillsAnalytics({
               <PieIcon className="h-4 w-4 text-emerald-500" />
               Origem das Receitas (Sem Duplicidade)
             </h3>
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">
-              Base Auditada
-            </span>
+            <button 
+              onClick={() => navigateToBudget('INCOME')}
+              className="text-xs text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer"
+            >
+              Conferir na Planilha →
+            </button>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-around gap-6 pt-2">
             {/* SVG Donut */}
-            <div className="relative w-48 h-48 flex items-center justify-center flex-shrink-0">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 180 180">
+            <div 
+              onClick={() => navigateToBudget('INCOME')} 
+              className="relative w-48 h-48 flex items-center justify-center flex-shrink-0 cursor-pointer group"
+              title="Clique para ir para a planilha de receitas"
+            >
+              <svg className="w-full h-full -rotate-90 group-hover:scale-105 transition-transform" viewBox="0 0 180 180">
                 {renderDonutSlices(normalizedIncomeCategories, calculatedTotalIncome)}
               </svg>
               <div className="absolute text-center">
                 <span className="font-mono text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums block">
                   R$ {calculatedTotalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Receita Real
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-emerald-500 transition-colors">
+                  Ver Planilha
                 </span>
               </div>
             </div>

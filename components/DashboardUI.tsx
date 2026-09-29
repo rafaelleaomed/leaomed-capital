@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { DeliveryPayload, DashboardFilter } from '@/utils/dashboardData'
 import { useRouter } from 'next/navigation'
-import { Sliders } from 'lucide-react'
+import { Sliders, PlusCircle } from 'lucide-react'
 import { MobileQuickNav } from './dashboard/MobileQuickNav'
 import { MobillsAnalytics } from './dashboard/MobillsAnalytics'
 import { SummaryCards } from './dashboard/SummaryCards'
@@ -16,6 +16,7 @@ import { InstallmentsProjection } from './dashboard/InstallmentsProjection'
 import { InvestmentRebalance } from './dashboard/InvestmentRebalance'
 import { HistoricalOverview } from './dashboard/HistoricalOverview'
 import { OnboardingWizardModal } from './dashboard/OnboardingWizardModal'
+import { QuickTransactionModal } from './dashboard/QuickTransactionModal'
 
 export default function DashboardUI({ 
   payload, 
@@ -30,6 +31,7 @@ export default function DashboardUI({
 }) {
   const router = useRouter()
   const [isWizardOpen, setIsWizardOpen] = useState(false)
+  const [isQuickTxOpen, setIsQuickTxOpen] = useState(false)
 
   // Controle de Mês e Ano Estilo Mobills (Mês atual como padrão)
   const now = new Date()
@@ -81,6 +83,16 @@ export default function DashboardUI({
         
         {/* Ações e Filtro Global */}
         <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+          {/* Botão de Adicionar Lançamento Manualmente */}
+          <button
+            onClick={() => setIsQuickTxOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs shadow-emerald-500/20 cursor-pointer"
+            title="Adicionar Despesa ou Receita (Fixa, Pontual ou Parcelada)"
+          >
+            <PlusCircle className="w-4 h-4 text-slate-950" />
+            <span>+ Novo Lançamento</span>
+          </button>
+
           {/* Botão de Personalização / Onboarding Wizard */}
           <button
             onClick={() => setIsWizardOpen(true)}
@@ -179,6 +191,22 @@ export default function DashboardUI({
         isOpen={isWizardOpen} 
         onClose={() => setIsWizardOpen(false)} 
         isDemo={isDemo} 
+      />
+
+      {/* Botão Flutuante (FAB) de Acesso Rápido para Novo Lançamento */}
+      <button
+        onClick={() => setIsQuickTxOpen(true)}
+        className="fixed bottom-6 right-6 z-40 p-3.5 sm:px-4 sm:py-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-sm shadow-xl shadow-emerald-500/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer border border-emerald-400/40"
+        title="Novo Lançamento Manual (Despesa / Receita)"
+      >
+        <PlusCircle className="w-5 h-5 text-slate-950 shrink-0" />
+        <span className="hidden sm:inline font-black text-xs uppercase tracking-wider">Novo Lançamento</span>
+      </button>
+
+      {/* Modal de Novo Lançamento Rápido (Fixa, Parcelada ou Pontual) */}
+      <QuickTransactionModal 
+        isOpen={isQuickTxOpen} 
+        onClose={() => setIsQuickTxOpen(false)} 
       />
     </div>
   )
