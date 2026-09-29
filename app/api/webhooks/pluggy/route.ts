@@ -1,10 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Usamos a chave de Service Role porque o webhook é um endpoint backend que precisa de acesso total (ignorando RLS para inserir logs)
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const getSupabaseAdmin = () => {
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    throw new Error('Supabase Service Role credentials not configured');
+  }
+  return createClient(url, key);
+};
 
 export async function POST(req: Request) {
   try {
@@ -13,8 +16,10 @@ export async function POST(req: Request) {
     console.log('Received Pluggy webhook:', event.event);
     console.log('Event ID:', event.eventId);
 
+    const supabase = getSupabaseAdmin();
+
     // Salvar na tabela webhook_events para processamento assíncrono idempotente
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('webhook_events')
       .insert({
         external_event_id: event.eventId, // Para idempotência

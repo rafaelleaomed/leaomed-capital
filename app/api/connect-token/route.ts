@@ -1,16 +1,40 @@
+import { NextResponse } from 'next/server';
 import { PluggyClient } from 'pluggy-sdk';
+import { getAuthenticatedUserId } from '@/utils/auth-helpers';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
-  const pluggy = new PluggyClient({
-    clientId: process.env.PLUGGY_CLIENT_ID!,
-    clientSecret: process.env.PLUGGY_CLIENT_SECRET!,
-  });
+  const { userId, errorResponse } = await getAuthenticatedUserId();
+  if (errorResponse) return errorResponse;
 
-  const { clientUserId } = await req.json();
+  const clientId = process.env.PLUGGY_CLIENT_ID;
+  const clientSecret = process.env.PLUGGY_CLIENT_SECRET;
 
-  const connectToken = await pluggy.createConnectToken(undefined, {
-    clientUserId, // Optional: track your users
-  });
+  if (!clientId || !clientSecret) {
+    return NextResponse.json(
+      { success: false, error: 'Serviço de Open Finance não configurado no servidor.' },
+      { status: 503 }
+    );
+  }
 
-  return Response.json({ accessToken: connectToken.accessToken });
+  try {
+    const pluggy = new PluggyClient({
+      clientId,
+      clientSecret,
+    });
+
+    // Prevenção contra IDOR/BOLA: força o clientUserId do usuário autenticado na sessão
+    const connectToken = await pluggy.createConnectToken(undefined, {
+      clientUserId: userId!,
+    });
+
+    return NextResponse.json({ success: true, accessToken: connectToken.accessToken });
+  } catch (error) {
+    console.error('Erro ao gerar connect token Pluggy:', error);
+    return NextResponse.json(
+      { success: false, error: 'Falha ao iniciar conexão segura com o Open Finance.' },
+      { status: 500 }
+    );
+  }
 }

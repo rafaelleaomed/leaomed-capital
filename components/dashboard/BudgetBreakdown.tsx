@@ -43,9 +43,10 @@ interface CategoryGroup {
 
 interface BudgetBreakdownProps {
   currentFilter?: string
+  isDemo?: boolean
 }
 
-export function BudgetBreakdown({ currentFilter = 'PF' }: BudgetBreakdownProps) {
+export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false }: BudgetBreakdownProps) {
   const [activeTab, setActiveTab] = useState<'ALL' | 'OBRIGATORIAS' | 'NAO_OBRIGATORIAS'>('ALL')
   const [searchTerm, setSearchTerm] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -208,11 +209,11 @@ export function BudgetBreakdown({ currentFilter = 'PF' }: BudgetBreakdownProps) 
       color: 'from-pink-500 to-rose-600',
       is_obligatory: false,
       subcategories: [
-        { name: 'Jogos Mineirão (Cruzeiro)', value: 492.10, is_fixed: false },
-        { name: 'Resenhas / Aniversários', value: 173.80, is_fixed: false },
-        { name: 'Bares / Baladas', value: 60.00, is_fixed: false },
-        { name: 'Futebol / Esportes', value: 60.00, is_fixed: false },
-        { name: 'Apostas / Bets', value: 18.00, is_fixed: false }
+        { name: 'Eventos Culturais & Esportivos', value: 492.10, is_fixed: false },
+        { name: 'Encontros Sociais & Família', value: 173.80, is_fixed: false },
+        { name: 'Gastronomia & Lazer Noturno', value: 60.00, is_fixed: false },
+        { name: 'Práticas Esportivas', value: 60.00, is_fixed: false },
+        { name: 'Diversos Lazer', value: 18.00, is_fixed: false }
       ]
     },
     {
@@ -282,13 +283,18 @@ export function BudgetBreakdown({ currentFilter = 'PF' }: BudgetBreakdownProps) 
       color: 'from-slate-500 to-zinc-600',
       is_obligatory: true,
       subcategories: [
-        { name: 'Anuidade CRM', value: 189.60, is_fixed: true }
+        { name: 'Conselho Profissional', value: 189.60, is_fixed: true }
       ]
     }
   ], [])
 
   // Carrega dados da rota /api/budget com fallback elegante
   useEffect(() => {
+    if (isDemo) {
+      setCategoriesData(baselineCategories)
+      return
+    }
+
     let isMounted = true
     setIsLoading(true)
 

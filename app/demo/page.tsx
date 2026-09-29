@@ -17,18 +17,28 @@ export default async function DemoPage({
 
   return (
     <div className="min-h-screen relative">
-      {/* Banner de aviso de Demonstração Pública */}
-      <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white text-xs py-2 px-4 text-center font-medium shadow-md flex items-center justify-center gap-2">
-        <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
-          Modo Demonstração Pública
+      {/* Banner de aviso de Demonstração Pública Premium */}
+      <div className="bg-slate-950 border-b border-amber-500/20 text-slate-200 text-xs py-2.5 px-4 text-center font-medium shadow-lg flex flex-wrap items-center justify-center gap-2">
+        <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+          Portfólio / Demonstração Pública
         </span>
-        <span>Todos os dados apresentados nesta página são 100% fictícios para fins de portfólio.</span>
-        <a href="/login" className="underline font-bold hover:text-purple-200 ml-2">
-          Acessar Conta Privada →
+        <span className="text-slate-300">
+          Dados sintéticos de simulação para apresentação técnica. Nenhuma informação real ou privada está exposta.
+        </span>
+        <a 
+          href="/login" 
+          className="inline-flex items-center gap-1 font-bold text-emerald-400 hover:text-emerald-300 transition-colors ml-1"
+        >
+          Acesso Restrito →
         </a>
       </div>
 
-      <DashboardUI payload={demoPayload} currentFilter={activeFilter} />
+      <DashboardUI 
+        payload={demoPayload} 
+        currentFilter={activeFilter} 
+        basePath="/demo" 
+        isDemo={true} 
+      />
     </div>
   )
 }

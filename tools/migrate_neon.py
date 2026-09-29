@@ -4,9 +4,17 @@ import psycopg2
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-NEON_URI = "postgresql://neondb_owner:REDACTED_PASSWORD@ep-bold-shape-awxwzyxn-pooler.c-12.us-east-1.aws.neon.tech/neondb?sslmode=require"
+NEON_URI = os.environ.get("DATABASE_URL")
+if not NEON_URI:
+    print("❌ ERRO: Variável de ambiente DATABASE_URL não configurada.")
+    print("   Defina DATABASE_URL no seu ambiente ou arquivo .env local.")
+    sys.exit(1)
 
-SCHEMA_SQL = """
+DEFAULT_USER_ID = os.environ.get("DEFAULT_USER_ID", "00000000-0000-0000-0000-000000000001")
+DEFAULT_USER_EMAIL = os.environ.get("DEFAULT_USER_EMAIL", "admin@leaomed.local")
+DEFAULT_USER_NAME = os.environ.get("DEFAULT_USER_NAME", "Administrador LeãoMed")
+
+SCHEMA_SQL = f"""
 -- Extensões
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
@@ -18,9 +26,9 @@ CREATE TABLE IF NOT EXISTS public.users (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Usuário padrão do Rafael
+-- Usuário padrão
 INSERT INTO public.users (id, email, name)
-VALUES ('d8225585-6cf1-4dc7-ba96-724bc2bb7cc0', 'rafaelleaobh@gmail.com', 'Dr. Rafael Leão')
+VALUES ('{DEFAULT_USER_ID}', '{DEFAULT_USER_EMAIL}', '{DEFAULT_USER_NAME}')
 ON CONFLICT (id) DO NOTHING;
 
 -- 1. Webhook Events

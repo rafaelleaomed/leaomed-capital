@@ -20,8 +20,11 @@ export async function GET() {
     `;
 
     return NextResponse.json({ success: true, installments: rows });
-  } catch (error: any) {
-    console.error('Erro ao buscar parcelamentos no Neon:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error('Erro ao buscar parcelamentos no banco:', error);
+    return NextResponse.json(
+      { success: false, error: 'Falha interna ao recuperar projeções de parcelamento.' },
+      { status: 500 }
+    );
   }
 }

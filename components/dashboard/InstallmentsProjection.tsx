@@ -25,120 +25,153 @@ export interface InstallmentItem {
   paymentMethod?: string
 }
 
-export function InstallmentsProjection() {
+export function InstallmentsProjection({ isDemo = false }: { isDemo?: boolean }) {
   const [filter, setFilter] = useState<'ALL' | 'MAJOR' | 'ENDING_SOON'>('ALL')
 
-  // Base auditada com os contratos reais (Localiza nº 3796937, Safra CCB 0102300010493464 e Buona Vitta GVI126924)
-  const installments: InstallmentItem[] = [
+  // Portfólio demonstrativo sanitizado sem dados sensíveis de contratos reais
+  const demoInstallments: InstallmentItem[] = [
     { 
       id: '1', 
-      name: 'Entrada T-Cross Cartão (Localiza)', 
+      name: 'Entrada Veículo Parcelada (12x)', 
       category: 'Transporte', 
       monthlyValue: 6837.14, 
       currentInstallment: 2, 
       totalInstallments: 12, 
       endMonthYear: 'Abril/2027', 
-      contractNotes: 'Contrato Localiza nº 3796937: 12x no cartão de crédito (Entrada R$ 73.884 + taxas/encargos) • Término Abr/2027',
-      paymentMethod: 'C6 Carbon Black'
+      contractNotes: '12x no cartão corporativo • Quitação prevista para Abril/2027',
+      paymentMethod: 'Cartão Black'
     },
     { 
       id: '2', 
-      name: 'Financiamento T-Cross (Banco Safra)', 
+      name: 'Financiamento Veicular CDC (18x)', 
       category: 'Transporte', 
       monthlyValue: 3336.28, 
       currentInstallment: 2, 
       totalInstallments: 18, 
-      endMonthYear: '27/Outubro/2027', 
-      contractNotes: 'CCB Safra nº 010230001 493464: 18 parcelas de R$ 3.336,28 (Vcto 27/05/26 a 27/10/27) • T-Cross 100% quitado!',
-      paymentMethod: 'Boleto Banco Safra'
+      endMonthYear: 'Outubro/2027', 
+      contractNotes: '18 parcelas fixas • Veículo 100% quitado ao término',
+      paymentMethod: 'Débito em Conta'
     },
     { 
       id: '3', 
-      name: 'Gramado Parks (Contrato GVI126924)', 
+      name: 'Cota Imobiliária / Resort (70x)', 
       category: 'Imóvel / Resort', 
       monthlyValue: 1865.33, 
       currentInstallment: 5, 
       totalInstallments: 70, 
       endMonthYear: 'Fevereiro/2032', 
-      contractNotes: '70 parcelas mensais (10/05/2026 a 10/02/2032) • Reajuste IPCA acumulado (Cláusula 1.4.1/3.2)',
+      contractNotes: '70 parcelas mensais • Reajuste IPCA acumulado',
       hasIpcaAdjustment: true,
-      paymentMethod: 'Boleto Gramado Parks'
+      paymentMethod: 'Boleto Bancário'
     },
     { 
       id: '4', 
-      name: 'Condomínio Buona Vitta Spa Resort', 
+      name: 'Condomínio Fração Imobiliária', 
       category: 'Imóvel / Resort', 
       monthlyValue: 377.49, 
       currentInstallment: 5, 
       totalInstallments: 999, 
-      endMonthYear: 'Perpétuo (Nunca vence)', 
-      contractNotes: 'Encargo mensal contínuo de manutenção da fração imobiliária do resort',
+      endMonthYear: 'Perpétuo (Contínuo)', 
+      contractNotes: 'Taxa mensal de manutenção e conservação da fração imobiliária',
       isPerpetual: true,
-      paymentMethod: 'Boleto Condomínio'
+      paymentMethod: 'Boleto Bancário'
     },
     { 
       id: '5', 
-      name: 'Samsung S26 Ultra', 
-      category: 'Eletrônicos', 
+      name: 'Equipamentos de TI / Smartphones', 
+      category: 'Tecnologia', 
       monthlyValue: 274.66, 
       currentInstallment: 4, 
       totalInstallments: 21, 
       endMonthYear: 'Novembro/2027', 
-      contractNotes: 'Finaliza em Nov/27',
-      paymentMethod: 'C6 Carbon Black'
+      contractNotes: 'Parceria de fornecimento tecnológico corporativo',
+      paymentMethod: 'Cartão Corporativo'
     },
     { 
       id: '6', 
-      name: 'Aliança Solitário Vivara', 
+      name: 'Compras Corporativas Diversas', 
       category: 'Compras', 
       monthlyValue: 382.37, 
       currentInstallment: 7, 
       totalInstallments: 10, 
       endMonthYear: 'Outubro/2026', 
-      contractNotes: 'Finaliza em breve (Out/26)',
-      paymentMethod: 'C6 Carbon Black'
+      contractNotes: 'Término iminente em Outubro/2026',
+      paymentMethod: 'Cartão Black'
     },
     { 
       id: '7', 
-      name: 'Lava e Seca Midea', 
-      category: 'Casa', 
+      name: 'Eletrodomésticos & Climatização', 
+      category: 'Estrutura', 
       monthlyValue: 355.00, 
       currentInstallment: 7, 
       totalInstallments: 10, 
       endMonthYear: 'Outubro/2026', 
-      contractNotes: 'Finaliza em breve (Out/26)',
-      paymentMethod: 'Itaú Personnalité'
+      contractNotes: 'Término iminente em Outubro/2026',
+      paymentMethod: 'Cartão Corporativo'
     },
     { 
       id: '8', 
-      name: 'TV TCL 55"', 
-      category: 'Casa', 
+      name: 'Painéis e Telas de Monitoramento', 
+      category: 'Estrutura', 
       monthlyValue: 250.92, 
       currentInstallment: 7, 
       totalInstallments: 10, 
       endMonthYear: 'Outubro/2026', 
-      contractNotes: 'Finaliza em breve (Out/26)',
-      paymentMethod: 'Nubank Ultravioleta'
+      contractNotes: 'Término iminente em Outubro/2026',
+      paymentMethod: 'Cartão Corporativo'
     },
     { 
       id: '9', 
-      name: 'Sofá Retrátil Sala', 
-      category: 'Casa', 
+      name: 'Mobiliário Ergonômico de Escritório', 
+      category: 'Estrutura', 
       monthlyValue: 197.00, 
       currentInstallment: 4, 
       totalInstallments: 10, 
       endMonthYear: 'Dezembro/2026', 
-      contractNotes: 'Finaliza em Dez/26',
-      paymentMethod: 'C6 Carbon Black'
+      contractNotes: 'Finalização programada em Dezembro/2026',
+      paymentMethod: 'Cartão Corporativo'
     },
   ]
 
+  const [installments, setInstallments] = useState<InstallmentItem[]>(demoInstallments)
+
+  // Em modo autenticado privado, busca parcelamentos ativos do banco
+  React.useEffect(() => {
+    if (isDemo) return
+    let isMounted = true
+    fetch('/api/installments')
+      .then(res => res.json())
+      .then(data => {
+        if (!isMounted) return
+        if (data.success && Array.isArray(data.installments) && data.installments.length > 0) {
+          const mapped: InstallmentItem[] = data.installments.map((row: any) => ({
+            id: String(row.id),
+            name: row.description,
+            category: row.category,
+            monthlyValue: parseFloat(row.installment_amount) || 0,
+            currentInstallment: row.current_installment,
+            totalInstallments: row.total_installments,
+            endMonthYear: row.end_date ? new Date(row.end_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : 'Em aberto',
+            contractNotes: `Método: ${row.payment_method || 'Boleto/Cartão'} • Subcategoria: ${row.subcategory || 'Geral'}`,
+            paymentMethod: row.payment_method
+          }))
+          setInstallments(mapped)
+        }
+      })
+      .catch(() => {})
+    return () => { isMounted = false }
+  }, [isDemo])
+
   const totalMonthlyCommitment = installments.reduce((acc, curr) => acc + curr.monthlyValue, 0)
   
-  // Marcos de Alívio
-  const reliefOct26 = 382.37 + 355.00 + 250.92 // R$ 988,29
-  const reliefApr27 = reliefOct26 + 197.00 + 6837.14 // R$ 8.022,43
-  const reliefOct27 = reliefApr27 + 3336.28 // R$ 11.358,71 (Quitação total T-Cross)
+  // Marcos de Alívio calculados dinamicamente
+  const reliefOct26 = installments
+    .filter(i => i.endMonthYear.toLowerCase().includes('2026'))
+    .reduce((acc, curr) => acc + curr.monthlyValue, 0)
+  const reliefApr27 = reliefOct26 + installments
+    .filter(i => i.endMonthYear.toLowerCase().includes('2027'))
+    .reduce((acc, curr) => acc + curr.monthlyValue, 0)
+  const reliefOct27 = totalMonthlyCommitment
 
   const filteredInstallments = installments.filter(item => {
     if (filter === 'MAJOR') return item.monthlyValue >= 1000

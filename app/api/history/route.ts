@@ -19,8 +19,11 @@ export async function GET() {
     `;
 
     return NextResponse.json({ success: true, history: rows });
-  } catch (error: any) {
-    console.error('Erro ao buscar histórico no Neon:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error('Erro ao buscar histórico no banco:', error);
+    return NextResponse.json(
+      { success: false, error: 'Falha interna ao recuperar histórico financeiro.' },
+      { status: 500 }
+    );
   }
 }

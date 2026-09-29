@@ -33,8 +33,8 @@ interface AssetRow {
   isEmergencyReserve?: boolean
 }
 
-export function InvestmentRebalance() {
-  // Metas oficiais da imagem media_1790555008565.png
+export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
+  // Metas oficiais de alocação estratégica de portfólio
   const [targets, setTargets] = useState({
     'Ações': 25,
     'Real Estate': 15,
@@ -45,22 +45,60 @@ export function InvestmentRebalance() {
 
   const [activeTab, setActiveTab] = useState<'REBALANCE' | 'TABLE'>('REBALANCE')
 
-  // 13 Ativos exatos da imagem media_1790554922684.png
-  const assets: AssetRow[] = [
-    { name: 'Caixa Itaú', category: 'Caixa', broker: 'Itaú', invested: 29020.73, current: 33346.93, profit: 4326.19, profitPct: 14.91, operation: 'Comprado' },
-    { name: 'Internacional NuInvest', category: 'Internacional', broker: 'NuInvest', quantity: 268, avgPrice: 60.27, currentPrice: 71.89, invested: 16152.11, current: 19266.23, profit: 3114.12, profitPct: 19.28, operation: 'Comprado' },
-    { name: 'Ações Itaú', category: 'Ações', broker: 'Itaú', quantity: 1930, avgPrice: 13.07, currentPrice: 14.68, invested: 25221.59, current: 28327.03, profit: 3105.44, profitPct: 12.31, operation: 'Comprado' },
-    { name: 'Reserva Emergência Itaú', category: 'Reserva Emergência', broker: 'Itaú', invested: 32000.00, current: 33418.10, profit: 1418.10, profitPct: 4.43, operation: 'Comprado', isEmergencyReserve: true },
-    { name: 'Cripto NuCrypto', category: 'Cripto', broker: 'NuCrypto', quantity: 40.01, avgPrice: 100.27, currentPrice: 134.47, invested: 4011.69, current: 5380.14, profit: 1368.45, profitPct: 34.11, operation: 'Comprado' },
-    { name: 'Internacional Inter USA', category: 'Internacional', broker: 'Inter USA', quantity: 36.99, avgPrice: 278.68, currentPrice: 300.01, invested: 10308.36, current: 11097.54, profit: 789.18, profitPct: 7.66, operation: 'Comprado' },
-    { name: 'Caixa NuInvest', category: 'Caixa', broker: 'NuInvest', invested: 10000.00, current: 10376.89, profit: 376.89, profitPct: 3.77, operation: 'Comprado' },
-    { name: 'Cripto Itaú', category: 'Cripto', broker: 'Itaú', quantity: 5, avgPrice: 120.04, currentPrice: 128.19, invested: 600.18, current: 640.95, profit: 40.77, profitPct: 6.79, operation: 'Comprado' },
-    { name: 'Ações BTG (Vendido)', category: 'Ações', broker: 'BTG', quantity: -1, avgPrice: 46.12, currentPrice: 42.13, invested: -46.12, current: -42.13, profit: 3.99, profitPct: 8.65, operation: 'Vendido' },
-    { name: 'Ações NuInvest', category: 'Ações', broker: 'NuInvest', quantity: 1005, avgPrice: 5.82, currentPrice: 5.55, invested: 5846.01, current: 5582.30, profit: -263.71, profitPct: -4.51, operation: 'Comprado' },
-    { name: 'Cripto Bybit', category: 'Cripto', broker: 'Bybit', quantity: 96.23, avgPrice: 104.97, currentPrice: 101.54, invested: 10101.26, current: 9771.66, profit: -329.60, profitPct: -3.26, operation: 'Comprado' },
-    { name: 'Real Estate NuInvest', category: 'Real Estate', broker: 'NuInvest', quantity: 966, avgPrice: 21.35, currentPrice: 20.03, invested: 20627.38, current: 19350.70, profit: -1276.68, profitPct: -6.19, operation: 'Comprado' },
-    { name: 'Cripto MEXC', category: 'Cripto', broker: 'MEXC', quantity: 9984.04, avgPrice: 0.33, currentPrice: 0.20, invested: 3317.82, current: 1960.02, profit: -1357.80, profitPct: -40.92, operation: 'Comprado' },
+  // Portfólio demonstrativo sanitizado para visualização de portfólio
+  const demoAssets: AssetRow[] = [
+    { name: 'Tesouro Selic / Caixa', category: 'Caixa', broker: 'Custódia B3', invested: 30000.00, current: 33400.00, profit: 3400.00, profitPct: 11.33, operation: 'Comprado' },
+    { name: 'ETF S&P 500 Global', category: 'Internacional', broker: 'Corretora Global', quantity: 250, avgPrice: 65.00, currentPrice: 78.50, invested: 16250.00, current: 19625.00, profit: 3375.00, profitPct: 20.77, operation: 'Comprado' },
+    { name: 'Ações Blue Chips (B3)', category: 'Ações', broker: 'Corretora Nacional', quantity: 1800, avgPrice: 14.00, currentPrice: 16.20, invested: 25200.00, current: 29160.00, profit: 3960.00, profitPct: 15.71, operation: 'Comprado' },
+    { name: 'Reserva de Emergência (Liquidez)', category: 'Reserva Emergência', broker: 'Conta Remunerada', invested: 32000.00, current: 33500.00, profit: 1500.00, profitPct: 4.69, operation: 'Comprado', isEmergencyReserve: true },
+    { name: 'Bitcoin (BTC)', category: 'Cripto', broker: 'Custódia Fria', quantity: 0.08, avgPrice: 50000.00, currentPrice: 68500.00, invested: 4000.00, current: 5480.00, profit: 1480.00, profitPct: 37.00, operation: 'Comprado' },
+    { name: 'ETF Renda Fixa Global (BNDX)', category: 'Internacional', broker: 'Corretora Global', quantity: 35, avgPrice: 280.00, currentPrice: 310.00, invested: 9800.00, current: 10850.00, profit: 1050.00, profitPct: 10.71, operation: 'Comprado' },
+    { name: 'CDB Liquidez Diária', category: 'Caixa', broker: 'Banco Primário', invested: 10000.00, current: 10450.00, profit: 450.00, profitPct: 4.50, operation: 'Comprado' },
+    { name: 'Ethereum (ETH)', category: 'Cripto', broker: 'Custódia Fria', quantity: 0.5, avgPrice: 1200.00, currentPrice: 1350.00, invested: 600.00, current: 675.00, profit: 75.00, profitPct: 12.50, operation: 'Comprado' },
+    { name: 'Ações Dividendos Brasil', category: 'Ações', broker: 'Corretora Nacional', quantity: 950, avgPrice: 6.00, currentPrice: 6.20, invested: 5700.00, current: 5890.00, profit: 190.00, profitPct: 3.33, operation: 'Comprado' },
+    { name: 'FIIs Imobiliários Papel & Tijolo', category: 'Real Estate', broker: 'Corretora Nacional', quantity: 950, avgPrice: 21.00, currentPrice: 20.50, invested: 19950.00, current: 19475.00, profit: -475.00, profitPct: -2.38, operation: 'Comprado' },
   ]
+
+  const [assets, setAssets] = useState<AssetRow[]>(demoAssets)
+
+  // Em modo autenticado privado, busca posições reais do banco
+  React.useEffect(() => {
+    if (isDemo) return
+    let isMounted = true
+    fetch('/api/investments')
+      .then(res => res.json())
+      .then(data => {
+        if (!isMounted) return
+        if (data.success && data.data) {
+          if (Array.isArray(data.data.assets) && data.data.assets.length > 0) {
+            const mappedAssets: AssetRow[] = data.data.assets.map((a: any) => ({
+              name: a.asset_name,
+              category: a.category,
+              broker: a.broker,
+              quantity: a.quantity ? parseFloat(a.quantity) : undefined,
+              avgPrice: a.avg_price ? parseFloat(a.avg_price) : undefined,
+              currentPrice: a.current_price ? parseFloat(a.current_price) : undefined,
+              invested: parseFloat(a.total_invested) || 0,
+              current: parseFloat(a.current_total) || 0,
+              profit: parseFloat(a.profit_loss) || 0,
+              profitPct: parseFloat(a.profit_loss_pct) || 0,
+              operation: (a.operation === 'Vendido' ? 'Vendido' : 'Comprado') as 'Comprado' | 'Vendido',
+              isEmergencyReserve: Boolean(a.is_emergency_reserve)
+            }))
+            setAssets(mappedAssets)
+          }
+          if (Array.isArray(data.data.targets) && data.data.targets.length > 0) {
+            const mappedTargets: Record<string, number> = {}
+            data.data.targets.forEach((t: any) => {
+              mappedTargets[t.asset_class] = parseFloat(t.target_percentage) || 0
+            })
+            setTargets(prev => ({ ...prev, ...mappedTargets }))
+          }
+        }
+      })
+      .catch(() => {})
+    return () => { isMounted = false }
+  }, [isDemo])
 
   // Totais Gerais
   const totalInvested = assets.reduce((acc, a) => acc + a.invested, 0) // R$ 167.161,02

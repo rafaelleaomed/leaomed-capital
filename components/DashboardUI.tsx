@@ -17,15 +17,19 @@ import { HistoricalOverview } from './dashboard/HistoricalOverview'
 
 export default function DashboardUI({ 
   payload, 
-  currentFilter 
+  currentFilter,
+  basePath = '/dashboard',
+  isDemo = false
 }: { 
   payload: DeliveryPayload
-  currentFilter: DashboardFilter 
+  currentFilter: DashboardFilter
+  basePath?: string
+  isDemo?: boolean
 }) {
   const router = useRouter()
 
   const handleFilterChange = (filter: DashboardFilter) => {
-    router.push(`/dashboard?filter=${filter}`)
+    router.push(`${basePath}?filter=${filter}`)
   }
 
   return (
@@ -91,16 +95,16 @@ export default function DashboardUI({
       />
 
       {/* Linha 2: ESPINHA DORSAL DA PLANILHA (Gastos Obrigatórios vs Não Obrigatórios) */}
-      <BudgetBreakdown currentFilter={currentFilter} />
+      <BudgetBreakdown currentFilter={currentFilter} isDemo={isDemo} />
 
-      {/* Linha 3: Otimizador de Aportes & Rebalanceamento da Carteira (13 Ativos + Metas 25/15/30/5/25) */}
+      {/* Linha 3: Otimizador de Aportes & Rebalanceamento da Carteira */}
       <div id="balanceamento-investimentos" className="scroll-mt-24">
-        <InvestmentRebalance />
+        <InvestmentRebalance isDemo={isDemo} />
       </div>
 
-      {/* Linha 4: Previsibilidade de Parcelamentos (Entrada T-Cross Abr/27, Samsung Nov/27, Gramado Parks 70x Fev/32 com IPCA) */}
+      {/* Linha 4: Previsibilidade de Parcelamentos & Alívio de Caixa */}
       <div id="parcelamentos-dividas" className="scroll-mt-24">
-        <InstallmentsProjection />
+        <InstallmentsProjection isDemo={isDemo} />
       </div>
 
       {/* Linha 5: Gráficos de Fluxo e Categorias Reais */}
@@ -114,14 +118,16 @@ export default function DashboardUI({
         />
       </div>
 
-      {/* Linha 6: Módulo de Entrada Inteligente (Upload Fatura C6 e Extratos) */}
-      <div id="upload-documentos" className="scroll-mt-24">
-        <DocumentUploadModal />
-      </div>
+      {/* Linha 6: Módulo de Entrada Inteligente (Upload Fatura e Extratos - Apenas privado) */}
+      {!isDemo && (
+        <div id="upload-documentos" className="scroll-mt-24">
+          <DocumentUploadModal />
+        </div>
+      )}
 
-      {/* Linha 7: Série Temporal Histórica (Dezembro/25 a Julho/26) */}
+      {/* Linha 7: Série Temporal Histórica */}
       <div id="historico-mensal" className="scroll-mt-24">
-        <HistoricalOverview />
+        <HistoricalOverview isDemo={isDemo} />
       </div>
     </div>
   )

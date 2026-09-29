@@ -56,6 +56,12 @@ export async function proxy(request: NextRequest) {
     (pathname.startsWith('/api/') && !isPublic);
 
   if (isProtected && !user) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { success: false, error: 'Não autorizado. Autentique-se para acessar este recurso.' },
+        { status: 401 }
+      );
+    }
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(loginUrl);

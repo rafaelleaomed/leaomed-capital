@@ -4,8 +4,12 @@ import psycopg2
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-NEON_URI = "postgresql://neondb_owner:REDACTED_PASSWORD@ep-bold-shape-awxwzyxn-pooler.c-12.us-east-1.aws.neon.tech/neondb?sslmode=require"
-USER_ID = "d8225585-6cf1-4dc7-ba96-724bc2bb7cc0"
+NEON_URI = os.environ.get("DATABASE_URL")
+if not NEON_URI:
+    print("❌ ERRO: Variável de ambiente DATABASE_URL não configurada.")
+    sys.exit(1)
+
+USER_ID = os.environ.get("USER_ID", "d8225585-6cf1-4dc7-ba96-724bc2bb7cc0")
 
 def seed():
     conn = psycopg2.connect(NEON_URI)

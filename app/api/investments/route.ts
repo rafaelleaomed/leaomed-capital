@@ -62,8 +62,11 @@ export async function GET() {
         }
       }
     });
-  } catch (error: any) {
-    console.error('Erro ao buscar investimentos no Neon:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error('Erro ao buscar investimentos no banco:', error);
+    return NextResponse.json(
+      { success: false, error: 'Falha interna ao recuperar carteira de investimentos.' },
+      { status: 500 }
+    );
   }
 }

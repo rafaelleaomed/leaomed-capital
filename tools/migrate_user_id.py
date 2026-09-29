@@ -3,12 +3,17 @@
 Script de Migração de user_id: Neon (ID antigo) → Supabase Auth (ID novo)
 """
 
+import os
 import sys
 import psycopg2
 
-DATABASE_URL = "postgresql://neondb_owner:REDACTED_PASSWORD@ep-bold-shape-awxwzyxn-pooler.c-12.us-east-1.aws.neon.tech/neondb?sslmode=require"
-OLD_USER_ID  = "d8225585-6cf1-4dc7-ba96-724bc2bb7cc0"
-OLD_EMAIL    = "rafaelleaobh@gmail.com"
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    print("❌ ERRO: Variável de ambiente DATABASE_URL não configurada.")
+    sys.exit(1)
+
+OLD_USER_ID = os.environ.get("OLD_USER_ID", "d8225585-6cf1-4dc7-ba96-724bc2bb7cc0")
+OLD_EMAIL = os.environ.get("OLD_EMAIL", "usuario@leaomed.local")
 
 TABLES_WITH_USER_ID = [
     "accounts",

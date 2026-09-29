@@ -1,10 +1,14 @@
+import os
 import json
 import psycopg2
 import sys
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-NEON_URI = "postgresql://neondb_owner:REDACTED_PASSWORD@ep-bold-shape-awxwzyxn-pooler.c-12.us-east-1.aws.neon.tech/neondb?sslmode=require"
+NEON_URI = os.environ.get("DATABASE_URL")
+if not NEON_URI:
+    print("❌ ERRO: Variável de ambiente DATABASE_URL não configurada.")
+    sys.exit(1)
 
 def seed_history():
     print("🔌 Conectando ao Neon para popular histórico...")
@@ -15,7 +19,7 @@ def seed_history():
     with open('.tmp/historical_summary.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-    user_id = 'd8225585-6cf1-4dc7-ba96-724bc2bb7cc0'
+    user_id = os.environ.get("USER_ID", "d8225585-6cf1-4dc7-ba96-724bc2bb7cc0")
 
     month_mapping = {
         'dez_25': '2025-12',

@@ -36,6 +36,7 @@ dist/
 *.xlsx
 *.xls
 *.ods
+*.csv
 
 # PDFs de contratos/dados pessoais
 *.pdf
