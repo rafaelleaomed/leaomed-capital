@@ -135,9 +135,65 @@ export function InstallmentsProjection({ isDemo = false }: { isDemo?: boolean })
 
   const [installments, setInstallments] = useState<InstallmentItem[]>(demoInstallments)
 
-  // Em modo autenticado privado, busca parcelamentos ativos do banco
+  // Suporte a carregamento de parcelamentos customizados do Onboarding Wizard
+  const loadCustomInstallments = React.useCallback(() => {
+    try {
+      const stored = localStorage.getItem('leaomed_user_custom_setup')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (parsed.installments && Array.isArray(parsed.installments) && parsed.installments.length > 0) {
+          const mapped: InstallmentItem[] = parsed.installments.map((inst: any, idx: number) => ({
+            id: `custom-${idx}`,
+            name: inst.name,
+            category: inst.category || 'Financiamento',
+            monthlyValue: Number(inst.monthlyValue) || 0,
+            currentInstallment: Number(inst.currentInstallment) || 1,
+            totalInstallments: Number(inst.totalInstallments) || 12,
+            endMonthYear: inst.endMonthYear || 'Em aberto',
+            contractNotes: `Personalizado no Setup • ${inst.totalInstallments}x de R$ ${Number(inst.monthlyValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+            paymentMethod: 'Débito / Cartão'
+          }))
+          setInstallments(mapped)
+          return true
+        }
+      }
+    } catch (_) {}
+    return false
+  }, [])
+
+  // Sincronização com API e escuta de eventos do Wizard
   React.useEffect(() => {
-    if (isDemo) return
+    const handleUpdate = (e: any) => {
+      const config = e.detail
+      if (config?.installments?.length) {
+        const mapped: InstallmentItem[] = config.installments.map((inst: any, idx: number) => ({
+          id: `custom-${idx}`,
+          name: inst.name,
+          category: inst.category || 'Financiamento',
+          monthlyValue: Number(inst.monthlyValue) || 0,
+          currentInstallment: Number(inst.currentInstallment) || 1,
+          totalInstallments: Number(inst.totalInstallments) || 12,
+          endMonthYear: inst.endMonthYear || 'Em aberto',
+          contractNotes: `Personalizado no Setup • ${inst.totalInstallments}x de R$ ${Number(inst.monthlyValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+          paymentMethod: 'Débito / Cartão'
+        }))
+        setInstallments(mapped)
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('leaomed_setup_updated', handleUpdate)
+    }
+
+    if (isDemo) {
+      loadCustomInstallments()
+      return () => {
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('leaomed_setup_updated', handleUpdate)
+        }
+      }
+    }
+
     let isMounted = true
     fetch('/api/installments')
       .then(res => res.json())
@@ -156,11 +212,21 @@ export function InstallmentsProjection({ isDemo = false }: { isDemo?: boolean })
             paymentMethod: row.payment_method
           }))
           setInstallments(mapped)
+        } else {
+          loadCustomInstallments()
         }
       })
-      .catch(() => {})
-    return () => { isMounted = false }
-  }, [isDemo])
+      .catch(() => {
+        if (isMounted) loadCustomInstallments()
+      })
+
+    return () => { 
+      isMounted = false
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('leaomed_setup_updated', handleUpdate)
+      }
+    }
+  }, [isDemo, loadCustomInstallments])
 
   const totalMonthlyCommitment = installments.reduce((acc, curr) => acc + curr.monthlyValue, 0)
   

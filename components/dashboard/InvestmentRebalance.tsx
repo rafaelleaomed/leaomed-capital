@@ -61,9 +61,53 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
 
   const [assets, setAssets] = useState<AssetRow[]>(demoAssets)
 
-  // Em modo autenticado privado, busca posições reais do banco
+  // Carregar metas personalizadas do Setup Wizard
+  const loadCustomTargets = React.useCallback(() => {
+    try {
+      const stored = localStorage.getItem('leaomed_user_custom_setup')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (parsed.investmentTargets && Array.isArray(parsed.investmentTargets)) {
+          const mappedTargets: Record<string, number> = {}
+          parsed.investmentTargets.forEach((t: any) => {
+            if (t.assetClass && t.targetPercentage !== undefined) {
+              mappedTargets[t.assetClass] = Number(t.targetPercentage)
+            }
+          })
+          setTargets(prev => ({ ...prev, ...mappedTargets }))
+        }
+      }
+    } catch (_) {}
+  }, [])
+
+  // Sincronização com API e listener reativo do Wizard
   React.useEffect(() => {
-    if (isDemo) return
+    const handleUpdate = (e: any) => {
+      const config = e.detail
+      if (config?.investmentTargets?.length) {
+        const mappedTargets: Record<string, number> = {}
+        config.investmentTargets.forEach((t: any) => {
+          if (t.assetClass && t.targetPercentage !== undefined) {
+            mappedTargets[t.assetClass] = Number(t.targetPercentage)
+          }
+        })
+        setTargets(prev => ({ ...prev, ...mappedTargets }))
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('leaomed_setup_updated', handleUpdate)
+    }
+
+    if (isDemo) {
+      loadCustomTargets()
+      return () => {
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('leaomed_setup_updated', handleUpdate)
+        }
+      }
+    }
+
     let isMounted = true
     fetch('/api/investments')
       .then(res => res.json())
@@ -93,12 +137,21 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
               mappedTargets[t.asset_class] = parseFloat(t.target_percentage) || 0
             })
             setTargets(prev => ({ ...prev, ...mappedTargets }))
+          } else {
+            loadCustomTargets()
           }
         }
       })
-      .catch(() => {})
-    return () => { isMounted = false }
-  }, [isDemo])
+      .catch(() => {
+        if (isMounted) loadCustomTargets()
+      })
+    return () => { 
+      isMounted = false
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('leaomed_setup_updated', handleUpdate)
+      }
+    }
+  }, [isDemo, loadCustomTargets])
 
   // Totais Gerais
   const totalInvested = assets.reduce((acc, a) => acc + a.invested, 0) // R$ 167.161,02

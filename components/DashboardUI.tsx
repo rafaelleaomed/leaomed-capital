@@ -1,8 +1,9 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { DeliveryPayload, DashboardFilter } from '@/utils/dashboardData'
 import { useRouter } from 'next/navigation'
+import { Sliders } from 'lucide-react'
 import { MobileQuickNav } from './dashboard/MobileQuickNav'
 import { MobillsAnalytics } from './dashboard/MobillsAnalytics'
 import { SummaryCards } from './dashboard/SummaryCards'
@@ -10,10 +11,11 @@ import { InsightsPanel } from './dashboard/InsightsPanel'
 import { BudgetBreakdown } from './dashboard/BudgetBreakdown'
 import { CashFlowChart } from './dashboard/CashFlowChart'
 import { CategoryChart } from './dashboard/CategoryChart'
-import { DocumentUploadModal } from './dashboard/DocumentUploadModal'
+import { DataIngestionCenter } from './dashboard/DataIngestionCenter'
 import { InstallmentsProjection } from './dashboard/InstallmentsProjection'
 import { InvestmentRebalance } from './dashboard/InvestmentRebalance'
 import { HistoricalOverview } from './dashboard/HistoricalOverview'
+import { OnboardingWizardModal } from './dashboard/OnboardingWizardModal'
 
 export default function DashboardUI({ 
   payload, 
@@ -27,6 +29,7 @@ export default function DashboardUI({
   isDemo?: boolean
 }) {
   const router = useRouter()
+  const [isWizardOpen, setIsWizardOpen] = useState(false)
 
   const handleFilterChange = (filter: DashboardFilter) => {
     router.push(`${basePath}?filter=${filter}`)
@@ -53,21 +56,34 @@ export default function DashboardUI({
           </p>
         </div>
         
-        {/* Toggle Global (Filtro PF / PJ / Consolidado) */}
-        <div className="inline-flex rounded-xl shadow-xs border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-slate-950/90 p-1 self-start sm:self-auto" role="group">
-          {(['CONSOLIDATED', 'PF', 'PJ'] as DashboardFilter[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => handleFilterChange(f)}
-              className={`px-3 py-1.5 md:px-4 md:py-2 text-xs font-bold rounded-lg transition-all ${
-                currentFilter === f 
-                  ? 'bg-emerald-500 text-slate-950 font-black shadow-md shadow-emerald-500/20' 
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5'
-              }`}
-            >
-              {f === 'CONSOLIDATED' ? 'Consolidado' : f === 'PJ' ? 'Inter PJ' : 'Pessoa Física'}
-            </button>
-          ))}
+        {/* Ações e Filtro Global */}
+        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+          {/* Botão de Personalização / Onboarding Wizard */}
+          <button
+            onClick={() => setIsWizardOpen(true)}
+            className="px-3.5 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs"
+            title="Personalizar Contas, Categorias e Métodos de Ingestão"
+          >
+            <Sliders className="w-3.5 h-3.5 text-amber-400" />
+            <span>Personalizar & Setup</span>
+          </button>
+
+          {/* Toggle Global (Filtro PF / PJ / Consolidado) */}
+          <div className="inline-flex rounded-xl shadow-xs border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-slate-950/90 p-1" role="group">
+            {(['CONSOLIDATED', 'PF', 'PJ'] as DashboardFilter[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => handleFilterChange(f)}
+                className={`px-3 py-1.5 md:px-4 md:py-2 text-xs font-bold rounded-lg transition-all ${
+                  currentFilter === f 
+                    ? 'bg-emerald-500 text-slate-950 font-black shadow-md shadow-emerald-500/20' 
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5'
+                }`}
+              >
+                {f === 'CONSOLIDATED' ? 'Consolidado' : f === 'PJ' ? 'Inter PJ' : 'Pessoa Física'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -118,17 +134,23 @@ export default function DashboardUI({
         />
       </div>
 
-      {/* Linha 6: Módulo de Entrada Inteligente (Upload Fatura e Extratos - Apenas privado) */}
-      {!isDemo && (
-        <div id="upload-documentos" className="scroll-mt-24">
-          <DocumentUploadModal />
-        </div>
-      )}
+      {/* Linha 6: Central Multicanal de Ingestão de Dados (Fatura, OCR/Print, Manual, Open Finance) */}
+      <div id="upload-documentos" className="scroll-mt-24">
+        <DataIngestionCenter isDemo={isDemo} />
+      </div>
 
       {/* Linha 7: Série Temporal Histórica */}
       <div id="historico-mensal" className="scroll-mt-24">
         <HistoricalOverview isDemo={isDemo} />
       </div>
+
+      {/* Modal do Onboarding Wizard & Personalização Inicial */}
+      <OnboardingWizardModal 
+        isOpen={isWizardOpen} 
+        onClose={() => setIsWizardOpen(false)} 
+        isDemo={isDemo} 
+      />
     </div>
   )
 }
+

@@ -222,6 +222,161 @@ export const USER_INVESTMENT_TARGETS: InvestmentTargetDef[] = [
   { assetClass: 'Ouro', targetPercentage: 5.0 },
   { assetClass: 'Dólar', targetPercentage: 5.0 },
   { assetClass: 'Criptomoedas', targetPercentage: 5.0 },
-  { assetClass: 'Previdência Privada', targetPercentage: 5.0 },
-  { assetClass: 'Debêntures', targetPercentage: 0.0 }
+  { assetClass: 'Previdência Privada', targetPercentage: 0.0 },
+  { assetClass: 'Outros', targetPercentage: 5.0 }
 ];
+
+/**
+ * Taxonomia Médica Padrão Inicial (Template Oficial para Novos Usuários e Modo Demo)
+ * Baseada no blueprint de gestão médica (Receitas hospitalares/consultório, despesas fixas, despesas PJ e investimentos).
+ */
+export const DEFAULT_MEDICAL_TAXONOMY: CategoryDef[] = [
+  {
+    name: 'Receitas Médicas',
+    scope: 'PJ',
+    subcategories: [
+      { name: 'Hospital 01', isFixed: true, keywords: ['hospital', 'plantao'] },
+      { name: 'Hospital 02', isFixed: true, keywords: ['hospital 2', 'santa casa', 'mater dei'] },
+      { name: 'Convênio 01', isFixed: true, keywords: ['convenio 1', 'unimed'] },
+      { name: 'Convênio 02', isFixed: true, keywords: ['convenio 2', 'bradesco', 'amil'] },
+      { name: 'Ambulatório', isFixed: true, keywords: ['ambulatorio'] },
+      { name: 'Consultório', isFixed: true, keywords: ['consultorio', 'clinica'] },
+      { name: 'Particulares', isFixed: false, keywords: ['particular', 'consulta particular'] },
+      { name: 'Plantões', isFixed: false, keywords: ['plantao', 'plantao extra'] },
+      { name: 'Aluguéis', isFixed: true, keywords: ['aluguel', 'locacao'] },
+      { name: 'Dividendos Fundos Imobiliários', isFixed: false, keywords: ['dividendos fii', 'rendimento fii'] },
+      { name: 'Dividendos Ações', isFixed: false, keywords: ['jcp', 'dividendos acoes'] },
+      { name: 'Outros', isFixed: false, keywords: ['outros', 'reembolso'] }
+    ]
+  },
+  {
+    name: 'Moradia',
+    scope: 'PF',
+    subcategories: [
+      { name: 'Condomínio', isFixed: true, keywords: ['condominio'] },
+      { name: 'Conta de energia', isFixed: true, keywords: ['cemig', 'enel', 'luz', 'energia'] },
+      { name: 'Telefones celulares', isFixed: true, keywords: ['celular', 'vivo', 'claro', 'tim'] },
+      { name: 'Internet', isFixed: true, keywords: ['internet', 'fibra'] },
+      { name: 'TV por assinatura', isFixed: true, keywords: ['tv por assinatura', 'tv cabo'] },
+      { name: 'Netflix', isFixed: true, keywords: ['netflix', 'streaming', 'spotify'] },
+      { name: 'IPTU', isFixed: true, keywords: ['iptu'] },
+      { name: 'Supermercado', isFixed: false, keywords: ['supermercado', 'mercado'] },
+      { name: 'Empregados', isFixed: true, keywords: ['diarista', 'empregada', 'domestica'] },
+      { name: 'Itens para casa', isFixed: false, keywords: ['itens para casa', 'utensilios'] },
+      { name: 'Eletrodomésticos', isFixed: false, keywords: ['eletrodomesticos', 'eletro'] },
+      { name: 'Outros', isFixed: false, keywords: ['outros moradia'] }
+    ]
+  },
+  {
+    name: 'Saúde',
+    scope: 'PF',
+    subcategories: [
+      { name: 'Plano de Saúde', isFixed: true, keywords: ['plano de saude', 'unimed', 'bradesco saude'] },
+      { name: 'Médicos/Psicólogo/Terapeutas', isFixed: false, keywords: ['terapia', 'psicologo', 'consulta'] },
+      { name: 'Dentista', isFixed: false, keywords: ['dentista', 'odonto'] },
+      { name: 'Farmácia', isFixed: false, keywords: ['farmacia', 'drogaria'] },
+      { name: 'Seguro saúde', isFixed: true, keywords: ['seguro saude', 'seguro vida'] },
+      { name: 'Outros', isFixed: false, keywords: ['outros saude'] }
+    ]
+  },
+  {
+    name: 'Transporte',
+    scope: 'PF',
+    subcategories: [
+      { name: 'Manutenção Veículo', isFixed: false, keywords: ['manutencao', 'oficina', 'mecanico'] },
+      { name: 'Itens para carro', isFixed: false, keywords: ['pneu', 'autopecas', 'acessorios'] },
+      { name: 'IPVA + Seguro Obrigatório', isFixed: false, keywords: ['ipva', 'seguro obrigatorio'] },
+      { name: 'Seguro', isFixed: true, keywords: ['seguro auto', 'porto seguro'] },
+      { name: 'Combustível', isFixed: false, keywords: ['combustivel', 'posto', 'gasolina', 'etanol'] },
+      { name: 'Estacionamentos', isFixed: false, keywords: ['estacionamento', 'valet'] },
+      { name: 'Transporte público', isFixed: false, keywords: ['metro', 'onibus'] },
+      { name: 'Multas', isFixed: false, keywords: ['multa'] },
+      { name: 'Pedágios', isFixed: false, keywords: ['pedagio', 'sem parar'] },
+      { name: 'Táxi/Uber', isFixed: false, keywords: ['uber', '99', 'taxi'] },
+      { name: 'Outros', isFixed: false, keywords: ['outros transporte'] }
+    ]
+  },
+  {
+    name: 'Despesas Pessoais',
+    scope: 'PF',
+    subcategories: [
+      { name: 'Congressos', isFixed: false, keywords: ['congresso', 'simposio'] },
+      { name: 'Anuidades sociedades', isFixed: true, keywords: ['crm', 'cfm', 'anuidade', 'sociedade medica'] },
+      { name: 'Cursos', isFixed: false, keywords: ['curso', 'pos graduacao', 'treinamento'] },
+      { name: 'Cabeleireiro', isFixed: false, keywords: ['cabeleireiro', 'barbeiro', 'salao'] },
+      { name: 'Vestuário', isFixed: false, keywords: ['roupa', 'calcados', 'vestuario', 'jaleco'] },
+      { name: 'Academia', isFixed: true, keywords: ['academia', 'smartfit', 'bodytech', 'personal'] },
+      { name: 'Outros', isFixed: false, keywords: ['outros pessoal'] }
+    ]
+  },
+  {
+    name: 'Filhos',
+    scope: 'PF',
+    subcategories: [
+      { name: 'Escola', isFixed: true, keywords: ['escola', 'colegio', 'mensalidade escolar'] },
+      { name: 'Mesada', isFixed: true, keywords: ['mesada'] },
+      { name: 'Alimentação', isFixed: false, keywords: ['alimentacao filhos', 'lanche'] },
+      { name: 'Extras', isFixed: false, keywords: ['extras filhos', 'material escolar'] },
+      { name: 'Saúde', isFixed: false, keywords: ['pediatra', 'vacinas'] },
+      { name: 'Outros', isFixed: false, keywords: ['outros filhos'] }
+    ]
+  },
+  {
+    name: 'Lazer',
+    scope: 'PF',
+    subcategories: [
+      { name: 'Restaurantes', isFixed: false, keywords: ['restaurante', 'bar', 'jantar'] },
+      { name: 'Balada', isFixed: false, keywords: ['balada', 'festa', 'show'] },
+      { name: 'Comida delivery', isFixed: false, keywords: ['ifood', 'delivery', 'rappi'] },
+      { name: 'Viagens / gastos de férias', isFixed: false, keywords: ['viagem', 'ferias'] },
+      { name: 'Passagens', isFixed: false, keywords: ['passagem', 'voo', 'latam', 'azul', 'gol'] },
+      { name: 'Hospedagens', isFixed: false, keywords: ['hotel', 'airbnb', 'pousada', 'resort'] },
+      { name: 'Passeios', isFixed: false, keywords: ['passeio', 'ingressos', 'cinema'] },
+      { name: 'Outros', isFixed: false, keywords: ['outros lazer'] }
+    ]
+  },
+  {
+    name: 'Empresa - Despesas Fixas',
+    scope: 'PJ',
+    subcategories: [
+      { name: 'Impostos empresa 1', isFixed: true, keywords: ['darf', 'simples nacional', 'imposto pj 1'] },
+      { name: 'Impostos empresa 2', isFixed: true, keywords: ['imposto pj 2'] },
+      { name: 'Impostos empresa 3', isFixed: true, keywords: ['imposto pj 3'] },
+      { name: 'Impostos empresa 4', isFixed: true, keywords: ['imposto pj 4'] },
+      { name: 'ISS', isFixed: true, keywords: ['iss', 'issqn', 'prefeitura'] },
+      { name: 'Mensalidade Contador', isFixed: true, keywords: ['contador', 'contabilidade', 'honorarios'] },
+      { name: 'Despesas Gerais Médicas', isFixed: false, keywords: ['despesas medicas', 'insumos clinicos'] },
+      { name: 'Outros', isFixed: false, keywords: ['outros pj'] }
+    ]
+  },
+  {
+    name: 'Despesas Temporárias / Variáveis',
+    scope: 'PF',
+    subcategories: [
+      { name: 'Manutenção e reparos', isFixed: false, keywords: ['reparo', 'manutencao'] },
+      { name: 'Cursos', isFixed: false, keywords: ['curso avulso'] },
+      { name: 'PET', isFixed: false, keywords: ['pet', 'veterinario', 'racao', 'petshop'] },
+      { name: 'Festa', isFixed: false, keywords: ['festa', 'comemoracao'] },
+      { name: 'Doações', isFixed: false, keywords: ['doacao'] },
+      { name: 'Presentes', isFixed: false, keywords: ['presente'] },
+      { name: 'Presentes parcelados', isFixed: true, keywords: ['presente parcelado'] },
+      { name: 'Utilidades domésticas e decoração', isFixed: false, keywords: ['decoracao', 'utilidades'] },
+      { name: 'Outros', isFixed: false, keywords: ['outros variaveis'] }
+    ]
+  },
+  {
+    name: 'Despesas Financeiras & Cartões',
+    scope: 'PF',
+    subcategories: [
+      { name: 'Tarifas Bancárias 01', isFixed: true, keywords: ['tarifa bancaria 1', 'manutencao conta'] },
+      { name: 'Tarifas Bancárias 02', isFixed: true, keywords: ['tarifa bancaria 2'] },
+      { name: 'Extras diários', isFixed: false, keywords: ['extras diarios', 'pequenos gastos'] },
+      { name: 'IOF', isFixed: false, keywords: ['iof'] },
+      { name: 'Seguro cartão', isFixed: true, keywords: ['seguro cartao'] },
+      { name: 'Anuidade cartão', isFixed: true, keywords: ['anuidade cartao'] },
+      { name: 'Taxas tesouro direto', isFixed: false, keywords: ['taxa b3', 'taxa tesouro'] },
+      { name: 'Outros', isFixed: false, keywords: ['outras tarifas'] }
+    ]
+  }
+];
+
