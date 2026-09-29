@@ -58,26 +58,53 @@ A plataforma adota a arquitetura **A.N.T. (Architecture, Navigation, Tools)** co
 - Alternância instantânea entre **Consolidado**, **Pessoa Física (PF)** e **Pessoa Jurídica**.
 - Despesas e receitas são segregadas no banco de dados e unificadas sem duplicidade contábil na visão executiva (pró-labore não bitributa faturamento).
 
-### 2. Categorização Inteligente com Memória de Regras
-- **IA Preditiva & Heurística Médica:** Sugere a categoria e subcategoria exata para cada lançamento ao importar faturas de cartões ou extratos.
-- **Aprendizado Contínuo:** Opção de memorizar *"Sempre categorizar lançamentos contendo '[Nome]' nesta categoria"* (ex: McDonald's em Alimentação, DARF em Impostos PJ, Drogaria em Saúde).
-- **Zero Trabalho Repetitivo:** Nos meses seguintes ou em novos uploads, o sistema aplica automaticamente as regras aprendidas sem exigir revisão manual item a item.
+### 2. Controle Tributário e Despesas Fixas PJ (Alíquota Efetiva)
+- **Segregação de Impostos Médicos:** Acompanhamento rigoroso de guias tributárias (Simples Nacional / DAS, ISSQN, IRPJ/CSLL) e honorários contábeis.
+- **Cálculo da Alíquota Efetiva:** Exibição da carga tributária real em percentual sobre o faturamento bruto PJ, com alternância para incluir ou excluir custos contábeis.
+- **Histórico Mensal de Impostos:** Comparativo mês a mês da evolução dos encargos da pessoa jurídica.
 
-### 3. Extrato Item a Item & Prevenção Antiduplicação (Cartão vs Conta)
+### 3. Categorização Inteligente com Memória de Regras & Sugestão Preditiva
+- **IA Preditiva & Heurística Médica:** Sugere a categoria e subcategoria exata para cada lançamento ao importar faturas de cartões ou extratos bancários.
+- **Aprendizado de Máquina Contínuo:** Opção de memorizar *"Sempre categorizar lançamentos contendo '[Nome]' nesta categoria"* (ex: McDonald's em Alimentação, DARF em Impostos PJ, Drogaria em Saúde).
+- **Zero Trabalho Repetitivo:** Em faturas futuras, o sistema detecta os padrões e aplica as regras automaticamente.
+
+### 4. Extrato Item a Item, Seleção Múltipla & Categorização em Lote
 - **Auditoria Granular:** Aba dedicada na planilha com extrato completo transação por transação (data, estabelecimento, conta/cartão, categoria e valor).
-- **Edição & Exclusão Individual:** Possibilidade de editar ou excluir qualquer lançamento individual com 1 clique.
-- **Detecção de Duplicidades Contábeis:** Identifica débitos de pagamento de fatura em conta corrente quando as despesas individuais do cartão já estão discriminadas, oferecendo deduplicação automática com 1 clique (conforme Seção 2 do `GEMINI.md`).
+- **Seleção em Massa:** Checkboxes individuais e botão de "Selecionar todos os pendentes" para aplicar categoria e subcategoria a dezenas de itens em lote com 1 clique.
+- **Edição & Exclusão Individual:** Possibilidade de editar valor, data e descrição ou excluir qualquer lançamento individual com confirmação de segurança.
+- **Prevenção Antiduplicação (Cartão vs Conta):** Detecta e remove duplicidades quando o débito da fatura integral na conta concorre com os lançamentos individuais do cartão (conforme Seção 2 do `GEMINI.md`).
 
-### 4. Navegação Temporal Dinâmica Mês a Mês (Estilo Mobills)
+### 5. Alerta de Transações Não Categorizadas / Pendentes
+- **Banner de Conciliação Ativa:** Alerta visual instantâneo destacando despesas que ainda não possuem categoria ou subcategoria vinculada.
+- **Filtro Rápido de Pendências:** 1 clique para isolar apenas os itens sem classificação e resolver em segundos.
+
+### 6. Subdivisão Nível 3 (Detalhamento por Hospital / Unidade)
+- **Granularidade Médica Avançada:** Em subcategorias como *Transporte > Estacionamento* ou *Alimentação em Serviço*, é possível discriminar a unidade específica (ex: Hospital Madre Teresa, Mater Dei, Vila da Serra, IPSEMG).
+- **Relatório por Unidade:** Rastreabilidade exata do custo operacional em cada centro de atuação médica.
+
+### 7. Aporte & Resgate Vinculados Inteligentes
+- **Conexão Direta com Carteira:** Ao categorizar um lançamento como *Aplicação em Investimento* ou *Resgate*, o sistema abre um fluxo assistido para vincular diretamente o ativo da carteira patrimonial (Renda Fixa, FIIs, Ações Nacionais, Stocks/BDRs, Cripto).
+- **Sincronização Patrimonial:** O aporte ou resgate atualiza o saldo e a alocação de ativos em tempo real.
+
+### 8. Gestão Dinâmica de Cartões de Crédito
+- **Adição de Novos Cartões:** Modal completo para cadastrar novos cartões de crédito (bandeira, banco emissor, limite total, limite disponível, dia de fechamento e dia de vencimento).
+- **Edição e Manutenção:** Ajuste ágil de limites, inclusão e exclusão de cartões adicionais, personalização de apelidos e cores visuais do cartão.
+- **Controle de Faturas Reais:** Monitoramento fiel das faturas de PF sem inventar cartões inexistentes na PJ.
+
+### 9. Navegação Temporal Dinâmica Mês a Mês (Estilo Mobills)
 - Seletor de mês/ano com setas rápidas e modal de calendário completo (Dezembro/25 a Dezembro/26).
-- **Recálculo instantâneo:** receitas brutas, despesas totais, fatura de cartão de crédito principal, saldo líquido, gráficos Donut e distribuição de picos diários se adaptam automaticamente ao mês selecionado.
+- **Recálculo instantâneo:** Receitas brutas, despesas totais, fatura de cartão de crédito, saldo líquido, gráficos Donut e distribuição de picos diários se adaptam dinamicamente ao mês selecionado.
 
-### 5. Edição e Exclusão Inline na Planilha Oficial
-- **Edição Clicável:** Qualquer subcategoria de despesa ou receita pode ser clicada para editar o valor monetário, nome ou classificação (fixa/obrigatória vs. variável).
-- **Exclusão de Inconsistências:** Botão de lixeira rápida e opção de exclusão com confirmação em duas etapas no modal para remover linhas com inconsistências.
-- **Persistência Reativa:** As alterações são salvas localmente e recalculam na hora a categoria pai, despesas obrigatórias e cálculos de reserva.
+### 10. Consolidado Anual com Gráficos Evolutivos
+- Aba executiva com a evolução financeira acumulada de todo o exercício.
+- Gráficos comparativos de faturamento bruto vs. despesas totais vs. faturas de cartão vs. resultado líquido mês a mês.
 
-### 6. Simulador do Teto Diário Seguro & Meta de Aporte (10% Padrão)
+### 11. Edição e Exclusão Inline na Planilha Oficial
+- **Edição Clicável:** Qualquer subcategoria de despesa ou receita pode ser clicada para editar valor monetário, nome ou classificação (fixa/obrigatória vs. variável).
+- **Exclusão de Inconsistências:** Botão de lixeira rápida e opção de exclusão com confirmação em duas etapas no modal.
+- **Persistência Reativa:** Recálculo instantâneo da categoria pai, custos fixos e projeção de reserva.
+
+### 12. Simulador do Teto Diário Seguro & Meta de Aporte (10% Padrão)
 - **Engenharia de Saúde Financeira:** Responde à pergunta central: *"Quanto posso gastar hoje sem comprometer minhas contas fixas e meus investimentos?"*.
 - **Fórmula Matemática Contábil:**
   $$\text{Teto Diário Seguro} = \frac{\text{Faturamento} - \text{Custos Fixos Blindados} - \text{Meta de Novos Aportes}}{\text{Dias Restantes ou Ciclo Total}}$$
@@ -86,8 +113,8 @@ A plataforma adota a arquitetura **A.N.T. (Architecture, Navigation, Tools)** co
   - Demonstração em cascata transparente: Faturamento (-) Custos Fixos (-) Meta de Aportes (=) Orçamento Livre (÷) Dias (=) Teto Seguro Diário.
   - Alternância entre dias restantes do mês ou ciclo cheio de 30 dias.
 
-### 7. Calculadora de Reserva de Emergência Sugerida (6 a 12x Custo Fixo)
-- **Sincronização Automática:** Campo de custo fixo mensal alimentado diretamente pelo **somatório das despesas obrigatórias da planilha** (R$ 25.528,57).
+### 13. Calculadora de Reserva de Emergência Sugerida (6 a 12x Custo Fixo)
+- **Sincronização Automática:** Campo de custo fixo mensal alimentado diretamente pelo somatório das despesas obrigatórias da planilha.
 - **Perfis Médicos Estruturados:**
   - **10 Meses (Recomendado):** Médico autônomo, plantonista e consultório particular.
   - **12 Meses (Blindagem Total):** Clínica médica própria / PJ com folha e insumos.
@@ -95,29 +122,52 @@ A plataforma adota a arquitetura **A.N.T. (Architecture, Navigation, Tools)** co
   - **6 Meses:** Servidor público concursado.
 - Diagnóstico em tempo real com barra de progresso, déficit patrimonial e meses cobertos.
 
-### 8. Central Multicanal de Ingestão de Dados (Drag & Drop Múltiplo)
+### 14. Central Multicanal de Ingestão de Dados (Drag & Drop Múltiplo)
 - **Arrastar e Soltar Múltiplo:** Suporte a upload simultâneo de vários arquivos (PDFs de faturas de meses ou cartões distintos, planilhas Excel `.xlsx` ou extratos `.csv`).
-- **Pré-visualização & Parsing:** Validação de faturas, identificação automática do emissor (Itaú, Pessoa Jurídica, C6, Nubank, XP) e conciliação bancária.
-- **Open Finance:** Conexão direta via Pluggy com atualização automática de saldos e lançamentos.
+- **Pré-visualização & Parsing:** Validação de faturas, identificação do emissor (Itaú, Pessoa Jurídica, C6, Nubank, XP) e conciliação bancária assistida.
 
-### 7. Lançamento Rápido Manual (Header & Botão Flutuante FAB)
+### 15. Lançamento Rápido Manual (Header & Botão Flutuante FAB)
 - Modal acessível pelo botão executivo no topo ou pelo FAB flutuante no canto inferior direito.
 - Registro de despesas e receitas com seleção de conta de origem, PF/PJ e tipo de gasto:
   - **À Vista / Pontual**
   - **Despesa Fixa / Obrigatória**
   - **Parcelada:** Seletor de 2x a 48x com cálculo em tempo real do valor da parcela mensal e data da 1ª parcela.
 
-### 8. Rebalanceamento Estratégico de Carteira (13 Ativos Multi-Mercado)
+### 16. Rebalanceamento Estratégico de Carteira (13 Ativos Multi-Mercado)
 - Alocação estratégica: **Ações (25%)**, **Internacional (25%)**, **Caixa (30%)**, **Real Estate/FIIs (15%)** e **Criptoativos (5%)**.
 - Isolamento contábil da **Reserva de Emergência** (não afeta o perfil de risco de investimento).
 - Motor de cálculo de superávit/déficit para direcionar novos aportes.
 
-### 9. Previsibilidade de Parcelamentos & Alívio de Caixa
+### 17. Previsibilidade de Parcelamentos & Alívio de Caixa
 - Monitoramento de parcelas de financiamentos e contratos de longo prazo (veículos, equipamentos médicos, reformas).
 - Linha do tempo de descompressão financeira ao longo dos meses.
 
-### 10. Onboarding Wizard & Personalização para Novos Usuários
-- Modal completo para configuração de novas contas, personalização de categorias médicas, definição de metas de aporte e métodos preferidos de ingestão de dados.
+### 18. Mini Registro de Conta & Perfil do Usuário
+- Modal acessível ao clicar no nome/avatar do usuário no topo da tela:
+  - Alteração de nome completo de exibição.
+  - Atualização de e-mail cadastrado.
+  - Atualização e troca segura de senha (com confirmação e validação de requisitos de força).
+  - Gestão de contas bancárias vinculadas (adicionar nova conta ou remover contas antigas).
+
+### 19. Menu Lateral Fixo & Responsivo
+- Menu de navegação fixo à esquerda, sempre visível para alternância rápida entre abas e painéis sem perda de contexto ou rolagem excessiva.
+
+---
+
+## 🔌 Status das Integrações & Limitações Conhecidas
+
+Para total transparência arquitetural e operacional, segue o quadro de prontidão das integrações externas:
+
+| Funcionalidade / Integração | Status Atual | Detalhamento Operacional |
+|---|---|---|
+| **Gestão Orçamentária & Planilha Interativa** | 🟢 **100% Operacional** | Edição inline, cálculo de custos fixos/variáveis, segregação PF/PJ e alíquota de impostos ativa. |
+| **Extrato Granular & Seleção em Lote** | 🟢 **100% Operacional** | Auditoria item a item, categorização em lote com memória de regras e antiduplicação de fatura/conta. |
+| **Gestão de Cartões de Crédito** | 🟢 **100% Operacional** | Cadastro de cartões, alteração de limites, cartões adicionais e monitoramento de faturas reais. |
+| **Investimentos & Aportes Vinculados** | 🟢 **100% Operacional** | Rebalanceamento de 13 ativos, calculadora de reserva de emergência e fluxo de vínculo direto com transações. |
+| **Autenticação & Controle de Sessão** | 🟢 **100% Operacional** | Supabase Auth com SSR cookies HTTP-Only, rota de cadastro e modal de perfil/troca de senha. |
+| **Banco de Dados Relacional** | 🟢 **100% Operacional** | Neon Serverless PostgreSQL com pooling de conexões e queries parametrizadas. |
+| **API Open Finance (Pluggy)** | 🟡 **Arquitetura Pronta (Aguardando Chaves de Produção)** | A infraestrutura completa de Route Handlers (`/api/connect-token`), Webhooks idempotentes (`/api/webhooks/pluggy`) e Worker de sincronização (`tools/sync_worker.py`) está codificada e pronta. No entanto, **a sincronização automática de contas via Open Finance não opera em tempo real no deploy público**, pois exige credenciais bancárias ativas da Pluggy em ambiente de produção (contrato comercial de Open Finance). O sistema opera no momento via conciliação por extratos/faturas (CSV/XLSX/PDF) e lançamentos auditados. |
+| **OCR Automático de Boletos PJ** | 🟡 **Em Desenvolvimento / Ingestão Assistida** | A extração automática de dados de boletos bancários via OCR (Gemini Vision / AWS Textract) está em fase de modelagem de serviço; atualmente o controle de tributos PJ é realizado via conciliação assistida e lançamento direto. |
 
 ---
 
@@ -137,8 +187,8 @@ Inspirado nas melhores práticas de fintechs institucionais de alto padrão:
 
 O projeto segue rigorosamente os padrões de segurança e Clean Architecture:
 
-- ✅ **Zero Secrets no Código**: Nenhuma chave, credencial ou string de conexão versionada. Variáveis injetadas via `.env.local` e ambiente seguro de produção na Vercel.
-- ✅ **Isolamento e Sanitização de PII**: A rota pública `/demo` opera exclusivamente com dados sintéticos sanitizados; dados reais e contratos privados permanecem restritos à conta autenticada do Dr. Rafael no Neon PostgreSQL.
+- ✅ **Zero Secrets no Código Ativo**: Nenhuma chave, credencial ou string de conexão ativa versionada. Variáveis injetadas via `.env.local` e ambiente seguro de produção na Vercel.
+- ✅ **Isolamento e Sanitização de PII**: A rota pública `/demo` opera exclusivamente com dados sintéticos sanitizados; dados reais e contratos privados permanecem restritos à conta autenticada no Neon PostgreSQL.
 - ✅ **Proteção contra IDOR / BOLA**: Endpoints autenticados validam a sessão server-side e forçam o `user_id` criptografado via cookie HTTP-Only.
 - ✅ **Sessões Seguras**: Autenticação gerenciada via `@supabase/ssr` com cookies criptografados, `httpOnly`, `sameSite: lax` e renovação automática de sliding session.
 - ✅ **Defesa em Profundidade contra SQL Injection**: Consultas parametrizadas via tagged template literals do `@neondatabase/serverless`.
