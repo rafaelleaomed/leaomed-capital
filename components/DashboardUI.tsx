@@ -18,6 +18,7 @@ import { InvestmentRebalance } from './dashboard/InvestmentRebalance'
 import { HistoricalOverview } from './dashboard/HistoricalOverview'
 import { OnboardingWizardModal } from './dashboard/OnboardingWizardModal'
 import { QuickTransactionModal } from './dashboard/QuickTransactionModal'
+import { AppleMobileTabBar } from './dashboard/AppleMobileTabBar'
 
 export default function DashboardUI({ 
   payload, 
@@ -70,9 +71,15 @@ export default function DashboardUI({
     const handleTarget = (e: any) => {
       if (e.detail?.targetPct !== undefined) setInvestmentTargetPct(e.detail.targetPct)
     }
+    const handleQuickTx = () => setIsQuickTxOpen(true)
+    const handleWizard = () => setIsWizardOpen(true)
+    window.addEventListener('leaomed_open_quick_tx', handleQuickTx)
+    window.addEventListener('leaomed_open_onboarding_wizard', handleWizard)
     window.addEventListener('leaomed_budget_obligatory_updated', handleObligatory)
     window.addEventListener('leaomed_investment_target_updated', handleTarget)
     return () => {
+      window.removeEventListener('leaomed_open_quick_tx', handleQuickTx)
+      window.removeEventListener('leaomed_open_onboarding_wizard', handleWizard)
       window.removeEventListener('leaomed_budget_obligatory_updated', handleObligatory)
       window.removeEventListener('leaomed_investment_target_updated', handleTarget)
     }
@@ -104,7 +111,7 @@ export default function DashboardUI({
   const periodLabel = monthlyData.periodLabel
 
   return (
-    <div className="flex flex-col gap-6 md:gap-8 max-w-7xl mx-auto pb-24 transition-colors">
+    <div className="flex flex-col gap-6 md:gap-8 max-w-7xl mx-auto pb-32 md:pb-24 transition-colors">
       {/* Mobile Sticky Quick Navigation */}
       <MobileQuickNav />
 
@@ -148,13 +155,13 @@ export default function DashboardUI({
             <span>Personalizar & Setup</span>
           </button>
 
-          {/* Toggle Global (Filtro PF / PJ / Consolidado) */}
-          <div className="inline-flex rounded-xl shadow-xs border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-slate-950/90 p-1" role="group">
+          {/* Toggle Global (Filtro PF / PJ / Consolidado) estilo iOS Segmented Control */}
+          <div className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex rounded-xl shadow-xs border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-slate-950/90 p-1" role="group">
             {(['CONSOLIDATED', 'PF', 'PJ'] as DashboardFilter[]).map((f) => (
               <button
                 key={f}
                 onClick={() => handleFilterChange(f)}
-                className={`px-3 py-1.5 md:px-4 md:py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                className={`px-2 py-2 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all cursor-pointer text-center active:scale-95 ${
                   currentFilter === f 
                     ? 'bg-emerald-500 text-slate-950 font-black shadow-md shadow-emerald-500/20' 
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5'
@@ -246,14 +253,14 @@ export default function DashboardUI({
         isDemo={isDemo} 
       />
 
-      {/* Botão Flutuante (FAB) de Acesso Rápido para Novo Lançamento */}
+      {/* Botão Flutuante (FAB) de Acesso Rápido para Novo Lançamento (Desktop - Mobile usa a TabBar central) */}
       <button
         onClick={() => setIsQuickTxOpen(true)}
-        className="fixed bottom-6 right-6 z-40 p-3.5 sm:px-4 sm:py-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-sm shadow-xl shadow-emerald-500/30 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer border border-emerald-400/40"
+        className="hidden md:flex fixed bottom-6 right-6 z-40 p-3.5 sm:px-4 sm:py-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-sm shadow-xl shadow-emerald-500/30 items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer border border-emerald-400/40"
         title="Novo Lançamento Manual (Despesa / Receita)"
       >
         <PlusCircle className="w-5 h-5 text-slate-950 shrink-0" />
-        <span className="hidden sm:inline font-black text-xs uppercase tracking-wider">Novo Lançamento</span>
+        <span className="font-black text-xs uppercase tracking-wider">Novo Lançamento</span>
       </button>
 
       {/* Modal de Novo Lançamento Rápido (Fixa, Parcelada ou Pontual) */}
@@ -261,6 +268,9 @@ export default function DashboardUI({
         isOpen={isQuickTxOpen} 
         onClose={() => setIsQuickTxOpen(false)} 
       />
+
+      {/* Barra de Navegação Inferior Nativa Apple (iOS Feel) */}
+      <AppleMobileTabBar />
     </div>
   )
 }

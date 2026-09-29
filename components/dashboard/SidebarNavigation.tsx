@@ -68,6 +68,34 @@ export function SidebarNavigation({ isDemo = false }: SidebarNavigationProps) {
         const el = document.getElementById('cartoes-credito')
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }, 50)
+    } else if (id === 'reserva-emergencia') {
+      window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
+      window.dispatchEvent(new CustomEvent('leaomed_open_emergency_reserve'))
+      setTimeout(() => {
+        const el = document.getElementById('reserva-emergencia') || document.getElementById('balanceamento-investimentos')
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 50)
+    } else if (id === 'parcelamentos-dividas') {
+      window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
+      setTimeout(() => {
+        const el = document.getElementById('parcelamentos-dividas')
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 50)
+    } else if (id === 'balanceamento-investimentos') {
+      window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
+      setTimeout(() => {
+        const el = document.getElementById('balanceamento-investimentos')
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 50)
+    } else if (id === 'categorias-planilha') {
+      window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
+      setTimeout(() => {
+        const el = document.getElementById('categorias-planilha')
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 50)
+    } else if (id === 'visao-geral-graficos') {
+      window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 

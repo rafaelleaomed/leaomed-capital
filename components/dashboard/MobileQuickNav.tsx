@@ -9,7 +9,9 @@ import {
   UploadCloud, 
   LayoutDashboard,
   BarChart3,
-  PieChart as PieIcon
+  PieChart as PieIcon,
+  ShieldCheck,
+  CreditCard
 } from 'lucide-react'
 
 export function MobileQuickNav() {
@@ -31,6 +33,20 @@ export function MobileQuickNav() {
       badgeColor: 'bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30'
     },
     {
+      id: 'reserva-emergencia',
+      label: 'Reserva de Emergência',
+      icon: ShieldCheck,
+      badge: 'Segurança',
+      badgeColor: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+    },
+    {
+      id: 'cartoes-credito',
+      label: 'Cartões de Crédito',
+      icon: CreditCard,
+      badge: 'Faturas',
+      badgeColor: 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30'
+    },
+    {
       id: 'balanceamento-investimentos',
       label: 'Investimentos',
       icon: PieChart,
@@ -45,27 +61,6 @@ export function MobileQuickNav() {
       badgeColor: 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30'
     },
     {
-      id: 'resumo-executivo',
-      label: 'Resumo Geral',
-      icon: LayoutDashboard,
-      badge: null,
-      badgeColor: ''
-    },
-    {
-      id: 'graficos-fluxo',
-      label: 'Fluxo & Top Gastos',
-      icon: BarChart3,
-      badge: null,
-      badgeColor: ''
-    },
-    {
-      id: 'upload-documentos',
-      label: 'Upload C6 & Prints',
-      icon: UploadCloud,
-      badge: 'IA',
-      badgeColor: 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-500/30'
-    },
-    {
       id: 'historico-mensal',
       label: 'Série Histórica',
       icon: TrendingUp,
@@ -76,9 +71,22 @@ export function MobileQuickNav() {
 
   const scrollTo = (id: string) => {
     setActiveNav(id)
+    if (id === 'reserva-emergencia') {
+      window.dispatchEvent(new CustomEvent('leaomed_open_emergency_reserve'))
+      setTimeout(() => {
+        const el = document.getElementById('reserva-emergencia') || document.getElementById('balanceamento-investimentos')
+        if (el) {
+          const yOffset = -90
+          const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset
+          window.scrollTo({ top: y, behavior: 'smooth' })
+        }
+      }, 50)
+      return
+    }
+
     const el = document.getElementById(id)
     if (el) {
-      const yOffset = -80 // Compensa o header sticky
+      const yOffset = -90 // Compensa o header sticky
       const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset
       window.scrollTo({ top: y, behavior: 'smooth' })
     }

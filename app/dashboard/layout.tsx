@@ -29,17 +29,20 @@ export default async function DashboardLayout({
     <ThemeProvider>
       <div className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-[#070B12] text-slate-900 dark:text-slate-100 transition-colors duration-200">
         {/* Topbar Executiva com Glassmorphism */}
-        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white/80 dark:bg-slate-950/80 px-4 md:px-6 backdrop-blur-xl">
-          <div className="flex items-center gap-3">
-            <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-emerald-500/30 bg-slate-900 shadow-lg shadow-emerald-500/20">
+        <header className="sticky top-0 z-40 flex h-14 sm:h-16 items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white/85 dark:bg-slate-950/85 px-3 sm:px-6 backdrop-blur-xl">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center overflow-hidden rounded-xl border border-emerald-500/30 bg-slate-900 shadow-md shrink-0">
               <img src="/logo.jpg" alt="LeãoMed Capital Logo" className="h-full w-full object-cover" />
             </div>
             <div>
-              <span className="font-display text-base md:text-lg font-bold tracking-tight text-slate-900 dark:text-white block leading-tight">
+              <span className="font-display text-sm sm:text-base md:text-lg font-bold tracking-tight text-slate-900 dark:text-white block leading-tight">
                 LeãoMed Capital
               </span>
-              <span className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-bold block">
+              <span className="hidden sm:block text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-bold">
                 Gestão Patrimonial & IA Consultiva
+              </span>
+              <span className="sm:hidden text-[9px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-bold">
+                Gestão Patrimonial
               </span>
             </div>
           </div>

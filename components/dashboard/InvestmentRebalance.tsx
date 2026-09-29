@@ -175,6 +175,7 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
       .catch(() => {
         if (isMounted) loadCustomTargets()
       })
+
     return () => { 
       isMounted = false
       if (typeof window !== 'undefined') {
@@ -184,6 +185,36 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
       }
     }
   }, [isDemo, loadCustomTargets])
+
+  // Listener dedicado e ininterrupto para ativação direta da Reserva de Emergência
+  React.useEffect(() => {
+    const handleEmergencyOpen = () => {
+      setActiveTab('EMERGENCY')
+      setTimeout(() => {
+        const el = document.getElementById('reserva-emergencia') || document.getElementById('balanceamento-investimentos')
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 50)
+    }
+
+    const checkHash = () => {
+      if (typeof window !== 'undefined' && window.location.hash === '#reserva-emergencia') {
+        setActiveTab('EMERGENCY')
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('leaomed_open_emergency_reserve', handleEmergencyOpen)
+      window.addEventListener('hashchange', checkHash)
+      checkHash()
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('leaomed_open_emergency_reserve', handleEmergencyOpen)
+        window.removeEventListener('hashchange', checkHash)
+      }
+    }
+  }, [])
 
   // Totais Gerais
   const totalInvested = assets.reduce((acc, a) => acc + a.invested, 0) // R$ 167.161,02
@@ -249,7 +280,8 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
   }
 
   return (
-    <section id="balanceamento-investimentos" className="scroll-mt-24 space-y-6">
+    <section id="balanceamento-investimentos" className="scroll-mt-24 space-y-6 relative">
+      <div id="reserva-emergencia" className="absolute -top-24 left-0 w-1 h-1 pointer-events-none" />
       <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 p-5 md:p-6 shadow-sm">
         {/* Header com Totais */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">

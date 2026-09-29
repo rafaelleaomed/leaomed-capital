@@ -22,45 +22,48 @@ export default async function DemoPage({
   return (
     <div className="min-h-screen relative bg-slate-50 dark:bg-[#070B12] text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* Banner de aviso de Demonstração Pública Premium */}
-      <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-900 dark:text-amber-200 text-xs py-2 px-4 text-center font-medium shadow-xs flex flex-wrap items-center justify-center gap-2">
+      <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-900 dark:text-amber-200 text-xs py-1.5 px-3 text-center font-medium shadow-xs flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
         <span className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
-          Portfólio / Modo Demonstração
+          Modo Demonstração
         </span>
-        <span>
+        <span className="hidden sm:inline">
           Planilha médica padrão genérica ativa.
         </span>
         <a 
           href="/login?mode=signup" 
-          className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
+          className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400 hover:underline text-[11px] sm:text-xs"
         >
-          Criar minha conta gratuita →
+          Criar conta gratuita →
         </a>
       </div>
 
       {/* Topbar Executiva no Demo com ThemeToggle */}
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white/80 dark:bg-slate-950/80 px-4 md:px-8 backdrop-blur-xl">
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-emerald-500/30 bg-slate-900 shadow-md">
+      <header className="sticky top-0 z-40 flex h-14 sm:h-16 items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white/85 dark:bg-slate-950/85 px-3 sm:px-6 md:px-8 backdrop-blur-xl">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center overflow-hidden rounded-xl border border-emerald-500/30 bg-slate-900 shadow-md shrink-0">
             <img src="/logo.jpg" alt="LeãoMed Capital Logo" className="h-full w-full object-cover" />
           </div>
           <div>
-            <span className="font-display text-base md:text-lg font-bold tracking-tight text-slate-900 dark:text-white block leading-tight">
+            <span className="font-display text-sm sm:text-base md:text-lg font-bold tracking-tight text-slate-900 dark:text-white block leading-tight">
               LeãoMed Capital
             </span>
-            <span className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-bold block">
+            <span className="hidden sm:block text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-bold">
               Gestão Médica & Inteligência Financeira
+            </span>
+            <span className="sm:hidden text-[9px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-bold">
+              Gestão Médica
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
           {/* Alternador de Modo Claro / Escuro */}
           <ThemeToggle />
 
           {/* Botão de Cadastro para Novos Usuários */}
           <a 
             href="/login?mode=signup" 
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-500 hover:bg-emerald-600 text-slate-950 transition-all shadow-sm shadow-emerald-500/20 cursor-pointer"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-500 hover:bg-emerald-600 text-slate-950 transition-all shadow-sm shadow-emerald-500/20 cursor-pointer"
             title="Criar nova conta com a planilha padrão médica"
           >
             <UserPlus className="w-3.5 h-3.5 text-slate-950" />
@@ -70,10 +73,10 @@ export default async function DemoPage({
           {/* Botão de Login */}
           <a 
             href="/login" 
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 transition-all cursor-pointer"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 transition-all cursor-pointer"
           >
             <LogIn className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Entrar</span>
+            <span>Entrar</span>
           </a>
 
           <UserAccountHeader isDemo={true} initialName="Dr. Médico (Demo)" initialEmail="demo@leaomed.com" />
