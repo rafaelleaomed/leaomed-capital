@@ -44,6 +44,7 @@ export async function proxy(request: NextRequest) {
   // Rotas públicas — nunca redirecionar
   const isPublic =
     pathname === '/login' ||
+    pathname === '/cadastro' ||
     pathname === '/demo' ||
     pathname.startsWith('/demo/') ||
     pathname.startsWith('/api/auth/') ||
