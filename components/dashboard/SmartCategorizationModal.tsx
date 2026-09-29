@@ -46,6 +46,7 @@ interface ReviewedItem {
   entityType: 'PF' | 'PJ'
   category: string
   subcategory: string
+  subdivision?: string
   source: 'USER_RULE' | 'SMART_HEURISTIC' | 'DEFAULT'
   isCardBillPayment: boolean
   alwaysApplyRule: boolean
@@ -55,9 +56,11 @@ interface ReviewedItem {
 // Categorias e Subcategorias padrão da plataforma médica
 const CATEGORY_OPTIONS: Record<string, string[]> = {
   'Alimentação': ['Restaurantes & Fast Food', 'Supermercado Familiar', 'Delivery & Lanches', 'Padaria & Confeitaria', 'Cafeteria & Lanches'],
-  'Transporte': ['Combustível', 'Transporte por Aplicativo', 'Manutenção Veicular', 'Estacionamento & Pedágios', 'Seguro Auto'],
+  'Transporte': ['Estacionamentos', 'Combustível', 'Transporte por Aplicativo', 'Manutenção Veicular', 'Estacionamento & Pedágios', 'Seguro Auto'],
   'Moradia': ['Condomínio Residencial', 'Supermercado Familiar', 'Energia Elétrica', 'Água e Esgoto', 'Internet & Telefonia', 'Manutenção da Casa'],
   'Saúde': ['Medicamentos & Farmácia', 'Plano de Saúde', 'Consultas & Exames', 'Odontologia'],
+  'Investimentos & Aplicações': ['Aporte de Capital', 'Renda Fixa / CDB', 'Tesouro Selic / IPCA', 'Ações', 'FIIs Imobiliários'],
+  'Resgate de Investimentos': ['Resgate de Capital'],
   'Despesas Pessoais': ['Educação Médica & Livros', 'Congressos & Atualização', 'Vestuário & Uso Pessoal', 'Anuidade CRM/CFM', 'Educação / Escola'],
   'Financiamento': ['Parcelas CDC Veicular', 'Fração Imobiliária Resort', 'Amortização de Dívidas'],
   'Lazer': ['Streaming & Assinaturas', 'Viagens & Hospedagem', 'Passeios & Cultura', 'Esportes & Academia'],
@@ -95,6 +98,7 @@ export function SmartCategorizationModal({
         entityType: t.entityType || 'PF',
         category: t.category || pred.category,
         subcategory: t.subcategory || pred.subcategory,
+        subdivision: pred.subdivision,
         source: pred.source,
         isCardBillPayment: pred.isCardBillPayment,
         alwaysApplyRule: pred.source !== 'USER_RULE', // Sugere criar regra se ainda não for regra do usuário
@@ -122,6 +126,12 @@ export function SmartCategorizationModal({
     setItems(updated)
   }
 
+  const handleSubdivisionChange = (index: number, newSubdiv: string) => {
+    const updated = [...items]
+    updated[index].subdivision = newSubdiv
+    setItems(updated)
+  }
+
   const handleToggleAlwaysApply = (index: number) => {
     const updated = [...items]
     updated[index].alwaysApplyRule = !updated[index].alwaysApplyRule
@@ -145,6 +155,7 @@ export function SmartCategorizationModal({
           pattern: item.ruleKeyword.trim(),
           category: item.category,
           subcategory: item.subcategory,
+          subdivision: item.subdivision,
           entityType: item.entityType,
           alwaysApply: true
         })
@@ -160,6 +171,7 @@ export function SmartCategorizationModal({
       accountOrCard: i.accountOrCard,
       category: i.category,
       subcategory: i.subcategory,
+      subdivision: i.subdivision,
       entityType: i.entityType,
       isFixed: i.isCardBillPayment,
       source: 'INVOICE'

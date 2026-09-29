@@ -10,6 +10,9 @@ export interface GranularTransaction {
   accountOrCard: string
   category: string
   subcategory: string
+  subdivision?: string // Nível 3: Ex: 'Hospital Madre Teresa', 'Hospital Mater Dei', 'Lifecenter'
+  investmentAsset?: string // Vínculo com ativo da carteira de investimentos
+  investmentAction?: 'APORTE' | 'RESGATE'
   isFixed: boolean
   isIgnored: boolean // Se true, o valor NÃO entra no somatório de despesas (deduplicado)
   isDuplicateSuspect?: boolean
@@ -17,7 +20,7 @@ export interface GranularTransaction {
   source: 'INITIAL_AUDIT' | 'MANUAL' | 'INVOICE' | 'OCR' | 'OPEN_FINANCE'
 }
 
-const STORAGE_KEY = 'leaomed_granular_transactions_v2'
+const STORAGE_KEY = 'leaomed_granular_transactions_v3'
 
 // Base inicial auditada do Dr. Rafael Leão (Junho/2026)
 const INITIAL_TRANSACTIONS: GranularTransaction[] = [
@@ -35,6 +38,96 @@ const INITIAL_TRANSACTIONS: GranularTransaction[] = [
     isIgnored: true, // Já vem seguro como ignorado para não duplicar, mas permite auditoria
     isDuplicateSuspect: true,
     duplicateReason: 'Débito em conta referente à fatura do cartão C6 cujos gastos já estão discriminados abaixo.',
+    source: 'INITIAL_AUDIT'
+  },
+
+  // 2. Gastos Discriminados no Cartão C6 Carbon Black (PF)
+  // 2.1 Estacionamentos com Subdivisão Nível 3 por Hospital
+  {
+    id: 'tx_c6_park_madre',
+    entityType: 'PF',
+    date: '2026-06-02',
+    description: 'Estapar Estacionamento - Madre Teresa',
+    amount: -380.00,
+    accountOrCard: 'Cartão C6 Carbon Black',
+    category: 'Transporte',
+    subcategory: 'Estacionamentos',
+    subdivision: 'Hospital Madre Teresa',
+    isFixed: false,
+    isIgnored: false,
+    source: 'INITIAL_AUDIT'
+  },
+  {
+    id: 'tx_c6_park_materdei',
+    entityType: 'PF',
+    date: '2026-06-09',
+    description: 'Indigo Estacionamento - Mater Dei',
+    amount: -220.00,
+    accountOrCard: 'Cartão C6 Carbon Black',
+    category: 'Transporte',
+    subcategory: 'Estacionamentos',
+    subdivision: 'Hospital Mater Dei',
+    isFixed: false,
+    isIgnored: false,
+    source: 'INITIAL_AUDIT'
+  },
+  {
+    id: 'tx_c6_park_lifecenter',
+    entityType: 'PF',
+    date: '2026-06-16',
+    description: 'PareBem Estacionamento - Lifecenter',
+    amount: -130.00,
+    accountOrCard: 'Cartão C6 Carbon Black',
+    category: 'Transporte',
+    subcategory: 'Estacionamentos',
+    subdivision: 'Hospital Lifecenter',
+    isFixed: false,
+    isIgnored: false,
+    source: 'INITIAL_AUDIT'
+  },
+
+  // 2.2 Aplicação em Investimento Vinculada
+  {
+    id: 'tx_c6_invest_01',
+    entityType: 'PF',
+    date: '2026-06-05',
+    description: 'Aplicação Financeira CDB Liquidez Diária XP',
+    amount: -3000.00,
+    accountOrCard: 'Itaú Personnalité PF',
+    category: 'Investimentos & Aplicações',
+    subcategory: 'Renda Fixa / CDB',
+    investmentAsset: 'CDB Liquidez Diária',
+    investmentAction: 'APORTE',
+    isFixed: false,
+    isIgnored: false,
+    source: 'INITIAL_AUDIT'
+  },
+
+  // 2.3 Lançamentos Pendentes de Categorização / Subcategoria (Para Auditoria Ativa)
+  {
+    id: 'tx_pend_01',
+    entityType: 'PF',
+    date: '2026-06-19',
+    description: 'TED Avulsa - Comprovante em Análise',
+    amount: -250.00,
+    accountOrCard: 'Cartão C6 Carbon Black',
+    category: 'Sem Categoria',
+    subcategory: '',
+    isFixed: false,
+    isIgnored: false,
+    source: 'INITIAL_AUDIT'
+  },
+  {
+    id: 'tx_pend_02',
+    entityType: 'PF',
+    date: '2026-06-24',
+    description: 'Débito Terminal Balcão Desconhecido',
+    amount: -95.00,
+    accountOrCard: 'Nubank PF',
+    category: 'Transporte',
+    subcategory: '',
+    isFixed: false,
+    isIgnored: false,
     source: 'INITIAL_AUDIT'
   },
 
@@ -301,14 +394,41 @@ export class GranularTransactionStore {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (!raw) {
-        // Inicializa com a base oficial e salva
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_TRANSACTIONS))
-        return INITIAL_TRANSACTIONS
+        // Se existir v2 antigo, preserva transações adicionadas e mescla com as novas
+        const oldV2 = localStorage.getItem('leaomed_granular_transactions_v2')
+        let initialList = INITIAL_TRANSACTIONS
+        if (oldV2) {
+          try {
+            const parsedOld = JSON.parse(oldV2) as GranularTransaction[]
+            // Adiciona transações customizadas que o usuário possa ter criado
+            const customUserTxs = parsedOld.filter(t => !INITIAL_TRANSACTIONS.some(init => init.id === t.id))
+            initialList = [...INITIAL_TRANSACTIONS, ...customUserTxs]
+          } catch (_) {}
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialList))
+        return initialList
       }
       return JSON.parse(raw) as GranularTransaction[]
     } catch (_) {
       return INITIAL_TRANSACTIONS
     }
+  }
+
+  // Verifica se uma transação está sem categoria ou sem subcategoria definida
+  static isUncategorized(t: GranularTransaction): boolean {
+    const cat = (t.category || '').trim().toLowerCase()
+    const sub = (t.subcategory || '').trim().toLowerCase()
+    
+    const hasNoCat = !cat || cat === 'outros' || cat === 'sem categoria' || cat === 'não categorizado' || cat === 'pendente'
+    const hasNoSub = !sub || sub === 'outros' || sub === 'não categorizado' || sub === 'pendente' || sub === 'não especificado'
+    
+    return hasNoCat || hasNoSub
+  }
+
+  // Retorna todos os lançamentos pendentes de categoria ou subcategoria
+  static getUncategorized(transactions?: GranularTransaction[]): GranularTransaction[] {
+    const list = transactions || this.getAll()
+    return list.filter(t => this.isUncategorized(t))
   }
 
   // Salva lista no LocalStorage e dispara evento

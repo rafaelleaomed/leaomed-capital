@@ -16,8 +16,11 @@ import {
   Coins,
   ChevronDown,
   Info,
-  RefreshCw
+  RefreshCw,
+  PlusCircle
 } from 'lucide-react'
+import { InvestmentPortfolioStore, PortfolioAsset } from '@/utils/investmentPortfolioStore'
+import { InvestmentLinkModal } from './InvestmentLinkModal'
 
 interface AssetRow {
   name: string
@@ -46,27 +49,17 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
 
   const [activeTab, setActiveTab] = useState<'REBALANCE' | 'TABLE' | 'EMERGENCY'>('REBALANCE')
   const [emergencyMonths, setEmergencyMonths] = useState<number>(10)
+  const [isInvestModalOpen, setIsInvestModalOpen] = useState(false)
   
   // O custo fixo mensal estimado deve vir principalmente do somatório das despesas obrigatórias da planilha (R$ 25.528,57)
   const [obligatoryBudgetTotal, setObligatoryBudgetTotal] = useState<number>(25528.57)
   const [fixedCostInput, setFixedCostInput] = useState<number>(25528.57)
   const [isSyncedWithBudget, setIsSyncedWithBudget] = useState<boolean>(true)
 
-  // Portfólio demonstrativo sanitizado para visualização de portfólio
-  const demoAssets: AssetRow[] = [
-    { name: 'Tesouro Selic / Caixa', category: 'Caixa', broker: 'Custódia B3', invested: 30000.00, current: 33400.00, profit: 3400.00, profitPct: 11.33, operation: 'Comprado' },
-    { name: 'ETF S&P 500 Global', category: 'Internacional', broker: 'Corretora Global', quantity: 250, avgPrice: 65.00, currentPrice: 78.50, invested: 16250.00, current: 19625.00, profit: 3375.00, profitPct: 20.77, operation: 'Comprado' },
-    { name: 'Ações Blue Chips (B3)', category: 'Ações', broker: 'Corretora Nacional', quantity: 1800, avgPrice: 14.00, currentPrice: 16.20, invested: 25200.00, current: 29160.00, profit: 3960.00, profitPct: 15.71, operation: 'Comprado' },
-    { name: 'Reserva de Emergência (Liquidez)', category: 'Reserva Emergência', broker: 'Conta Remunerada', invested: 32000.00, current: 33500.00, profit: 1500.00, profitPct: 4.69, operation: 'Comprado', isEmergencyReserve: true },
-    { name: 'Bitcoin (BTC)', category: 'Cripto', broker: 'Custódia Fria', quantity: 0.08, avgPrice: 50000.00, currentPrice: 68500.00, invested: 4000.00, current: 5480.00, profit: 1480.00, profitPct: 37.00, operation: 'Comprado' },
-    { name: 'ETF Renda Fixa Global (BNDX)', category: 'Internacional', broker: 'Corretora Global', quantity: 35, avgPrice: 280.00, currentPrice: 310.00, invested: 9800.00, current: 10850.00, profit: 1050.00, profitPct: 10.71, operation: 'Comprado' },
-    { name: 'CDB Liquidez Diária', category: 'Caixa', broker: 'Banco Primário', invested: 10000.00, current: 10450.00, profit: 450.00, profitPct: 4.50, operation: 'Comprado' },
-    { name: 'Ethereum (ETH)', category: 'Cripto', broker: 'Custódia Fria', quantity: 0.5, avgPrice: 1200.00, currentPrice: 1350.00, invested: 600.00, current: 675.00, profit: 75.00, profitPct: 12.50, operation: 'Comprado' },
-    { name: 'Ações Dividendos Brasil', category: 'Ações', broker: 'Corretora Nacional', quantity: 950, avgPrice: 6.00, currentPrice: 6.20, invested: 5700.00, current: 5890.00, profit: 190.00, profitPct: 3.33, operation: 'Comprado' },
-    { name: 'FIIs Imobiliários Papel & Tijolo', category: 'Real Estate', broker: 'Corretora Nacional', quantity: 950, avgPrice: 21.00, currentPrice: 20.50, invested: 19950.00, current: 19475.00, profit: -475.00, profitPct: -2.38, operation: 'Comprado' },
-  ]
-
-  const [assets, setAssets] = useState<AssetRow[]>(demoAssets)
+  // Portfólio oficial conciliado integrado com o Store central
+  const [assets, setAssets] = useState<AssetRow[]>(() => {
+    return InvestmentPortfolioStore.getAssets() as AssetRow[]
+  })
 
   // Carregar metas personalizadas do Setup Wizard
   const loadCustomTargets = React.useCallback(() => {
@@ -123,9 +116,15 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
       }
     }
 
+    const handlePortfolioUpdate = () => {
+      const fresh = InvestmentPortfolioStore.getAssets()
+      setAssets(fresh as AssetRow[])
+    }
+
     if (typeof window !== 'undefined') {
       window.addEventListener('leaomed_setup_updated', handleUpdate)
       window.addEventListener('leaomed_budget_obligatory_updated', handleObligatoryUpdate)
+      window.addEventListener('leaomed_investments_updated', handlePortfolioUpdate)
     }
 
     if (isDemo) {
@@ -134,6 +133,7 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
         if (typeof window !== 'undefined') {
           window.removeEventListener('leaomed_setup_updated', handleUpdate)
           window.removeEventListener('leaomed_budget_obligatory_updated', handleObligatoryUpdate)
+          window.removeEventListener('leaomed_investments_updated', handlePortfolioUpdate)
         }
       }
     }
@@ -180,6 +180,7 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
       if (typeof window !== 'undefined') {
         window.removeEventListener('leaomed_setup_updated', handleUpdate)
         window.removeEventListener('leaomed_budget_obligatory_updated', handleObligatoryUpdate)
+        window.removeEventListener('leaomed_investments_updated', handlePortfolioUpdate)
       }
     }
   }, [isDemo, loadCustomTargets])
@@ -266,8 +267,17 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
             </p>
           </div>
 
-          {/* Seletor de visualização */}
-          <div className="flex items-center gap-2">
+          {/* Seletor de visualização & Ações */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setIsInvestModalOpen(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+              title="Registrar nova aplicação ou resgate direto na carteira"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>+ Aporte / Resgate</span>
+            </button>
+
             <div className="inline-flex rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-slate-950 p-1 text-xs font-semibold">
               <button
                 onClick={() => setActiveTab('REBALANCE')}
@@ -760,6 +770,18 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
           </div>
         )}
       </div>
+
+      {/* Modal Interativo de Vínculo de Investimentos (Aporte e Resgate) */}
+      <InvestmentLinkModal
+        isOpen={isInvestModalOpen}
+        onClose={() => setIsInvestModalOpen(false)}
+        actionType="APORTE"
+        transactionAmount={0}
+        onSelectAsset={() => {
+          const fresh = InvestmentPortfolioStore.getAssets()
+          setAssets(fresh as AssetRow[])
+        }}
+      />
     </section>
   )
 }

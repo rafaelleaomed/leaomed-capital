@@ -3,6 +3,7 @@ export interface CategorizationRule {
   pattern: string
   category: string
   subcategory: string
+  subdivision?: string
   entityType?: 'PF' | 'PJ'
   alwaysApply: boolean
   createdAt: string
@@ -12,6 +13,7 @@ export interface CategorizationRule {
 export interface PredictionResult {
   category: string
   subcategory: string
+  subdivision?: string
   source: 'USER_RULE' | 'SMART_HEURISTIC' | 'DEFAULT'
   matchedRuleId?: string
   matchedPattern?: string
@@ -27,6 +29,7 @@ const DEFAULT_HEURISTIC_RULES: Array<{
   pattern: string
   category: string
   subcategory: string
+  subdivision?: string
   isBillPayment?: boolean
 }> = [
   // Detecção de Pagamento de Fatura (Candidatos a Deduplicação / Duplicidade)
@@ -40,6 +43,25 @@ const DEFAULT_HEURISTIC_RULES: Array<{
   { pattern: 'pagamento c6 bank', category: 'Pagamento de Fatura', subcategory: 'Deduplicado / Débito de Cartão', isBillPayment: true },
   { pattern: 'pagamento itaucard', category: 'Pagamento de Fatura', subcategory: 'Deduplicado / Débito de Cartão', isBillPayment: true },
   { pattern: 'pagamento nubank', category: 'Pagamento de Fatura', subcategory: 'Deduplicado / Débito de Cartão', isBillPayment: true },
+
+  // Investimentos & Aplicações vs Resgates
+  { pattern: 'aporte', category: 'Investimentos & Aplicações', subcategory: 'Aporte de Capital' },
+  { pattern: 'aplicacao cdb', category: 'Investimentos & Aplicações', subcategory: 'Renda Fixa / CDB' },
+  { pattern: 'tesouro direto', category: 'Investimentos & Aplicações', subcategory: 'Tesouro Selic / IPCA' },
+  { pattern: 'xp investimentos', category: 'Investimentos & Aplicações', subcategory: 'Aporte de Capital' },
+  { pattern: 'btg pactual', category: 'Investimentos & Aplicações', subcategory: 'Aporte de Capital' },
+  { pattern: 'resgate investimento', category: 'Resgate de Investimentos', subcategory: 'Resgate de Capital' },
+  { pattern: 'resgate cdb', category: 'Resgate de Investimentos', subcategory: 'Resgate de Capital' },
+  { pattern: 'resgate fundo', category: 'Resgate de Investimentos', subcategory: 'Resgate de Capital' },
+
+  // Estacionamentos com Subdivisão Nível 3 (Hospitais Médicos de BH)
+  { pattern: 'madre teresa', category: 'Transporte', subcategory: 'Estacionamentos', subdivision: 'Hospital Madre Teresa' },
+  { pattern: 'mater dei', category: 'Transporte', subcategory: 'Estacionamentos', subdivision: 'Hospital Mater Dei' },
+  { pattern: 'lifecenter', category: 'Transporte', subcategory: 'Estacionamentos', subdivision: 'Hospital Lifecenter' },
+  { pattern: 'felicio rocho', category: 'Transporte', subcategory: 'Estacionamentos', subdivision: 'Hospital Felício Rocho' },
+  { pattern: 'vila da serra', category: 'Transporte', subcategory: 'Estacionamentos', subdivision: 'Hospital Vila da Serra' },
+  { pattern: 'vera cruz', category: 'Transporte', subcategory: 'Estacionamentos', subdivision: 'Hospital Vera Cruz' },
+  { pattern: 'santa casa', category: 'Transporte', subcategory: 'Estacionamentos', subdivision: 'Santa Casa BH' },
 
   // Alimentação & Restaurantes
   { pattern: 'mcdonald', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
@@ -61,7 +83,10 @@ const DEFAULT_HEURISTIC_RULES: Array<{
   { pattern: 'combustivel', category: 'Transporte', subcategory: 'Combustível' },
   { pattern: 'uber', category: 'Transporte', subcategory: 'Transporte por Aplicativo' },
   { pattern: '99app', category: 'Transporte', subcategory: 'Transporte por Aplicativo' },
-  { pattern: 'estacionamento', category: 'Transporte', subcategory: 'Estacionamento & Pedágios' },
+  { pattern: 'estacionamento', category: 'Transporte', subcategory: 'Estacionamentos' },
+  { pattern: 'estapar', category: 'Transporte', subcategory: 'Estacionamentos' },
+  { pattern: 'indigo', category: 'Transporte', subcategory: 'Estacionamentos' },
+  { pattern: 'pare bem', category: 'Transporte', subcategory: 'Estacionamentos' },
   { pattern: 'sem parar', category: 'Transporte', subcategory: 'Estacionamento & Pedágios' },
   { pattern: 'veloe', category: 'Transporte', subcategory: 'Estacionamento & Pedágios' },
   { pattern: 'oficina', category: 'Transporte', subcategory: 'Manutenção Veicular' },
@@ -141,6 +166,7 @@ export class CategoryRulesEngine {
     pattern: string
     category: string
     subcategory: string
+    subdivision?: string
     entityType?: 'PF' | 'PJ'
     alwaysApply?: boolean
   }): CategorizationRule {
@@ -155,6 +181,7 @@ export class CategoryRulesEngine {
       pattern: cleanPattern,
       category: params.category,
       subcategory: params.subcategory,
+      subdivision: params.subdivision,
       entityType: params.entityType || 'PF',
       alwaysApply: params.alwaysApply ?? true,
       createdAt: existingIndex >= 0 ? rules[existingIndex].createdAt : new Date().toISOString(),
@@ -227,6 +254,7 @@ export class CategoryRulesEngine {
       return {
         category: matchedCustom.category,
         subcategory: matchedCustom.subcategory,
+        subdivision: matchedCustom.subdivision,
         source: 'USER_RULE',
         matchedRuleId: matchedCustom.id,
         matchedPattern: matchedCustom.pattern,
@@ -242,6 +270,7 @@ export class CategoryRulesEngine {
       return {
         category: matchedHeuristic.category,
         subcategory: matchedHeuristic.subcategory,
+        subdivision: matchedHeuristic.subdivision,
         source: 'SMART_HEURISTIC',
         matchedPattern: matchedHeuristic.pattern,
         confidence: 0.85,
@@ -270,10 +299,10 @@ export class CategoryRulesEngine {
   }
 
   // Aplica as regras sobre uma lista de transações
-  static applyToBatch<T extends { desc?: string; description?: string; cat?: string; category?: string; subcategory?: string }>(
+  static applyToBatch<T extends { desc?: string; description?: string; cat?: string; category?: string; subcategory?: string; subdivision?: string }>(
     items: T[],
     entityType: 'PF' | 'PJ' = 'PF'
-  ): (T & { suggestedCategory: string; suggestedSubcategory: string; isUserRule: boolean; isBillPayment: boolean })[] {
+  ): (T & { suggestedCategory: string; suggestedSubcategory: string; suggestedSubdivision?: string; isUserRule: boolean; isBillPayment: boolean })[] {
     return items.map(item => {
       const text = item.description || item.desc || ''
       const pred = this.predict(text, entityType)
@@ -281,6 +310,7 @@ export class CategoryRulesEngine {
         ...item,
         suggestedCategory: pred.category,
         suggestedSubcategory: pred.subcategory,
+        suggestedSubdivision: pred.subdivision,
         isUserRule: pred.source === 'USER_RULE',
         isBillPayment: pred.isCardBillPayment
       }

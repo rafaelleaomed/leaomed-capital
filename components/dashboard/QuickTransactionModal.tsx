@@ -14,8 +14,14 @@ import {
   CheckCircle2, 
   HelpCircle,
   Repeat,
-  Clock
+  Clock,
+  PieChart,
+  MapPin,
+  Building2,
+  Sparkles
 } from 'lucide-react'
+import { InvestmentLinkModal } from './InvestmentLinkModal'
+import { GranularTransactionStore } from '@/utils/granularTransactionStore'
 
 interface QuickTransactionModalProps {
   isOpen: boolean
@@ -36,9 +42,15 @@ export function QuickTransactionModal({
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [category, setCategory] = useState('')
   const [subcategory, setSubcategory] = useState('')
+  const [subdivision, setSubdivision] = useState('') // Nível 3: Ex: 'Hospital Madre Teresa'
   const [account, setAccount] = useState('C6 Carbon Black')
   const [scope, setScope] = useState<'PF' | 'PJ'>('PF')
   
+  // Vínculo inteligente de Investimentos
+  const [investmentAsset, setInvestmentAsset] = useState<string>('')
+  const [investmentAction, setInvestmentAction] = useState<'APORTE' | 'RESGATE' | null>(null)
+  const [isInvestmentModalOpen, setIsInvestmentModalOpen] = useState(false)
+
   // Condição da Despesa: PONTUAL, FIXA ou PARCELADA
   const [expenseCondition, setExpenseCondition] = useState<'PONTUAL' | 'FIXA' | 'PARCELADA'>('PONTUAL')
   const [installmentsCount, setInstallmentsCount] = useState<number>(3)
@@ -55,6 +67,7 @@ export function QuickTransactionModal({
     'Casa / Moradia',
     'Saúde',
     'Alimentação',
+    'Investimentos & Aplicações',
     'Empresa Médica PJ',
     'Financiamento',
     'Despesas Pessoais',
@@ -71,15 +84,39 @@ export function QuickTransactionModal({
     'Repasse de Convênios Médicos',
     'Plantões Médicos Extras',
     'Rendimentos FIIs & Dividendos',
+    'Resgate de Investimentos',
     'Pró-Labore Retirada PJ',
     'Outras Receitas'
   ]
+
+  const handleCategoryChange = (newCat: string) => {
+    setCategory(newCat)
+    if (newCat === 'Investimentos & Aplicações') {
+      setType('EXPENSE')
+      setInvestmentAction('APORTE')
+      setIsInvestmentModalOpen(true)
+    } else if (newCat === 'Resgate de Investimentos') {
+      setType('INCOME')
+      setInvestmentAction('RESGATE')
+      setIsInvestmentModalOpen(true)
+    }
+  }
+
+  const handleInvestmentSelect = (assetName: string, action: 'APORTE' | 'RESGATE') => {
+    setInvestmentAsset(assetName)
+    setInvestmentAction(action)
+    if (!subcategory.trim()) {
+      setSubcategory(action === 'APORTE' ? `Aporte em ${assetName}` : `Resgate de ${assetName}`)
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!description.trim() || parsedAmount <= 0) return
 
     setIsSubmitting(true)
+
+    const finalAmount = type === 'EXPENSE' ? -parsedAmount : parsedAmount
 
     const newTx = {
       id: `manual-tx-${Date.now()}`,
@@ -89,6 +126,9 @@ export function QuickTransactionModal({
       date,
       category: category || (type === 'EXPENSE' ? 'Casa / Moradia' : 'Faturamento Hospitalar & PJ'),
       subcategory: subcategory.trim() || description.trim(),
+      subdivision: subdivision.trim() || undefined,
+      investmentAsset: investmentAsset.trim() || undefined,
+      investmentAction: investmentAction || undefined,
       account,
       scope,
       is_fixed: type === 'EXPENSE' && expenseCondition === 'FIXA',
@@ -96,6 +136,25 @@ export function QuickTransactionModal({
       installments_count: type === 'EXPENSE' && expenseCondition === 'PARCELADA' ? installmentsCount : 1,
       installment_value: type === 'EXPENSE' && expenseCondition === 'PARCELADA' ? installmentValue : parsedAmount
     }
+
+    // Registra também na base de transações granulares para auditoria item a item
+    try {
+      GranularTransactionStore.addTransaction({
+        entityType: scope,
+        date,
+        description: description.trim(),
+        amount: finalAmount,
+        accountOrCard: account,
+        category: newTx.category,
+        subcategory: newTx.subcategory,
+        subdivision: newTx.subdivision,
+        investmentAsset: newTx.investmentAsset,
+        investmentAction: newTx.investmentAction,
+        isFixed: type === 'EXPENSE' && expenseCondition === 'FIXA',
+        isIgnored: false,
+        source: 'MANUAL'
+      })
+    } catch (_) {}
 
     setTimeout(() => {
       // Salva no localStorage para sincronizar com a planilha e histórico
@@ -324,12 +383,24 @@ export function QuickTransactionModal({
           {/* 4. Categoria e Conta */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                Categoria da Planilha
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                  Categoria da Planilha
+                </label>
+                {(category === 'Investimentos & Aplicações' || category === 'Resgate de Investimentos') && (
+                  <button
+                    type="button"
+                    onClick={() => setIsInvestmentModalOpen(true)}
+                    className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 hover:underline cursor-pointer"
+                  >
+                    <PieChart className="w-3 h-3" />
+                    <span>{investmentAsset ? 'Alterar Ativo' : 'Vincular Ativo'}</span>
+                  </button>
+                )}
+              </div>
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) => handleCategoryChange(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
               >
                 <option value="">Selecione uma categoria...</option>
@@ -337,6 +408,23 @@ export function QuickTransactionModal({
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
+
+              {/* Badge de Ativo de Investimento Vinculado */}
+              {investmentAsset && (
+                <div className="mt-1.5 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs animate-in fade-in">
+                  <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-bold truncate">
+                    <PieChart className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{investmentAction === 'APORTE' ? 'Aporte em:' : 'Resgate de:'} <strong>{investmentAsset}</strong></span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsInvestmentModalOpen(true)}
+                    className="text-[10px] text-emerald-600 dark:text-emerald-400 underline font-bold shrink-0 ml-1 cursor-pointer"
+                  >
+                    Mudar
+                  </button>
+                </div>
+              )}
             </div>
 
             <div>
@@ -357,6 +445,73 @@ export function QuickTransactionModal({
               </select>
             </div>
           </div>
+
+          {/* Subcategoria & Subdivisão Nível 3 (Hospital / Local / Tag) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                Subcategoria
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: Estacionamentos, Combustível, DARF..."
+                value={subcategory}
+                onChange={(e) => setSubcategory(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-indigo-500" />
+                Subdivisão Nível 3 (Local / Hospital)
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: Hospital Madre Teresa, Mater Dei..."
+                value={subdivision}
+                onChange={(e) => setSubdivision(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          </div>
+
+          {/* Chips de Sugestões Rápidas de Hospitais */}
+          {(category === 'Transporte' || subcategory.toLowerCase().includes('estacionamento') || subdivision.toLowerCase().includes('hospital')) && (
+            <div className="p-3 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 space-y-1.5 animate-in fade-in">
+              <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5" />
+                Hospitais Médicos (Clique para preencher a subdivisão Nível 3):
+              </span>
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {[
+                  'Hospital Madre Teresa',
+                  'Hospital Mater Dei',
+                  'Hospital Lifecenter',
+                  'Hospital Felício Rocho',
+                  'Hospital Vila da Serra',
+                  'Santa Casa BH'
+                ].map((hosp) => (
+                  <button
+                    key={hosp}
+                    type="button"
+                    onClick={() => {
+                      setSubdivision(hosp)
+                      if (!subcategory.trim()) setSubcategory('Estacionamentos')
+                      if (!category) setCategory('Transporte')
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                      subdivision === hosp 
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' 
+                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-indigo-500/50'
+                    }`}
+                  >
+                    🏥 {hosp}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* 5. Data e Escopo PF/PJ */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -430,6 +585,17 @@ export function QuickTransactionModal({
           </div>
         </form>
       </div>
+
+      {/* Modal de Vínculo de Investimento (Aporte vs Resgate com Ativos Atuais) */}
+      <InvestmentLinkModal
+        isOpen={isInvestmentModalOpen}
+        onClose={() => setIsInvestmentModalOpen(false)}
+        actionType={investmentAction || 'APORTE'}
+        transactionAmount={parsedAmount}
+        transactionDate={date}
+        transactionDescription={description}
+        onSelectAsset={handleInvestmentSelect}
+      />
     </div>
   )
 }

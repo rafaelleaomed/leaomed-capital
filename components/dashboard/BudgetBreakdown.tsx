@@ -47,6 +47,7 @@ import {
 } from 'lucide-react'
 import { QuickTransactionModal } from './QuickTransactionModal'
 import { GranularExpenseAuditor } from './GranularExpenseAuditor'
+import { GranularTransactionStore } from '@/utils/granularTransactionStore'
 
 export interface PjMonthTaxData {
   month: string
@@ -121,6 +122,22 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
   // Modal de Novo Lançamento
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false)
+
+  // Contador de transações pendentes de classificação no extrato granular
+  const [uncategorizedCount, setUncategorizedCount] = useState<number>(0)
+
+  useEffect(() => {
+    const updateCount = () => {
+      try {
+        const list = GranularTransactionStore.getAll()
+        const count = list.filter(t => GranularTransactionStore.isUncategorized(t)).length
+        setUncategorizedCount(count)
+      } catch (_) {}
+    }
+    updateCount()
+    window.addEventListener('leaomed_transactions_updated', updateCount)
+    return () => window.removeEventListener('leaomed_transactions_updated', updateCount)
+  }, [])
 
   // Modal de Edição Inline
   const [editingItem, setEditingItem] = useState<{
@@ -1095,11 +1112,17 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
             >
               <Receipt className={`w-4 h-4 ${activeScopeTab === 'GRANULAR_AUDIT' ? 'text-slate-950' : 'text-amber-500'}`} />
               <span>Extrato Item a Item & Auditoria</span>
-              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
-                activeScopeTab === 'GRANULAR_AUDIT' ? 'bg-black/20 text-slate-950 font-black' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-              }`}>
-                Anti-Duplicidade
-              </span>
+              {uncategorizedCount > 0 ? (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-600 text-white animate-pulse shadow-xs">
+                  ⚠️ {uncategorizedCount} pendente{uncategorizedCount > 1 ? 's' : ''}
+                </span>
+              ) : (
+                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
+                  activeScopeTab === 'GRANULAR_AUDIT' ? 'bg-black/20 text-slate-950 font-black' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                }`}>
+                  Anti-Duplicidade
+                </span>
+              )}
             </button>
           </div>
 
