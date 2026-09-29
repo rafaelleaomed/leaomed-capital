@@ -113,11 +113,13 @@ interface BudgetBreakdownProps {
   currentFilter?: string
   isDemo?: boolean
   initialTab?: string
+  selectedMonth?: number
+  selectedYear?: number
 }
 
 export type BudgetScopeTab = 'EXPENSE_PF' | 'EXPENSE_PJ' | 'INCOME_PJ' | 'INCOME_PF' | 'GRANULAR_AUDIT'
 
-export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialTab }: BudgetBreakdownProps) {
+export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialTab, selectedMonth, selectedYear }: BudgetBreakdownProps) {
   // Determina a aba inicial de acordo com o filtro global
   const defaultTab: BudgetScopeTab = useMemo(() => {
     if (initialTab === 'RECEITAS') return currentFilter === 'PJ' ? 'INCOME_PJ' : 'INCOME_PF'
@@ -1166,7 +1168,12 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
         {/* BANNER INFORMATIVO ESPECÍFICO DO ESCOPO SELECIONADO OU AUDITORIA */}
         {/* ========================================================================= */}
         {activeScopeTab === 'GRANULAR_AUDIT' ? (
-          <GranularExpenseAuditor currentFilter={currentFilter} isDemo={isDemo} />
+          <GranularExpenseAuditor 
+            currentFilter={currentFilter} 
+            isDemo={isDemo} 
+            selectedMonth={selectedMonth} 
+            selectedYear={selectedYear} 
+          />
         ) : (
           <>
         {activeScopeTab === 'EXPENSE_PF' && (

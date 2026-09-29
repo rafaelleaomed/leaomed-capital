@@ -213,7 +213,12 @@ export default function DashboardUI({
       />
 
       {/* Linha 2: ESPINHA DORSAL DA PLANILHA (Gastos Obrigatórios vs Não Obrigatórios) */}
-      <BudgetBreakdown currentFilter={currentFilter} isDemo={isDemo} />
+      <BudgetBreakdown 
+        currentFilter={currentFilter} 
+        isDemo={isDemo} 
+        selectedMonth={selectedMonth} 
+        selectedYear={selectedYear} 
+      />
 
       {/* Linha 3: Otimizador de Aportes & Rebalanceamento da Carteira */}
       <div id="balanceamento-investimentos" className="scroll-mt-24">

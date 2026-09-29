@@ -39,6 +39,8 @@ import { InvestmentLinkModal } from './InvestmentLinkModal'
 interface GranularExpenseAuditorProps {
   currentFilter?: string
   isDemo?: boolean
+  selectedMonth?: number
+  selectedYear?: number
 }
 
 export const BH_HOSPITALS = [
@@ -129,7 +131,12 @@ export const STANDARD_TAXONOMY: Record<string, string[]> = {
   ]
 }
 
-export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }: GranularExpenseAuditorProps) {
+export function GranularExpenseAuditor({ 
+  currentFilter = 'PF', 
+  isDemo = false,
+  selectedMonth,
+  selectedYear
+}: GranularExpenseAuditorProps) {
   const [transactions, setTransactions] = useState<GranularTransaction[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedAccount, setSelectedAccount] = useState<string>('ALL')
@@ -137,6 +144,20 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
   const [selectedSubdivision, setSelectedSubdivision] = useState<string>('ALL')
   const [showIgnored, setShowIgnored] = useState(true)
   const [onlyUncategorized, setOnlyUncategorized] = useState(false)
+
+  // Período no formato 'YYYY-MM' (Baseado no Mês/Ano selecionado no painel)
+  const initialPeriod = useMemo(() => {
+    const now = new Date()
+    const yr = selectedYear !== undefined ? selectedYear : now.getFullYear()
+    const mo = selectedMonth !== undefined ? selectedMonth : now.getMonth()
+    return `${yr}-${String(mo + 1).padStart(2, '0')}`
+  }, [selectedMonth, selectedYear])
+
+  const [selectedPeriod, setSelectedPeriod] = useState<string>(initialPeriod)
+
+  useEffect(() => {
+    setSelectedPeriod(initialPeriod)
+  }, [initialPeriod])
 
   // Seleção Múltipla & Categorização em Lote
   const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set())
@@ -295,6 +316,9 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
       if (currentFilter === 'PF' && t.entityType !== 'PF') return false
       if (currentFilter === 'PJ' && t.entityType !== 'PJ') return false
 
+      // Filtro por Mês / Período
+      if (selectedPeriod !== 'ALL' && (!t.date || !t.date.startsWith(selectedPeriod))) return false
+
       // Filtro exclusivo de pendentes
       if (onlyUncategorized && !GranularTransactionStore.isUncategorized(t)) return false
 
@@ -324,7 +348,35 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
 
       return true
     })
-  }, [transactions, currentFilter, onlyUncategorized, selectedAccount, selectedCategory, selectedSubdivision, showIgnored, searchTerm])
+  }, [transactions, currentFilter, selectedPeriod, onlyUncategorized, selectedAccount, selectedCategory, selectedSubdivision, showIgnored, searchTerm])
+
+  // Lista de períodos disponíveis a partir das transações reais + mês ativo
+  const availablePeriods = useMemo(() => {
+    const set = new Set<string>()
+    if (initialPeriod && initialPeriod !== 'ALL') {
+      set.add(initialPeriod)
+    }
+    transactions.forEach(t => {
+      if (t.date && t.date.length >= 7) {
+        set.add(t.date.substring(0, 7))
+      }
+    })
+    return Array.from(set).sort().reverse()
+  }, [transactions, initialPeriod])
+
+  const formatPeriodLabel = (p: string) => {
+    if (p === 'ALL') return '📅 Todos os Meses'
+    const parts = p.split('-')
+    if (parts.length < 2) return p
+    const [year, month] = parts
+    const months = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ]
+    const monthIndex = parseInt(month, 10) - 1
+    const monthName = months[monthIndex] || month
+    return `📅 ${monthName}/${year}`
+  }
 
   // Lista Ordenada para a Tabela
   const sortedList = useMemo(() => {
@@ -365,19 +417,9 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
       .reduce((acc, t) => acc + Math.abs(t.amount), 0)
   }, [filteredList])
 
-  // Lista única de contas e cartões existentes (Sem omissão)
+  // Lista única de contas e cartões existentes (Sem contas fictícias harcoded)
   const availableAccounts = useMemo(() => {
     const set = new Set<string>()
-    // Contas padrão de mercado
-    const defaults = [
-      'Itaú Personnalité PF',
-      'Cartão C6 Carbon Black PF',
-      'Conta PJ C6 Bank',
-      'Cartão C6 Carbon Black PJ',
-      'Safra Financ',
-      'Nubank PF'
-    ]
-    defaults.forEach(d => set.add(d))
     transactions.forEach(t => {
       if (t.accountOrCard && t.accountOrCard.trim()) {
         set.add(t.accountOrCard.trim())
@@ -861,6 +903,18 @@ export function GranularExpenseAuditor({ currentFilter = 'PF', isDemo = false }:
 
           {/* Filtros em Linha */}
           <div className="flex flex-wrap items-center gap-2">
+            {/* Filtro por Mês / Período */}
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="rounded-xl bg-slate-50 dark:bg-slate-950 border border-emerald-500/40 dark:border-emerald-500/40 px-3 py-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 focus:outline-none cursor-pointer"
+            >
+              {availablePeriods.map(p => (
+                <option key={p} value={p}>{formatPeriodLabel(p)}</option>
+              ))}
+              <option value="ALL">📅 Todos os Meses ({transactions.length})</option>
+            </select>
+
             {/* Filtro por Conta/Cartão */}
             <select
               value={selectedAccount}
