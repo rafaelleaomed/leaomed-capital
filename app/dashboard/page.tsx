@@ -136,8 +136,8 @@ function getBaselinePayload(filter: DashboardFilter, period: string): DeliveryPa
     },
     projections: {
       projected_end_balance: balance,
-      safe_daily_spend: Math.max(0, balance > 0 ? balance / 30 : 0),
-      available_to_invest: isPj ? 843.40 : 0
+      safe_daily_spend: Math.max(0, (income - fixed - (income * 0.10)) / 30),
+      available_to_invest: income * 0.10
     },
     alerts: [
       {

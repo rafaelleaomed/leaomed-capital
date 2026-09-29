@@ -1,7 +1,8 @@
 'use client'
 
-import React from 'react'
-import { Wallet, Sparkles, ArrowUpRight, TrendingDown, ArrowDownRight, Landmark } from 'lucide-react'
+import React, { useState } from 'react'
+import { Wallet, Sparkles, ArrowUpRight, TrendingDown, ArrowDownRight, Landmark, Sliders } from 'lucide-react'
+import { DailySpendModal } from './DailySpendModal'
 
 interface SummaryCardsProps {
   currentBalance: number;
@@ -11,6 +12,11 @@ interface SummaryCardsProps {
   availableToInvest: number;
   currentFilter: string;
   periodLabel?: string;
+  fixedExpenses?: number;
+  daysInMonth?: number;
+  daysLeft?: number;
+  investmentTargetPct?: number;
+  onInvestmentPctChange?: (pct: number) => void;
 }
 
 export function SummaryCards({
@@ -21,7 +27,13 @@ export function SummaryCards({
   availableToInvest,
   currentFilter,
   periodLabel,
+  fixedExpenses = 25528.57,
+  daysInMonth = 30,
+  daysLeft = 30,
+  investmentTargetPct = 10,
+  onInvestmentPctChange
 }: SummaryCardsProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const isPositive = currentBalance >= 0
 
   return (
@@ -48,40 +60,57 @@ export function SummaryCards({
           </p>
         </div>
 
-        {/* 2. Available to Invest */}
-        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-50 via-white to-slate-50 dark:from-emerald-950/60 dark:via-slate-900/80 dark:to-slate-950 p-3.5 md:p-5 backdrop-blur-xl shadow-xs dark:shadow-xl dark:shadow-emerald-950/20 transition-all hover:border-emerald-500/50">
+        {/* 2. Para Investir (Meta de Aporte Mensal) */}
+        <div 
+          onClick={() => setIsModalOpen(true)}
+          className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-50 via-white to-slate-50 dark:from-emerald-950/60 dark:via-slate-900/80 dark:to-slate-950 p-3.5 md:p-5 backdrop-blur-xl shadow-xs dark:shadow-xl dark:shadow-emerald-950/20 transition-all hover:border-emerald-500/60 cursor-pointer group"
+          title="Clique para simular e ajustar a meta de aportes mensais"
+        >
           <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 mb-1.5 md:mb-2">
             <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider flex items-center gap-1">
               <Sparkles className="h-3 w-3 md:h-3.5 md:w-3.5" />
               Para Investir
             </span>
-            <span className="text-[9px] bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-full font-bold">
-              Meta
-            </span>
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-full font-black">
+                Meta {investmentTargetPct}%
+              </span>
+              <Sliders className="w-3 h-3 text-emerald-500/70 group-hover:text-emerald-500 transition-colors" />
+            </div>
           </div>
           <div className="font-mono text-xl sm:text-2xl lg:text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums">
             R$ {availableToInvest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
-          <p className="text-[10px] md:text-[11px] text-emerald-700/80 dark:text-emerald-200/70 mt-1 md:mt-2 truncate">
-            Livre de custos fixos
+          <p className="text-[10px] md:text-[11px] text-emerald-700/80 dark:text-emerald-200/70 mt-1 md:mt-2 truncate flex items-center justify-between">
+            <span>Aporte mensal planejado</span>
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 group-hover:underline">Simular →</span>
           </p>
         </div>
 
-        {/* 3. Safe Daily Spend */}
-        <div className="relative overflow-hidden rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-50 via-white to-slate-50 dark:from-blue-950/40 dark:via-slate-900/70 dark:to-slate-950 p-3.5 md:p-5 backdrop-blur-xl shadow-xs dark:shadow-lg transition-all hover:border-blue-500/50">
+        {/* 3. Gasto Diário Seguro */}
+        <div 
+          onClick={() => setIsModalOpen(true)}
+          className="relative overflow-hidden rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-50 via-white to-slate-50 dark:from-blue-950/40 dark:via-slate-900/70 dark:to-slate-950 p-3.5 md:p-5 backdrop-blur-xl shadow-xs dark:shadow-lg transition-all hover:border-blue-500/60 cursor-pointer group"
+          title="Clique para abrir o Simulador do Teto Diário Seguro"
+        >
           <div className="flex items-center justify-between text-blue-600 dark:text-blue-400 mb-1.5 md:mb-2">
             <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider">
               Gasto Diário Seguro
             </span>
-            <div className="p-1.5 md:p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              <ArrowUpRight className="h-3.5 w-3.5 md:h-4 md:w-4" />
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] bg-blue-500/10 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full font-bold">
+                Teto Seguro
+              </span>
+              <Sliders className="w-3 h-3 text-blue-500/70 group-hover:text-blue-500 transition-colors" />
             </div>
           </div>
           <div className="font-mono text-xl sm:text-2xl lg:text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tight tabular-nums">
             R$ {safeDailySpend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            <span className="text-xs font-bold text-blue-500/80"> / dia</span>
           </div>
-          <p className="text-[10px] md:text-[11px] text-slate-500 dark:text-slate-400 mt-1 md:mt-2 truncate">
-            Teto livre por dia
+          <p className="text-[10px] md:text-[11px] text-slate-500 dark:text-slate-400 mt-1 md:mt-2 truncate flex items-center justify-between">
+            <span>Cobre fixos + {investmentTargetPct}% aportes</span>
+            <span className="font-semibold text-blue-600 dark:text-blue-400 group-hover:underline">Ajustar →</span>
           </p>
         </div>
 
@@ -106,6 +135,18 @@ export function SummaryCards({
           </div>
         </div>
       </div>
+
+      {/* Modal Interativo do Simulador de Teto Diário Seguro e Meta de Aporte */}
+      <DailySpendModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        totalIncome={totalIncome}
+        fixedExpenses={fixedExpenses}
+        daysInMonth={daysInMonth}
+        daysLeft={daysLeft}
+        currentInvestmentPct={investmentTargetPct}
+        onSaveInvestmentPct={onInvestmentPctChange}
+      />
     </section>
   )
 }

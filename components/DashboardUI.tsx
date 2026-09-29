@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { DeliveryPayload, DashboardFilter } from '@/utils/dashboardData'
+import { getMonthlyFinancialData } from '@/utils/monthlyFinancialData'
 import { useRouter } from 'next/navigation'
 import { Sliders, PlusCircle } from 'lucide-react'
 import { MobileQuickNav } from './dashboard/MobileQuickNav'
@@ -38,25 +39,68 @@ export default function DashboardUI({
   const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth())
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear())
 
-  const SHORT_MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-  const periodLabel = `${SHORT_MONTHS[selectedMonth]}/${String(selectedYear).slice(2)}`
+  // Meta de novos aportes para investimentos (padrão 10% do faturamento, customizável)
+  const [investmentTargetPct, setInvestmentTargetPct] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('leaomed_invest_target_pct')
+      if (saved) {
+        const val = parseFloat(saved)
+        if (!isNaN(val) && val >= 0) return val
+      }
+    }
+    return 10
+  })
+
+  // Custo fixo / despesas obrigatórias da planilha
+  const [obligatoryExpenses, setObligatoryExpenses] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('leaomed_obligatory_expenses')
+      if (saved) {
+        const val = parseFloat(saved)
+        if (!isNaN(val) && val > 0) return val
+      }
+    }
+    return 25528.57
+  })
+
+  useEffect(() => {
+    const handleObligatory = (e: any) => {
+      if (e.detail?.obligatoryTotal) setObligatoryExpenses(e.detail.obligatoryTotal)
+    }
+    const handleTarget = (e: any) => {
+      if (e.detail?.targetPct !== undefined) setInvestmentTargetPct(e.detail.targetPct)
+    }
+    window.addEventListener('leaomed_budget_obligatory_updated', handleObligatory)
+    window.addEventListener('leaomed_investment_target_updated', handleTarget)
+    return () => {
+      window.removeEventListener('leaomed_budget_obligatory_updated', handleObligatory)
+      window.removeEventListener('leaomed_investment_target_updated', handleTarget)
+    }
+  }, [])
 
   const handleFilterChange = (filter: DashboardFilter) => {
     router.push(`${basePath}?filter=${filter}`)
   }
 
-  // Valores rigorosamente auditados sem duplicidade contábil
-  const displayIncome = isDemo 
-    ? (currentFilter === 'PJ' ? 38500.00 : currentFilter === 'PF' ? 31200.00 : 49700.00)
-    : payload.cash_flow.total_income
+  // Dados financeiros sincronizados dinamicamente com o mês e ano selecionados
+  const monthlyData = useMemo(() => {
+    return getMonthlyFinancialData(
+      selectedMonth,
+      selectedYear,
+      currentFilter,
+      investmentTargetPct,
+      obligatoryExpenses
+    )
+  }, [selectedMonth, selectedYear, currentFilter, investmentTargetPct, obligatoryExpenses])
 
-  const displayExpenses = isDemo
-    ? (currentFilter === 'PJ' ? 7800.00 : currentFilter === 'PF' ? 22400.00 : 30200.00)
-    : payload.cash_flow.total_expenses
-
-  const displayBalance = isDemo
-    ? (displayIncome - displayExpenses)
-    : payload.projections.projected_end_balance
+  const displayIncome = monthlyData.totalIncome
+  const displayExpenses = monthlyData.totalExpenses
+  const displayBalance = monthlyData.balance
+  const displayCreditCard = currentFilter === 'PJ' ? 0 : monthlyData.creditCardTotal
+  const safeDailySpend = monthlyData.safeDailySpend
+  const availableToInvest = monthlyData.investmentTargetAmount
+  const displayCategories = monthlyData.categories
+  const periodLabel = monthlyData.periodLabel
 
   return (
     <div className="flex flex-col gap-6 md:gap-8 max-w-7xl mx-auto pb-24 transition-colors">
@@ -131,8 +175,10 @@ export default function DashboardUI({
         currentBalance={displayBalance}
         totalIncome={displayIncome}
         totalExpenses={displayExpenses}
-        creditCardTotal={currentFilter === 'PJ' ? 0 : (isDemo ? 4650.00 : 8749.96)}
-        categories={payload.categories}
+        creditCardTotal={displayCreditCard}
+        categories={displayCategories}
+        incomeSources={monthlyData.incomeSources}
+        dailySpendData={monthlyData.dailySpendData}
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
         onMonthChange={(m, y) => {
@@ -146,10 +192,15 @@ export default function DashboardUI({
         currentBalance={displayBalance}
         totalIncome={displayIncome}
         totalExpenses={displayExpenses}
-        safeDailySpend={payload.projections.safe_daily_spend}
-        availableToInvest={payload.projections.available_to_invest}
+        safeDailySpend={safeDailySpend}
+        availableToInvest={availableToInvest}
         currentFilter={currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter}
         periodLabel={periodLabel}
+        fixedExpenses={obligatoryExpenses}
+        daysInMonth={monthlyData.daysInMonth}
+        daysLeft={monthlyData.daysLeft}
+        investmentTargetPct={investmentTargetPct}
+        onInvestmentPctChange={(newPct) => setInvestmentTargetPct(newPct)}
       />
 
       {/* Linha 2: ESPINHA DORSAL DA PLANILHA (Gastos Obrigatórios vs Não Obrigatórios) */}

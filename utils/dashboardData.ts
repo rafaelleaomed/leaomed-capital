@@ -99,25 +99,19 @@ export function buildDashboardPayload(
     }))
     .sort((a, b) => b.total - a.total); // Ordena decrescente
 
-  // 3. Projeções
-  const daysLeft = Math.max(1, daysInMonth - currentDay);
-  
+  // 3. Projeções e Teto Diário Seguro
+  const available_to_invest = (income * 0.10); // Meta padrão sugerida de 10% do faturamento
+  const availableVariable = Math.max(0, income - fixed - available_to_invest);
+  const activeCycleDays = daysInMonth > 0 ? daysInMonth : 30;
+  const safe_daily_spend = activeCycleDays > 0 ? (availableVariable / activeCycleDays) : 0;
+
   // Saldo base para projeção varia pelo filtro
   let currentBalance = 0;
   if (filter === 'CONSOLIDATED') currentBalance = engineData.balances.consolidated;
   else if (filter === 'PF') currentBalance = engineData.balances.pf;
   else if (filter === 'PJ') currentBalance = engineData.balances.pj;
 
-  // Assumindo MVP simples para projeção: não há recebíveis/pagáveis futuros estritos no engine atual,
-  // então usamos o saldo atual para estimar o safe daily spend.
-  const safe_daily_spend = calculateSafeDailySpend(
-    currentBalance,
-    0, // Entradas futuras
-    0, // Despesas fixas pendentes
-    daysLeft
-  );
-
-  const projected_end_balance = currentBalance; // Melhorar lógica com engine futuramente
+  const projected_end_balance = currentBalance > 0 ? currentBalance : (income - expenses);
 
   // 4. Monta o Payload Final (sem alertas primeiro)
   const basePayload: Omit<DeliveryPayload, 'alerts'> = {
@@ -138,7 +132,7 @@ export function buildDashboardPayload(
     projections: {
       projected_end_balance,
       safe_daily_spend,
-      available_to_invest: 0
+      available_to_invest
     }
   };
 

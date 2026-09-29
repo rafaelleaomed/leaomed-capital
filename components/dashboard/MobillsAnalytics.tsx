@@ -32,6 +32,8 @@ interface MobillsAnalyticsProps {
   totalExpenses?: number
   creditCardTotal?: number
   categories?: CategoryItem[]
+  incomeSources?: { name: string; value: number; percentage: number; color?: string }[]
+  dailySpendData?: { day: string; amount: number }[]
   selectedMonth?: number
   selectedYear?: number
   onMonthChange?: (month: number, year: number) => void
@@ -56,6 +58,8 @@ export function MobillsAnalytics({
   totalExpenses = 23000.00,
   creditCardTotal = 4650.00,
   categories = [],
+  incomeSources,
+  dailySpendData,
   selectedMonth,
   selectedYear,
   onMonthChange
@@ -165,34 +169,46 @@ export function MobillsAnalytics({
     ]
   }, [categories, currentFilter])
 
-  // Categorias de receitas da gestão médica
+  // Categorias de receitas da gestão médica dinâmicas por mês
   const incomeCategories = useMemo(() => {
+    if (incomeSources && incomeSources.length > 0) {
+      return incomeSources.map((s, i) => ({
+        name: s.name,
+        value: s.value,
+        percentage: s.percentage,
+        color: s.color || palette[i % palette.length]
+      }))
+    }
+
+    const targetIncome = totalIncome || 49700.00
+    const ratio = targetIncome / 49700.00
+
     if (currentFilter === 'PJ') {
       return [
-        { name: 'Hospital 01 & Hospital 02', value: 24000.00, percentage: 62.3, color: '#06B6D4' },
-        { name: 'Convênios Médicos 01 e 02', value: 9500.00, percentage: 24.7, color: '#10B981' },
-        { name: 'Consultório & Particulares', value: 5000.00, percentage: 13.0, color: '#3B82F6' }
+        { name: 'Hospital 01 & Hospital 02', value: 24000.00 * ratio, percentage: 62.3, color: '#06B6D4' },
+        { name: 'Convênios Médicos 01 e 02', value: 9500.00 * ratio, percentage: 24.7, color: '#10B981' },
+        { name: 'Consultório & Particulares', value: 5000.00 * ratio, percentage: 13.0, color: '#3B82F6' }
       ]
     }
 
     if (currentFilter === 'PF') {
       return [
-        { name: 'Pró-Labore Retirada PJ', value: 22000.00, percentage: 70.5, color: '#8B5CF6' },
-        { name: 'Consultório Particular', value: 6200.00, percentage: 19.9, color: '#06B6D4' },
-        { name: 'Dividendos & Rendimentos FII/Ações', value: 3000.00, percentage: 9.6, color: '#10B981' }
+        { name: 'Pró-Labore Retirada PJ', value: 22000.00 * ratio, percentage: 70.5, color: '#8B5CF6' },
+        { name: 'Consultório Particular', value: 6200.00 * ratio, percentage: 19.9, color: '#06B6D4' },
+        { name: 'Dividendos & Rendimentos FII/Ações', value: 3000.00 * ratio, percentage: 9.6, color: '#10B981' }
       ]
     }
 
     // CONSOLIDATED: Receitas externas médicas
     return [
-      { name: 'Faturamento Hospitalar & PJ', value: 38500.00, percentage: 77.5, color: '#06B6D4' },
-      { name: 'Consultório Particular Direto', value: 8200.00, percentage: 16.5, color: '#10B981' },
-      { name: 'Rendimentos FIIs & Investimentos', value: 3000.00, percentage: 6.0, color: '#8B5CF6' }
+      { name: 'Faturamento Hospitalar & PJ', value: 38500.00 * ratio, percentage: 77.5, color: '#06B6D4' },
+      { name: 'Consultório Particular Direto', value: 8200.00 * ratio, percentage: 16.5, color: '#10B981' },
+      { name: 'Rendimentos FIIs & Investimentos', value: 3000.00 * ratio, percentage: 6.0, color: '#8B5CF6' }
     ]
-  }, [currentFilter])
+  }, [currentFilter, incomeSources, totalIncome, palette])
 
-  // Frequência de gastos diários (distribuição equilibrada dos compromissos)
-  const dailySpendData30d = [
+  // Frequência de gastos diários (distribuição adaptada ao mês)
+  const defaultDailySpend30d = [
     { day: '01', amount: 450 },
     { day: '05', amount: 1850 }, // Condomínio
     { day: '10', amount: 2100 }, // Educação / Filhos
@@ -202,6 +218,8 @@ export function MobillsAnalytics({
     { day: '27', amount: 1200 }, // Contador / Serviços
     { day: '30', amount: 620 },
   ]
+
+  const dailySpendData30d = dailySpendData && dailySpendData.length > 0 ? dailySpendData : defaultDailySpend30d
 
   const dailySpendData7d = [
     { day: 'Seg', amount: 280 },
@@ -287,18 +305,21 @@ export function MobillsAnalytics({
 
   // Soma matemática exata das categorias de receitas
   const calculatedTotalIncome = useMemo(() => {
+    if (totalIncome !== undefined && totalIncome > 0) return totalIncome
     return incomeCategories.reduce((acc, c) => acc + c.value, 0)
-  }, [incomeCategories])
+  }, [totalIncome, incomeCategories])
 
   // Soma matemática exata das categorias de despesas
   const calculatedTotalExpenses = useMemo(() => {
+    if (totalExpenses !== undefined && totalExpenses > 0) return totalExpenses
     return expenseCategories.reduce((acc, c) => acc + c.value, 0)
-  }, [expenseCategories])
+  }, [totalExpenses, expenseCategories])
 
   // Resultado do mês 100% harmonizado
   const calculatedBalance = useMemo(() => {
+    if (currentBalance !== undefined) return currentBalance
     return calculatedTotalIncome - calculatedTotalExpenses
-  }, [calculatedTotalIncome, calculatedTotalExpenses])
+  }, [currentBalance, calculatedTotalIncome, calculatedTotalExpenses])
 
   // Normalização das porcentagens de receita para garantir soma exata de 100.0%
   const normalizedIncomeCategories = useMemo(() => {

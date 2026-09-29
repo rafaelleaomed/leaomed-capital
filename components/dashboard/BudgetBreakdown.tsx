@@ -33,7 +33,8 @@ import {
   Briefcase,
   Stethoscope,
   Coins,
-  Repeat
+  Repeat,
+  Trash2
 } from 'lucide-react'
 import { QuickTransactionModal } from './QuickTransactionModal'
 
@@ -390,34 +391,39 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
   const [expenseCategories, setExpenseCategories] = useState<CategoryGroup[]>(defaultExpenseCategories)
   const [incomeCategories, setIncomeCategories] = useState<CategoryGroup[]>(defaultIncomeCategories)
 
-  // Carregar edições salvas no localStorage
+  // Carregar edições e exclusões salvas no localStorage
   useEffect(() => {
     try {
+      const storedDeleted = localStorage.getItem('leaomed_deleted_budget_items')
+      const deletedKeys: string[] = storedDeleted ? JSON.parse(storedDeleted) : []
+
       const savedExpenseEdits = localStorage.getItem('leaomed_custom_budget_edits')
-      if (savedExpenseEdits) {
-        const editsMap: Record<string, number> = JSON.parse(savedExpenseEdits)
-        setExpenseCategories(prev => prev.map(cat => {
-          let updatedSubs = cat.subcategories.map(sub => {
+      const expenseEditsMap: Record<string, number> = savedExpenseEdits ? JSON.parse(savedExpenseEdits) : {}
+
+      setExpenseCategories(prev => prev.map(cat => {
+        const updatedSubs = cat.subcategories
+          .filter(sub => !deletedKeys.includes(`EXPENSE::${cat.name}::${sub.name}`))
+          .map(sub => {
             const key = `${cat.name}::${sub.name}`
-            return editsMap[key] !== undefined ? { ...sub, value: editsMap[key] } : sub
+            return expenseEditsMap[key] !== undefined ? { ...sub, value: expenseEditsMap[key] } : sub
           })
-          const newTotal = updatedSubs.reduce((acc, s) => acc + s.value, 0)
-          return { ...cat, total: newTotal, subcategories: updatedSubs }
-        }))
-      }
+        const newTotal = updatedSubs.reduce((acc, s) => acc + s.value, 0)
+        return { ...cat, total: newTotal, subcategories: updatedSubs }
+      }))
 
       const savedIncomeEdits = localStorage.getItem('leaomed_custom_income_edits')
-      if (savedIncomeEdits) {
-        const editsMap: Record<string, number> = JSON.parse(savedIncomeEdits)
-        setIncomeCategories(prev => prev.map(cat => {
-          let updatedSubs = cat.subcategories.map(sub => {
+      const incomeEditsMap: Record<string, number> = savedIncomeEdits ? JSON.parse(savedIncomeEdits) : {}
+
+      setIncomeCategories(prev => prev.map(cat => {
+        const updatedSubs = cat.subcategories
+          .filter(sub => !deletedKeys.includes(`INCOME::${cat.name}::${sub.name}`))
+          .map(sub => {
             const key = `${cat.name}::${sub.name}`
-            return editsMap[key] !== undefined ? { ...sub, value: editsMap[key] } : sub
+            return incomeEditsMap[key] !== undefined ? { ...sub, value: incomeEditsMap[key] } : sub
           })
-          const newTotal = updatedSubs.reduce((acc, s) => acc + s.value, 0)
-          return { ...cat, total: newTotal, subcategories: updatedSubs }
-        }))
-      }
+        const newTotal = updatedSubs.reduce((acc, s) => acc + s.value, 0)
+        return { ...cat, total: newTotal, subcategories: updatedSubs }
+      }))
     } catch (_) {}
   }, [])
 
@@ -539,6 +545,66 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
     setEditValueInput(currentValue.toFixed(2))
     setEditNameInput(subcategoryName)
     setEditIsFixedInput(isFixed)
+    setIsConfirmingDelete(false)
+  }
+
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
+
+  // Excluir um item/subcategoria da planilha com persistência
+  const handleDeleteItem = () => {
+    if (!editingItem) return
+    const { categoryName, subcategoryName, isIncome } = editingItem
+
+    if (!isIncome) {
+      setExpenseCategories(prev => {
+        const updated = prev.map(cat => {
+          if (cat.name === categoryName) {
+            const filteredSubs = cat.subcategories.filter(s => s.name !== subcategoryName)
+            const newTotal = filteredSubs.reduce((acc, s) => acc + s.value, 0)
+            return { ...cat, total: newTotal, subcategories: filteredSubs }
+          }
+          return cat
+        })
+
+        try {
+          const stored = localStorage.getItem('leaomed_deleted_budget_items')
+          const deletedList: string[] = stored ? JSON.parse(stored) : []
+          const key = `EXPENSE::${categoryName}::${subcategoryName}`
+          if (!deletedList.includes(key)) {
+            deletedList.push(key)
+            localStorage.setItem('leaomed_deleted_budget_items', JSON.stringify(deletedList))
+          }
+        } catch (_) {}
+
+        return updated
+      })
+    } else {
+      setIncomeCategories(prev => {
+        const updated = prev.map(cat => {
+          if (cat.name === categoryName) {
+            const filteredSubs = cat.subcategories.filter(s => s.name !== subcategoryName)
+            const newTotal = filteredSubs.reduce((acc, s) => acc + s.value, 0)
+            return { ...cat, total: newTotal, subcategories: filteredSubs }
+          }
+          return cat
+        })
+
+        try {
+          const stored = localStorage.getItem('leaomed_deleted_budget_items')
+          const deletedList: string[] = stored ? JSON.parse(stored) : []
+          const key = `INCOME::${categoryName}::${subcategoryName}`
+          if (!deletedList.includes(key)) {
+            deletedList.push(key)
+            localStorage.setItem('leaomed_deleted_budget_items', JSON.stringify(deletedList))
+          }
+        } catch (_) {}
+
+        return updated
+      })
+    }
+
+    setEditingItem(null)
+    setIsConfirmingDelete(false)
   }
 
   // Salvar a edição do item da planilha
@@ -941,8 +1007,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                                 </div>
                               </div>
 
-                              {/* VALOR CLICÁVEL PARA EDIÇÃO DIRETA */}
-                              <div className="text-right flex-shrink-0">
+                              {/* VALOR CLICÁVEL PARA EDIÇÃO DIRETA E BOTÃO DE EXCLUIR */}
+                              <div className="flex items-center gap-1.5 flex-shrink-0">
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -956,6 +1022,18 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                                     R$ {sub.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                   </span>
                                   <Edit2 className="w-3 h-3 text-slate-400 group-hover/val:text-emerald-500 transition-colors opacity-60 group-hover/val:opacity-100" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleOpenEdit(cat.name, sub.name, sub.value, !!sub.is_fixed, false)
+                                    setIsConfirmingDelete(true)
+                                  }}
+                                  className="p-1 rounded-md text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                  title="Excluir este item da planilha"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </div>
                             </div>
@@ -1084,21 +1162,35 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                               {sub.name}
                             </span>
 
-                            {/* VALOR CLICÁVEL PARA EDIÇÃO DE RECEITA */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleOpenEdit(cat.name, sub.name, sub.value, true, true)
-                              }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 border border-transparent hover:border-emerald-500/30 transition-all cursor-pointer group/val"
-                              title="Clique para editar este valor de receita"
-                            >
-                              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                                R$ {sub.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                              </span>
-                              <Edit2 className="w-3 h-3 text-slate-400 group-hover/val:text-emerald-500 transition-colors opacity-60 group-hover/val:opacity-100" />
-                            </button>
+                            {/* VALOR CLICÁVEL PARA EDIÇÃO DE RECEITA E BOTÃO DE EXCLUIR */}
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleOpenEdit(cat.name, sub.name, sub.value, true, true)
+                                }}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 border border-transparent hover:border-emerald-500/30 transition-all cursor-pointer group/val"
+                                title="Clique para editar este valor de receita"
+                              >
+                                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                                  R$ {sub.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </span>
+                                <Edit2 className="w-3 h-3 text-slate-400 group-hover/val:text-emerald-500 transition-colors opacity-60 group-hover/val:opacity-100" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleOpenEdit(cat.name, sub.name, sub.value, true, true)
+                                  setIsConfirmingDelete(true)
+                                }}
+                                className="p-1 rounded-md text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                title="Excluir este item de receita"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1195,21 +1287,53 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                 </div>
               )}
 
-              <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingItem(null)}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Salvar Alteração</span>
-                </button>
+              <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-between gap-2">
+                {isConfirmingDelete ? (
+                  <div className="flex items-center gap-1.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-500/30 px-2.5 py-1.5 rounded-xl">
+                    <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400">Excluir item?</span>
+                    <button
+                      type="button"
+                      onClick={handleDeleteItem}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-black bg-rose-600 hover:bg-rose-700 text-white cursor-pointer shadow-xs"
+                    >
+                      Sim, Excluir
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsConfirmingDelete(false)}
+                      className="px-2 py-1 rounded-lg text-[10px] font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white cursor-pointer"
+                    >
+                      Não
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsConfirmingDelete(true)}
+                    className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                    title="Excluir este item da planilha"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Excluir Item</span>
+                  </button>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingItem(null)}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Salvar Alteração</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>
