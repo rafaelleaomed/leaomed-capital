@@ -1,8 +1,8 @@
 import React from 'react'
-import { LayoutDashboard, Receipt, TrendingUp, PieChart, Sparkles, Building2, UserCheck, ShieldCheck, BarChart3 } from 'lucide-react'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { LogoutButton } from '@/components/LogoutButton'
+import { UserAccountHeader } from '@/components/dashboard/UserAccountHeader'
+import { SidebarNavigation } from '@/components/dashboard/SidebarNavigation'
 
 export default function DashboardLayout({
   children,
@@ -28,7 +28,7 @@ export default function DashboardLayout({
             </div>
           </div>
 
-          {/* Status de Conexão das Contas + Theme Toggle + Perfil */}
+          {/* Status de Conexão das Contas + Theme Toggle + Perfil Interativo */}
           <div className="flex items-center gap-2.5 md:gap-3">
             {/* Botão de Alternar Modo Claro / Escuro */}
             <ThemeToggle />
@@ -38,81 +38,18 @@ export default function DashboardLayout({
               <span>Inter PJ + Itaú + Nubank + C6</span>
             </div>
 
-            <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200 dark:border-white/10">
-              <div className="text-right hidden md:block">
-                <span className="text-xs font-semibold text-slate-900 dark:text-slate-200 block">Dr. Rafael Leão</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Perfil Executivo</span>
-              </div>
-              <div className="h-9 w-9 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-900 border border-slate-300 dark:border-white/20 flex items-center justify-center font-bold text-xs text-slate-800 dark:text-white">
-                RL
-              </div>
-              <LogoutButton className="ml-1 hidden md:flex items-center gap-1.5 text-slate-400 hover:text-red-400 transition-colors text-xs" />
-            </div>
+            {/* Cabeçalho Interativo do Usuário com Mini Registro e Configurações */}
+            <UserAccountHeader initialName="Dr. Rafael Leão" initialEmail="rafaelleaobh@gmail.com" />
           </div>
         </header>
 
-        {/* Main Container */}
-        <div className="flex flex-1">
-          {/* Sidebar Moderna */}
-          <aside className="hidden w-64 flex-col border-r border-slate-200 dark:border-white/5 bg-slate-100/50 dark:bg-slate-950/40 p-4 md:flex justify-between">
-            <nav className="flex flex-col gap-1.5">
-              <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Módulos Principais
-              </div>
-              <a href="#visao-geral-graficos" className="flex items-center gap-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-2.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 transition-all">
-                <BarChart3 className="h-4 w-4" />
-                Gráficos & Dashboard
-              </a>
-              <a href="#categorias-planilha" className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-all">
-                <LayoutDashboard className="h-4 w-4" />
-                Categorias & Planilha
-              </a>
-              <a href="#parcelamentos-dividas" className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-all">
-                <Receipt className="h-4 w-4" />
-                Parcelamentos & Dívidas
-              </a>
-              <a href="#balanceamento-investimentos" className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-all">
-                <PieChart className="h-4 w-4" />
-                Investimentos & Rebalance
-              </a>
-              <a href="#historico-mensal" className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-all">
-                <TrendingUp className="h-4 w-4" />
-                Histórico Mensal
-              </a>
-
-              <div className="mt-6 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Separação de Entidades
-              </div>
-              <div className="flex flex-col gap-1 px-1">
-                <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/5 border border-slate-200 dark:border-transparent text-xs text-slate-700 dark:text-slate-300">
-                  <span className="flex items-center gap-2 font-medium">
-                    <Building2 className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
-                    Inter PJ
-                  </span>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Ativa</span>
-                </div>
-                <div className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-white/5 border border-slate-200 dark:border-transparent text-xs text-slate-700 dark:text-slate-300">
-                  <span className="flex items-center gap-2 font-medium">
-                    <UserCheck className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
-                    PF (Itaú, Nu, C6)
-                  </span>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Ativa</span>
-                </div>
-              </div>
-            </nav>
-
-            {/* Rodapé da Sidebar */}
-            <div className="rounded-xl border border-slate-200 dark:border-white/5 bg-white dark:bg-white/5 p-3 text-[11px] text-slate-500 dark:text-slate-400">
-              <div className="flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-200 mb-1">
-                <ShieldCheck className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
-                Modo Portfólio Ativo
-              </div>
-              Conciliação automática via Open Finance e extração de faturas.
-            </div>
-          </aside>
+        {/* Main Container com Menu Lateral Fixo */}
+        <div className="flex flex-1 relative items-start">
+          {/* Sidebar Fixo e Sticky (Permanente ao rolar a página) */}
+          <SidebarNavigation />
 
           {/* Área de Conteúdo */}
-          <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+          <main className="flex-1 p-4 md:p-8 min-w-0">
             {children}
           </main>
         </div>

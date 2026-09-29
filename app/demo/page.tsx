@@ -2,6 +2,8 @@ import DashboardUI from '@/components/DashboardUI'
 import { DeliveryPayload, DashboardFilter } from '@/utils/dashboardData'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { ShieldCheck, LogIn, Sparkles, UserPlus } from 'lucide-react'
+import { SidebarNavigation } from '@/components/dashboard/SidebarNavigation'
+import { UserAccountHeader } from '@/components/dashboard/UserAccountHeader'
 
 export const dynamic = 'force-dynamic'
 
@@ -73,18 +75,25 @@ export default async function DemoPage({
             <LogIn className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Entrar</span>
           </a>
+
+          <UserAccountHeader isDemo={true} initialName="Dr. Médico (Demo)" initialEmail="demo@leaomed.com" />
         </div>
       </header>
 
-      {/* Conteúdo Principal do Dashboard */}
-      <main className="p-4 md:p-8 max-w-7xl mx-auto">
-        <DashboardUI 
-          payload={demoPayload} 
-          currentFilter={activeFilter} 
-          basePath="/demo" 
-          isDemo={true} 
-        />
-      </main>
+      {/* Layout com Sidebar Fixo Permanente */}
+      <div className="flex flex-1 relative items-start">
+        <SidebarNavigation isDemo={true} />
+
+        {/* Conteúdo Principal do Dashboard */}
+        <main className="flex-1 p-4 md:p-8 min-w-0">
+          <DashboardUI 
+            payload={demoPayload} 
+            currentFilter={activeFilter} 
+            basePath="/demo" 
+            isDemo={true} 
+          />
+        </main>
+      </div>
     </div>
   )
 }

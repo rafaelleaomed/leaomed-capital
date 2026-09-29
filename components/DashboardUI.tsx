@@ -186,6 +186,7 @@ export default function DashboardUI({
           setSelectedMonth(m)
           setSelectedYear(y)
         }}
+        isDemo={isDemo}
       />
 
       {/* Linha 1: Cards de Decisão Rápida (Executivo) */}

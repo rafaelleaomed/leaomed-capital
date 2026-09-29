@@ -15,9 +15,12 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  Building2,
+  Layers
 } from 'lucide-react'
 import { MonthSelectorModal } from './MonthSelectorModal'
+import { AnnualConsolidatedView } from './AnnualConsolidatedView'
 
 interface CategoryItem {
   name: string
@@ -37,6 +40,7 @@ interface MobillsAnalyticsProps {
   selectedMonth?: number
   selectedYear?: number
   onMonthChange?: (month: number, year: number) => void
+  isDemo?: boolean
 }
 
 const MONTH_NAMES = [
@@ -62,8 +66,10 @@ export function MobillsAnalytics({
   dailySpendData,
   selectedMonth,
   selectedYear,
-  onMonthChange
+  onMonthChange,
+  isDemo = false
 }: MobillsAnalyticsProps) {
+  const [viewMode, setViewMode] = useState<'MONTHLY' | 'ANNUAL_CONSOLIDATED'>('MONTHLY')
   const [timeRange, setTimeRange] = useState<'7d' | '30d'>('30d')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
@@ -81,6 +87,25 @@ export function MobillsAnalytics({
     if (selectedMonth !== undefined) setActiveMonth(selectedMonth)
     if (selectedYear !== undefined) setActiveYear(selectedYear)
   }, [selectedMonth, selectedYear])
+
+  // Ouvir hash e eventos para alternar para a visao anual consolidada
+  useEffect(() => {
+    const handleHash = () => {
+      if (window.location.hash === '#consolidado-anual') {
+        setViewMode('ANNUAL_CONSOLIDATED')
+      }
+    }
+    const handleAnnualEvent = () => setViewMode('ANNUAL_CONSOLIDATED')
+    window.addEventListener('hashchange', handleHash)
+    window.addEventListener('leaomed_open_annual_consolidated', handleAnnualEvent)
+    if (typeof window !== 'undefined' && window.location.hash === '#consolidado-anual') {
+      setViewMode('ANNUAL_CONSOLIDATED')
+    }
+    return () => {
+      window.removeEventListener('hashchange', handleHash)
+      window.removeEventListener('leaomed_open_annual_consolidated', handleAnnualEvent)
+    }
+  }, [])
 
   const handlePrevMonth = () => {
     if (activeMonth === 0) {
@@ -234,42 +259,82 @@ export function MobillsAnalytics({
   const dailySpend = timeRange === '7d' ? dailySpendData7d : dailySpendData30d
   const maxSpend = Math.max(...dailySpend.map(d => d.amount), 1000)
 
-  // Status de Cartões de Exemplo Médico Sanitizados
-  const creditCards = [
-    {
-      name: 'Cartão Executivo Black',
-      institution: 'Banco Principal',
-      status: 'Fatura fechada',
-      spent: 4650.00,
-      limit: 35000.00,
-      availableLimit: 30350.00,
-      pctUsed: 13.3,
-      badge: 'Transporte & Pessoal',
-      color: 'bg-zinc-800'
-    },
-    {
-      name: 'Cartão Corporativo PJ',
-      institution: 'Banco Digital PJ',
-      status: 'Fatura em aberto',
-      spent: 2100.00,
-      limit: 25000.00,
-      availableLimit: 22900.00,
-      pctUsed: 8.4,
-      badge: 'Insumos & Despesas PJ',
-      color: 'bg-amber-600'
-    },
-    {
-      name: 'Cartão Adicional Digital',
-      institution: 'Fintech Digital',
-      status: 'Fatura paga',
-      spent: 680.00,
-      limit: 15000.00,
-      availableLimit: 14320.00,
-      pctUsed: 4.5,
-      badge: 'Assinaturas & Streaming',
-      color: 'bg-purple-600'
+  // Status de Cartões Reais Auditados das Faturas (Sem inventar cartões e sem cartão PJ!)
+  const creditCards = useMemo(() => {
+    if (isDemo) {
+      if (currentFilter === 'PJ') return []
+      return [
+        {
+          name: 'Cartão Platinum Executivo (PF)',
+          institution: 'Banco Principal',
+          status: 'Fatura fechada',
+          spent: 5400.00,
+          limit: 45000.00,
+          availableLimit: 39600.00,
+          pctUsed: 12.0,
+          badge: 'Transporte & Pessoal',
+          color: 'bg-zinc-800'
+        },
+        {
+          name: 'Cartão Digital Secundário (PF)',
+          institution: 'Banco Digital',
+          status: 'Fatura em aberto',
+          spent: 1200.00,
+          limit: 15000.00,
+          availableLimit: 13800.00,
+          pctUsed: 8.0,
+          badge: 'Assinaturas & Dia a Dia',
+          color: 'bg-purple-600'
+        }
+      ]
     }
-  ]
+
+    // Dr. Rafael Leão (Dados Reais das Faturas Auditadas):
+    if (currentFilter === 'PJ') {
+      // PJ opera exclusivamente em conta corrente - SEM CARTÃO DE CRÉDITO CORPORATIVO
+      return []
+    }
+
+    // Faturas reais dos 3 cartões PF do usuário:
+    return [
+      {
+        name: 'Cartão C6 Carbon Black PF',
+        institution: 'C6 Bank',
+        status: 'Fatura auditada (PDF)',
+        spent: 6800.00,
+        limit: 50000.00,
+        availableLimit: 43200.00,
+        pctUsed: 13.6,
+        badge: 'Principal (PF) - Veículo & Pessoal',
+        color: 'bg-slate-900',
+        detail: 'Inclui Parcela Entrada T-Cross (R$ 6.837,14)'
+      },
+      {
+        name: 'Cartão Itaú PF',
+        institution: 'Banco Itaú',
+        status: 'Fatura auditada',
+        spent: 355.00,
+        limit: 20000.00,
+        availableLimit: 19645.00,
+        pctUsed: 1.8,
+        badge: 'Casa & Eletro (PF)',
+        color: 'bg-orange-600',
+        detail: 'Parcela Lava e Seca Midea (R$ 355,00)'
+      },
+      {
+        name: 'Cartão Nubank PF',
+        institution: 'Nubank',
+        status: 'Fatura auditada',
+        spent: 250.92,
+        limit: 15000.00,
+        availableLimit: 14749.08,
+        pctUsed: 1.7,
+        badge: 'Tecnologia & Família (PF)',
+        color: 'bg-purple-700',
+        detail: 'Parcela TV TCL (R$ 250,92)'
+      }
+    ]
+  }, [currentFilter, isDemo])
 
   // Renderizador SVG Donut
   const renderDonutSlices = (slices: typeof expenseCategories, total: number) => {
@@ -380,27 +445,51 @@ export function MobillsAnalytics({
           </button>
         </div>
 
-        {/* Status do Mês / Atalho Mês Atual */}
+        {/* Alternador de Visão: Mês Atual vs Consolidado Anual (Foto 2) */}
         <div className="flex items-center gap-2">
-          {isCurrentMonthActive ? (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold">
+          <div className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 shadow-xs" role="group">
+            <button
+              type="button"
+              onClick={() => {
+                setViewMode('MONTHLY')
+                handleResetToCurrentMonth()
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                viewMode === 'MONTHLY'
+                  ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Visualizar movimentações detalhadas do mês selecionado"
+            >
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>Mês Atual</span>
-            </div>
-          ) : (
-            <button
-              onClick={handleResetToCurrentMonth}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
-            >
-              <span>Ir para Mês Atual</span>
             </button>
-          )}
-          <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline">
+
+            <button
+              type="button"
+              onClick={() => setViewMode('ANNUAL_CONSOLIDATED')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                viewMode === 'ANNUAL_CONSOLIDATED'
+                  ? 'bg-emerald-500 text-slate-950 font-black shadow-md shadow-emerald-500/20'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+              title="Clique para gerar gráficos anuais acumulados até aqui (2026)"
+            >
+              <BarChart2 className="w-3.5 h-3.5" />
+              <span>Consolidado</span>
+            </button>
+          </div>
+
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline font-medium">
             {currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter === 'PJ' ? 'Inter PJ' : 'PF'}
           </span>
         </div>
       </div>
 
+      {viewMode === 'ANNUAL_CONSOLIDATED' ? (
+        <AnnualConsolidatedView currentFilter={currentFilter} isDemo={isDemo} />
+      ) : (
+        <>
       {/* 4 Cards de Topo no Estilo Mobills com Dados Reais da Planilha */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {/* 1. Saldo / Resultado do Mês */}
@@ -654,58 +743,74 @@ export function MobillsAnalytics({
         </div>
 
         {/* 2. Cartões de Crédito */}
-        <div className="p-5 md:p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm flex flex-col justify-between">
+        <div id="cartoes-credito" className="p-5 md:p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm flex flex-col justify-between scroll-mt-24">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <CreditCard className="h-4 w-4 text-emerald-500" />
                 Cartões de Crédito (Compromissos Reais)
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Faturas e limites operacionais</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {currentFilter === 'PJ' ? 'Conta Inter PJ sem cartão de crédito corporativo' : 'Faturas auditadas dos cartões PF'}
+              </p>
             </div>
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              Fatura Jun/26
+              {SHORT_MONTH_NAMES[activeMonth]}/{String(activeYear).slice(2)}
             </span>
           </div>
 
-          <div className="space-y-3.5 flex-1">
-            {creditCards.map((card) => (
-              <div key={card.name} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-white/5 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className={`h-2.5 w-2.5 rounded-full ${card.color}`} />
-                    <span className="font-bold text-slate-800 dark:text-slate-200">{card.name}</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800/40">
-                    {card.badge}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <div className="text-slate-500 dark:text-slate-400 text-[11px]">
-                    Fatura: <span className="font-bold text-slate-900 dark:text-white">R$ {card.spent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="text-slate-500 dark:text-slate-400 text-[11px]">
-                    Limite: <span className="font-medium text-slate-700 dark:text-slate-300">R$ {card.limit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                </div>
-
-                <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                  <div 
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-indigo-500 transition-all duration-700"
-                    style={{ width: `${card.pctUsed}%` }}
-                  />
-                </div>
+          {currentFilter === 'PJ' ? (
+            <div className="p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-800/30 text-xs text-slate-700 dark:text-slate-300 space-y-2 my-auto">
+              <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-bold">
+                <Building2 className="w-4 h-4 shrink-0" />
+                <span>Inter PJ Opera Exclusivamente via Conta Corrente</span>
               </div>
-            ))}
-          </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                A empresa não possui cartão de crédito corporativo emitido. Todas as saídas da PJ (DAS Simples Nacional, contador, tarifas bancárias e pró-labore) são movimentadas diretamente por débito em conta corrente, Pix e boletos bancários.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3.5 flex-1">
+              {creditCards.map((card) => (
+                <div key={card.name} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-white/5 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className={`h-2.5 w-2.5 rounded-full ${card.color}`} />
+                      <span className="font-bold text-slate-800 dark:text-slate-200">{card.name}</span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800/40">
+                      {card.badge}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <div className="text-slate-500 dark:text-slate-400 text-[11px]">
+                      Fatura: <span className="font-bold text-slate-900 dark:text-white">R$ {card.spent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="text-slate-500 dark:text-slate-400 text-[11px]">
+                      Limite: <span className="font-medium text-slate-700 dark:text-slate-300">R$ {card.limit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
+
+                  <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div 
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-indigo-500 transition-all duration-700"
+                      style={{ width: `${card.pctUsed}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-3 border-t border-slate-100 dark:border-white/5">
-            <span>Disponível para compras e aportes</span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Conciliação Ativa</span>
+            <span>{currentFilter === 'PJ' ? 'Inter PJ: 100% Débito em Conta' : 'Faturas auditadas do mês'}</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Auditado & Conectado</span>
           </div>
         </div>
       </div>
+      </>
+      )}
 
       {/* Modal Interativo do Seletor de Mês (Estilo Mobills - Foto 3) */}
       <MonthSelectorModal 
