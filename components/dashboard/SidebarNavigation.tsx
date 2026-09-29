@@ -62,6 +62,12 @@ export function SidebarNavigation({ isDemo = false }: SidebarNavigationProps) {
         const el = document.getElementById('historico-mensal')
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }, 50)
+    } else if (id === 'cartoes-credito') {
+      window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
+      setTimeout(() => {
+        const el = document.getElementById('cartoes-credito')
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 50)
     }
   }
 

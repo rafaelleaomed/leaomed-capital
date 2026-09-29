@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { InvestmentLinkModal } from './InvestmentLinkModal'
 import { GranularTransactionStore } from '@/utils/granularTransactionStore'
+import { CreditCardStore, CreditCardItem } from '@/utils/creditCardStore'
 
 interface QuickTransactionModalProps {
   isOpen: boolean
@@ -56,6 +57,17 @@ export function QuickTransactionModal({
   const [installmentsCount, setInstallmentsCount] = useState<number>(3)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [availableCards, setAvailableCards] = useState<CreditCardItem[]>([])
+
+  React.useEffect(() => {
+    if (isOpen) {
+      const stored = CreditCardStore.getCards()
+      setAvailableCards(stored)
+      if (stored.length > 0 && !account) {
+        setAccount(stored[0].name)
+      }
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -436,9 +448,16 @@ export function QuickTransactionModal({
                 onChange={(e) => setAccount(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
               >
-                <option value="C6 Carbon Black">C6 Carbon Black (PF)</option>
-                <option value="Nubank Ultravioleta">Nubank Ultravioleta (PF)</option>
-                <option value="Itaú Personnalité">Itaú Personnalité (PF)</option>
+                {availableCards.map(c => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+                {availableCards.length === 0 && (
+                  <>
+                    <option value="Cartão C6 Carbon Black PF">Cartão C6 Carbon Black PF</option>
+                    <option value="Cartão Itaú PF">Cartão Itaú PF</option>
+                    <option value="Cartão Nubank PF">Cartão Nubank PF</option>
+                  </>
+                )}
                 <option value="Pessoa Jurídica">Pessoa Jurídica (Empresa)</option>
                 <option value="Conta Corrente Safra">Banco Safra</option>
                 <option value="Pix / Dinheiro">Pix / Transferência Direta</option>

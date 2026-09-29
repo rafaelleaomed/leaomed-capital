@@ -17,10 +17,14 @@ import {
   ChevronRight,
   ChevronDown,
   Building2,
-  Layers
+  Layers,
+  Plus,
+  Edit3
 } from 'lucide-react'
 import { MonthSelectorModal } from './MonthSelectorModal'
 import { AnnualConsolidatedView } from './AnnualConsolidatedView'
+import CreditCardModal from './CreditCardModal'
+import { CreditCardStore, CreditCardItem } from '@/utils/creditCardStore'
 
 interface CategoryItem {
   name: string
@@ -81,6 +85,20 @@ export function MobillsAnalytics({
   const [activeMonth, setActiveMonth] = useState<number>(selectedMonth !== undefined ? selectedMonth : currentSystemMonth)
   const [activeYear, setActiveYear] = useState<number>(selectedYear !== undefined ? selectedYear : currentSystemYear)
   const [isMonthModalOpen, setIsMonthModalOpen] = useState(false)
+
+  // Gerenciamento Dinâmico de Cartões de Crédito (Adicionar novo, editar limites, adicionais)
+  const [storedCards, setStoredCards] = useState<CreditCardItem[]>([])
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false)
+  const [cardToEdit, setCardToEdit] = useState<CreditCardItem | null>(null)
+
+  useEffect(() => {
+    setStoredCards(CreditCardStore.getCards())
+    const handleCardsUpdated = () => {
+      setStoredCards(CreditCardStore.getCards())
+    }
+    window.addEventListener('leaomed_credit_cards_updated', handleCardsUpdated)
+    return () => window.removeEventListener('leaomed_credit_cards_updated', handleCardsUpdated)
+  }, [])
 
   // Sincronizar caso receba props externas
   useEffect(() => {
@@ -313,52 +331,41 @@ export function MobillsAnalytics({
       ]
     }
 
-    // Dr. Rafael Leão (Dados Reais das Faturas Auditadas):
+    // Dr. Rafael Leão (Dados Reais das Faturas Auditadas e Editáveis):
     if (currentFilter === 'PJ') {
       // PJ opera exclusivamente em conta corrente - SEM CARTÃO DE CRÉDITO CORPORATIVO
       return []
     }
 
-    // Faturas reais dos 3 cartões PF do usuário:
-    return [
-      {
-        name: 'Cartão C6 Carbon Black PF',
-        institution: 'C6 Bank',
-        status: 'Fatura auditada (PDF)',
-        spent: 6800.00,
-        limit: 50000.00,
-        availableLimit: 43200.00,
-        pctUsed: 13.6,
-        badge: 'Principal (PF) - Veículo & Pessoal',
-        color: 'bg-slate-900',
-        detail: 'Inclui Parcela Entrada T-Cross (R$ 6.837,14)'
-      },
-      {
-        name: 'Cartão Itaú PF',
-        institution: 'Banco Itaú',
-        status: 'Fatura auditada',
-        spent: 355.00,
-        limit: 20000.00,
-        availableLimit: 19645.00,
-        pctUsed: 1.8,
-        badge: 'Casa & Eletro (PF)',
-        color: 'bg-orange-600',
-        detail: 'Parcela Lava e Seca Midea (R$ 355,00)'
-      },
-      {
-        name: 'Cartão Nubank PF',
-        institution: 'Nubank',
-        status: 'Fatura auditada',
-        spent: 250.92,
-        limit: 15000.00,
-        availableLimit: 14749.08,
-        pctUsed: 1.7,
-        badge: 'Tecnologia & Família (PF)',
-        color: 'bg-purple-700',
-        detail: 'Parcela TV TCL (R$ 250,92)'
-      }
-    ]
-  }, [currentFilter, isDemo])
+    const cards = storedCards.length > 0 ? storedCards : CreditCardStore.getCards()
+    return cards
+      .filter(c => currentFilter === 'CONSOLIDATED' || c.entityType === currentFilter)
+      .map(c => {
+        const spent = Number(c.spent) || 0
+        const limit = Number(c.limit) > 0 ? Number(c.limit) : 1
+        const availableLimit = Math.max(0, limit - spent)
+        const pctUsed = Math.min(100, Math.max(0, (spent / limit) * 100))
+
+        return {
+          id: c.id,
+          name: c.name,
+          institution: c.institution || 'Banco',
+          status: c.status || 'Fatura auditada',
+          spent,
+          limit,
+          availableLimit,
+          pctUsed: Number(pctUsed.toFixed(1)),
+          badge: c.badge || 'Cartão PF',
+          color: c.color || 'bg-slate-900',
+          closingDay: c.closingDay || 20,
+          dueDay: c.dueDay || 28,
+          additionalCards: c.additionalCards || 'Nenhum',
+          cardholder: c.cardholder || 'Dr. Rafael Leão',
+          lastDigits: c.lastDigits || '4821',
+          detail: c.notes || `Vencimento dia ${c.dueDay} • ${c.additionalCards || 'Sem adicionais'}`
+        }
+      })
+  }, [currentFilter, isDemo, storedCards])
 
   // Renderizador SVG Donut
   const renderDonutSlices = (slices: typeof expenseCategories, total: number) => {
@@ -780,9 +787,26 @@ export function MobillsAnalytics({
                 {currentFilter === 'PJ' ? 'Pessoa Jurídica sem cartão de crédito corporativo' : 'Faturas auditadas dos cartões PF'}
               </p>
             </div>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-              {SHORT_MONTH_NAMES[activeMonth]}/{String(activeYear).slice(2)}
-            </span>
+            
+            <div className="flex items-center gap-2">
+              {currentFilter !== 'PJ' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCardToEdit(null)
+                    setIsCardModalOpen(true)
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-[11px] flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
+                  title="Adicionar novo cartão de crédito"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Novo Cartão</span>
+                </button>
+              )}
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                {SHORT_MONTH_NAMES[activeMonth]}/{String(activeYear).slice(2)}
+              </span>
+            </div>
           </div>
 
           {currentFilter === 'PJ' ? (
@@ -797,24 +821,42 @@ export function MobillsAnalytics({
             </div>
           ) : (
             <div className="space-y-3.5 flex-1">
-              {creditCards.map((card) => (
-                <div key={card.name} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-white/5 space-y-2">
+              {creditCards.map((card: any) => (
+                <div key={card.id || card.name} className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200/80 dark:border-white/5 space-y-2.5 hover:border-slate-300 dark:hover:border-white/15 transition-all">
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
                       <span className={`h-2.5 w-2.5 rounded-full ${card.color}`} />
                       <span className="font-bold text-slate-800 dark:text-slate-200">{card.name}</span>
                     </div>
-                    <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800/40">
-                      {card.badge}
-                    </span>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800/40">
+                        {card.badge}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCardToEdit(card)
+                          setIsCardModalOpen(true)
+                        }}
+                        className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 hover:bg-indigo-500 hover:text-white text-slate-600 dark:text-slate-300 font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Editar limite, adicionais e vencimento deste cartão"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Editar</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs font-mono">
+                  <div className="flex flex-wrap items-center justify-between text-xs font-mono gap-y-1">
                     <div className="text-slate-500 dark:text-slate-400 text-[11px]">
                       Fatura: <span className="font-bold text-slate-900 dark:text-white">R$ {card.spent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div className="text-slate-500 dark:text-slate-400 text-[11px]">
-                      Limite: <span className="font-medium text-slate-700 dark:text-slate-300">R$ {card.limit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      Disponível: <span className="font-semibold text-emerald-600 dark:text-emerald-400">R$ {card.availableLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="text-slate-500 dark:text-slate-400 text-[11px]">
+                      Limite Total: <span className="font-medium text-slate-700 dark:text-slate-300">R$ {card.limit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
 
@@ -823,6 +865,11 @@ export function MobillsAnalytics({
                       className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-indigo-500 transition-all duration-700"
                       style={{ width: `${card.pctUsed}%` }}
                     />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5 border-t border-slate-200/50 dark:border-white/5">
+                    <span>Vencimento: dia {card.dueDay || 28} (fecha dia {card.closingDay || 20})</span>
+                    <span>Adicionais: <strong>{card.additionalCards || 'Nenhum'}</strong></span>
                   </div>
                 </div>
               ))}
@@ -845,6 +892,14 @@ export function MobillsAnalytics({
         selectedYear={activeYear}
         onSelect={handleSelectMonth}
         onClose={() => setIsMonthModalOpen(false)}
+      />
+
+      {/* Modal de Edição e Criação de Cartões de Crédito (Limite, Adicionais, etc.) */}
+      <CreditCardModal
+        isOpen={isCardModalOpen}
+        onClose={() => setIsCardModalOpen(false)}
+        cardToEdit={cardToEdit}
+        onSaved={() => setStoredCards(CreditCardStore.getCards())}
       />
     </section>
   )
