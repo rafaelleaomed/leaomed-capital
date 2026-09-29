@@ -28,109 +28,74 @@ export interface InstallmentItem {
 export function InstallmentsProjection({ isDemo = false }: { isDemo?: boolean }) {
   const [filter, setFilter] = useState<'ALL' | 'MAJOR' | 'ENDING_SOON'>('ALL')
 
-  // Portfólio demonstrativo sanitizado sem dados sensíveis de contratos reais
+  // Portfólio demonstrativo sanitizado com modelos genéricos médicos para novos usuários e demo
   const demoInstallments: InstallmentItem[] = [
     { 
       id: '1', 
-      name: 'Entrada Veículo Parcelada (12x)', 
-      category: 'Transporte', 
-      monthlyValue: 6837.14, 
-      currentInstallment: 2, 
-      totalInstallments: 12, 
-      endMonthYear: 'Abril/2027', 
-      contractNotes: '12x no cartão corporativo • Quitação prevista para Abril/2027',
-      paymentMethod: 'Cartão Black'
-    },
-    { 
-      id: '2', 
-      name: 'Financiamento Veicular CDC (18x)', 
-      category: 'Transporte', 
-      monthlyValue: 3336.28, 
-      currentInstallment: 2, 
-      totalInstallments: 18, 
-      endMonthYear: 'Outubro/2027', 
-      contractNotes: '18 parcelas fixas • Veículo 100% quitado ao término',
+      name: 'Financiamento Consultório / Clínica (36x)', 
+      category: 'Estrutura & Imóvel', 
+      monthlyValue: 3850.00, 
+      currentInstallment: 12, 
+      totalInstallments: 36, 
+      endMonthYear: 'Dezembro/2027', 
+      contractNotes: 'Financiamento bancário de sala comercial • Taxa fixa',
       paymentMethod: 'Débito em Conta'
     },
     { 
-      id: '3', 
-      name: 'Cota Imobiliária / Resort (70x)', 
-      category: 'Imóvel / Resort', 
-      monthlyValue: 1865.33, 
-      currentInstallment: 5, 
-      totalInstallments: 70, 
-      endMonthYear: 'Fevereiro/2032', 
-      contractNotes: '70 parcelas mensais • Reajuste IPCA acumulado',
-      hasIpcaAdjustment: true,
+      id: '2', 
+      name: 'Leasing Equipamento Diagnóstico / Ultrassom (24x)', 
+      category: 'Equipamentos Médicos', 
+      monthlyValue: 2450.00, 
+      currentInstallment: 8, 
+      totalInstallments: 24, 
+      endMonthYear: 'Outubro/2027', 
+      contractNotes: 'Aquisição de tecnologia clínica com garantia estendida',
       paymentMethod: 'Boleto Bancário'
+    },
+    { 
+      id: '3', 
+      name: 'Financiamento Veicular Modelo (24x)', 
+      category: 'Transporte', 
+      monthlyValue: 1800.00, 
+      currentInstallment: 14, 
+      totalInstallments: 24, 
+      endMonthYear: 'Abril/2027', 
+      contractNotes: '24 parcelas fixas • Quitação prevista para Abril/2027',
+      paymentMethod: 'Débito em Conta'
     },
     { 
       id: '4', 
-      name: 'Condomínio Fração Imobiliária', 
-      category: 'Imóvel / Resort', 
-      monthlyValue: 377.49, 
-      currentInstallment: 5, 
-      totalInstallments: 999, 
-      endMonthYear: 'Perpétuo (Contínuo)', 
-      contractNotes: 'Taxa mensal de manutenção e conservação da fração imobiliária',
-      isPerpetual: true,
-      paymentMethod: 'Boleto Bancário'
+      name: 'Reforma & Climatização Consultório (10x)', 
+      category: 'Estrutura', 
+      monthlyValue: 850.00, 
+      currentInstallment: 7, 
+      totalInstallments: 10, 
+      endMonthYear: 'Outubro/2026', 
+      contractNotes: 'Término iminente em Outubro/2026',
+      paymentMethod: 'Cartão PJ'
     },
     { 
       id: '5', 
-      name: 'Equipamentos de TI / Smartphones', 
-      category: 'Tecnologia', 
-      monthlyValue: 274.66, 
-      currentInstallment: 4, 
-      totalInstallments: 21, 
-      endMonthYear: 'Novembro/2027', 
-      contractNotes: 'Parceria de fornecimento tecnológico corporativo',
-      paymentMethod: 'Cartão Corporativo'
+      name: 'Pós-Graduação & Fellow Cirúrgico (12x)', 
+      category: 'Educação Médica', 
+      monthlyValue: 650.00, 
+      currentInstallment: 9, 
+      totalInstallments: 12, 
+      endMonthYear: 'Dezembro/2026', 
+      contractNotes: 'Capacitação profissional continuada',
+      paymentMethod: 'Cartão PF'
     },
     { 
       id: '6', 
-      name: 'Compras Corporativas Diversas', 
-      category: 'Compras', 
-      monthlyValue: 382.37, 
+      name: 'Mobiliário e TI Consultório (10x)', 
+      category: 'Estrutura', 
+      monthlyValue: 420.00, 
       currentInstallment: 7, 
       totalInstallments: 10, 
       endMonthYear: 'Outubro/2026', 
       contractNotes: 'Término iminente em Outubro/2026',
-      paymentMethod: 'Cartão Black'
-    },
-    { 
-      id: '7', 
-      name: 'Eletrodomésticos & Climatização', 
-      category: 'Estrutura', 
-      monthlyValue: 355.00, 
-      currentInstallment: 7, 
-      totalInstallments: 10, 
-      endMonthYear: 'Outubro/2026', 
-      contractNotes: 'Término iminente em Outubro/2026',
-      paymentMethod: 'Cartão Corporativo'
-    },
-    { 
-      id: '8', 
-      name: 'Painéis e Telas de Monitoramento', 
-      category: 'Estrutura', 
-      monthlyValue: 250.92, 
-      currentInstallment: 7, 
-      totalInstallments: 10, 
-      endMonthYear: 'Outubro/2026', 
-      contractNotes: 'Término iminente em Outubro/2026',
-      paymentMethod: 'Cartão Corporativo'
-    },
-    { 
-      id: '9', 
-      name: 'Mobiliário Ergonômico de Escritório', 
-      category: 'Estrutura', 
-      monthlyValue: 197.00, 
-      currentInstallment: 4, 
-      totalInstallments: 10, 
-      endMonthYear: 'Dezembro/2026', 
-      contractNotes: 'Finalização programada em Dezembro/2026',
-      paymentMethod: 'Cartão Corporativo'
-    },
+      paymentMethod: 'Cartão PJ'
+    }
   ]
 
   const [installments, setInstallments] = useState<InstallmentItem[]>(demoInstallments)

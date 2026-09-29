@@ -52,7 +52,9 @@ export default function DashboardUI({
             </span>
           </div>
           <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Controle automatizado: Inter PJ + Itaú, Nubank e C6 Carbon Black PF
+            {isDemo 
+              ? 'Controle automatizado: Gestão Médica Integrada PJ (Clínica/Plantões) + PF & Investimentos' 
+              : 'Controle automatizado: Inter PJ + Itaú, Nubank e C6 Carbon Black PF'}
           </p>
         </div>
         
@@ -61,10 +63,10 @@ export default function DashboardUI({
           {/* Botão de Personalização / Onboarding Wizard */}
           <button
             onClick={() => setIsWizardOpen(true)}
-            className="px-3.5 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs"
+            className="px-3.5 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs"
             title="Personalizar Contas, Categorias e Métodos de Ingestão"
           >
-            <Sliders className="w-3.5 h-3.5 text-amber-400" />
+            <Sliders className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
             <span>Personalizar & Setup</span>
           </button>
 
@@ -96,7 +98,7 @@ export default function DashboardUI({
         currentBalance={payload.projections.projected_end_balance}
         totalIncome={payload.cash_flow.total_income}
         totalExpenses={payload.cash_flow.total_expenses}
-        creditCardTotal={currentFilter === 'PJ' ? 0 : 8749.96}
+        creditCardTotal={currentFilter === 'PJ' ? 0 : (isDemo ? 4650.00 : 8749.96)}
         categories={payload.categories}
       />
 

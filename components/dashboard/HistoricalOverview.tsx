@@ -16,15 +16,16 @@ export interface MonthRecord {
 export function HistoricalOverview({ isDemo = false }: { isDemo?: boolean }) {
   const [selectedView, setSelectedView] = useState<'ALL' | 'PJ' | 'PF'>('ALL')
 
+  // Histórico demonstrativo genérico para visualização técnica e portfólio
   const demoHistory: MonthRecord[] = [
-    { month: 'Dez/25', pjGross: 18400.00, pjTaxes: 1204.87, pjProlabore: 12000.00, pfIncome: 21202.24, pfExpenses: 18735.89, balance: 2466.35 },
-    { month: 'Jan/26', pjGross: 23000.00, pjTaxes: 2023.97, pjProlabore: 16000.00, pfIncome: 19000.00, pfExpenses: 12376.24, balance: 6623.76 },
-    { month: 'Fev/26', pjGross: 28300.00, pjTaxes: 2618.69, pjProlabore: 20500.00, pfIncome: 22500.00, pfExpenses: 14517.47, balance: 7982.53 },
-    { month: 'Mar/26', pjGross: 24600.00, pjTaxes: 2522.47, pjProlabore: 19000.00, pfIncome: 21000.00, pfExpenses: 13992.65, balance: 7007.35 },
-    { month: 'Abr/26', pjGross: 26600.00, pjTaxes: 2783.58, pjProlabore: 20500.00, pfIncome: 22879.69, pfExpenses: 18982.68, balance: 3897.01 },
-    { month: 'Mai/26', pjGross: 25700.00, pjTaxes: 2764.77, pjProlabore: 20000.00, pfIncome: 22398.91, pfExpenses: 19004.93, balance: 3393.98 },
-    { month: 'Jun/26', pjGross: 26500.00, pjTaxes: 2764.77, pjProlabore: 21000.00, pfIncome: 23979.99, pfExpenses: 18729.65, balance: 5250.34 },
-    { month: 'Jul/26', pjGross: 27300.00, pjTaxes: 2841.21, pjProlabore: 21500.00, pfIncome: 24920.00, pfExpenses: 17984.55, balance: 6935.45 }
+    { month: 'Dez/25', pjGross: 32000.00, pjTaxes: 2150.00, pjProlabore: 18000.00, pfIncome: 22000.00, pfExpenses: 15400.00, balance: 6600.00 },
+    { month: 'Jan/26', pjGross: 35000.00, pjTaxes: 2450.00, pjProlabore: 20000.00, pfIncome: 24500.00, pfExpenses: 16800.00, balance: 7700.00 },
+    { month: 'Fev/26', pjGross: 38000.00, pjTaxes: 2650.00, pjProlabore: 22000.00, pfIncome: 27000.00, pfExpenses: 17900.00, balance: 9100.00 },
+    { month: 'Mar/26', pjGross: 34000.00, pjTaxes: 2380.00, pjProlabore: 19500.00, pfIncome: 23800.00, pfExpenses: 16200.00, balance: 7600.00 },
+    { month: 'Abr/26', pjGross: 37500.00, pjTaxes: 2620.00, pjProlabore: 21500.00, pfIncome: 26500.00, pfExpenses: 18400.00, balance: 8100.00 },
+    { month: 'Mai/26', pjGross: 36000.00, pjTaxes: 2520.00, pjProlabore: 21000.00, pfIncome: 25800.00, pfExpenses: 18100.00, balance: 7700.00 },
+    { month: 'Jun/26', pjGross: 38500.00, pjTaxes: 2700.00, pjProlabore: 22000.00, pfIncome: 27400.00, pfExpenses: 18900.00, balance: 8500.00 },
+    { month: 'Jul/26', pjGross: 40000.00, pjTaxes: 2800.00, pjProlabore: 23000.00, pfIncome: 28500.00, pfExpenses: 19200.00, balance: 9300.00 }
   ]
 
   const [history, setHistory] = useState<MonthRecord[]>(demoHistory)

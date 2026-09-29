@@ -31,10 +31,10 @@ interface MobillsAnalyticsProps {
 
 export function MobillsAnalytics({
   currentFilter = 'CONSOLIDATED',
-  currentBalance = -2505.64,
-  totalIncome = 29479.99,
-  totalExpenses = 31985.63,
-  creditCardTotal = 8749.96,
+  currentBalance = 15200.00,
+  totalIncome = 38500.00,
+  totalExpenses = 23000.00,
+  creditCardTotal = 4650.00,
   categories = []
 }: MobillsAnalyticsProps) {
   const [timeRange, setTimeRange] = useState<'7d' | '30d'>('30d')
@@ -54,7 +54,7 @@ export function MobillsAnalytics({
     '#14B8A6'  // Teal
   ]
 
-  // Categorias de despesas reais da planilha do usuário
+  // Categorias de despesas genéricas da planilha médica padrão
   const expenseCategories = useMemo(() => {
     if (categories && categories.length > 0) {
       return categories.map((c, i) => ({
@@ -65,105 +65,110 @@ export function MobillsAnalytics({
       }))
     }
 
-    // Baseline da Planilha (Junho/2026)
     if (currentFilter === 'PJ') {
       return [
-        { name: 'Tributos Simples Nacional', value: 2764.77, percentage: 84.9, color: '#3B82F6' },
-        { name: 'Tarifas Bancárias Inter', value: 491.21, percentage: 15.1, color: '#10B981' }
+        { name: 'Impostos Simples Nacional / DAS', value: 4200.00, percentage: 53.8, color: '#3B82F6' },
+        { name: 'Insumos & Despesas Médicas PJ', value: 1600.00, percentage: 20.5, color: '#10B981' },
+        { name: 'Mensalidade Contador PJ', value: 1200.00, percentage: 15.4, color: '#F59E0B' },
+        { name: 'ISS & Taxas Municipais', value: 800.00, percentage: 10.3, color: '#8B5CF6' }
       ]
     }
 
     return [
-      { name: 'Transporte', value: 13163.55, percentage: 45.8, color: '#3B82F6' },
-      { name: 'Casa', value: 5662.62, percentage: 19.7, color: '#10B981' },
-      { name: 'Compras', value: 2773.75, percentage: 9.7, color: '#EC4899' },
-      { name: 'Financiamento', value: 2302.90, percentage: 8.0, color: '#F59E0B' },
-      { name: 'Saúde', value: 1278.01, percentage: 4.4, color: '#EF4444' },
-      { name: 'Lazer', value: 803.90, percentage: 2.8, color: '#8B5CF6' },
-      { name: 'Alimentação', value: 793.09, percentage: 2.8, color: '#06B6D4' }
+      { name: 'Moradia & Condomínio', value: 6849.90, percentage: 30.4, color: '#10B981' },
+      { name: 'Transporte & Veículo', value: 4300.00, percentage: 19.1, color: '#3B82F6' },
+      { name: 'Saúde & Assistência', value: 3200.00, percentage: 14.2, color: '#EF4444' },
+      { name: 'Despesas Pessoais & CRM', value: 2800.00, percentage: 12.4, color: '#8B5CF6' },
+      { name: 'Filhos & Educação', value: 2700.00, percentage: 12.0, color: '#F59E0B' },
+      { name: 'Lazer & Restaurantes', value: 2230.00, percentage: 9.9, color: '#EC4899' },
+      { name: 'Despesas Financeiras', value: 320.00, percentage: 1.4, color: '#64748B' }
     ]
   }, [categories, currentFilter])
 
-  // Categorias de receitas auditadas da planilha (sem duplicação de pró-labore no consolidado)
+  // Categorias de receitas da gestão médica
   const incomeCategories = useMemo(() => {
     if (currentFilter === 'PJ') {
       return [
-        { name: 'Honorários Médicos Contratos PJ', value: 26500.00, percentage: 100.0, color: '#06B6D4' }
+        { name: 'Hospital 01 & Hospital 02', value: 24000.00, percentage: 62.3, color: '#06B6D4' },
+        { name: 'Convênios Médicos 01 e 02', value: 9500.00, percentage: 24.7, color: '#10B981' },
+        { name: 'Consultório & Particulares', value: 5000.00, percentage: 13.0, color: '#3B82F6' }
       ]
     }
 
     if (currentFilter === 'PF') {
       return [
-        { name: 'Pró-Labore Retirada PJ', value: 23000.00, percentage: 88.5, color: '#8B5CF6' },
-        { name: 'Reembolsos / Entradas Extras', value: 2979.99, percentage: 11.5, color: '#10B981' }
+        { name: 'Pró-Labore Retirada PJ', value: 22000.00, percentage: 70.5, color: '#8B5CF6' },
+        { name: 'Consultório Particular', value: 6200.00, percentage: 19.9, color: '#06B6D4' },
+        { name: 'Dividendos & Rendimentos FII/Ações', value: 3000.00, percentage: 9.6, color: '#10B981' }
       ]
     }
 
-    // CONSOLIDATED: Receitas externas que efetivamente entraram no patrimônio
+    // CONSOLIDATED: Receitas externas médicas
     return [
-      { name: 'Faturamento Empresa PJ (Contratos)', value: 26500.00, percentage: 89.9, color: '#06B6D4' },
-      { name: 'Entradas Diretas PF (Reembolsos)', value: 2979.99, percentage: 10.1, color: '#10B981' }
+      { name: 'Faturamento Hospitalar & PJ', value: 38500.00, percentage: 77.5, color: '#06B6D4' },
+      { name: 'Consultório Particular Direto', value: 8200.00, percentage: 16.5, color: '#10B981' },
+      { name: 'Rendimentos FIIs & Investimentos', value: 3000.00, percentage: 6.0, color: '#8B5CF6' }
     ]
   }, [currentFilter])
 
-  // Frequência de gastos diários (distribuição real dos compromissos no mês de 30 dias)
+  // Frequência de gastos diários (distribuição equilibrada dos compromissos)
   const dailySpendData30d = [
-    { day: '01', amount: 350 },
-    { day: '05', amount: 1451 }, // Condomínio
-    { day: '10', amount: 1865 }, // Gramado Parks
-    { day: '15', amount: 6837 }, // Parcela T-Cross Cartão
-    { day: '20', amount: 1690 }, // Supermercado
-    { day: '25', amount: 2764 }, // DAS Simples Nacional
-    { day: '27', amount: 3336 }, // Financiamento T-Cross Safra
-    { day: '30', amount: 480 },
+    { day: '01', amount: 450 },
+    { day: '05', amount: 1850 }, // Condomínio
+    { day: '10', amount: 2100 }, // Educação / Filhos
+    { day: '15', amount: 1650 }, // Saúde
+    { day: '20', amount: 4200 }, // Tributos DAS
+    { day: '25', amount: 1800 }, // Financiamento Veicular
+    { day: '27', amount: 1200 }, // Contador / Serviços
+    { day: '30', amount: 620 },
   ]
 
   const dailySpendData7d = [
-    { day: 'Seg', amount: 120 },
-    { day: 'Ter', amount: 3336 }, // Parcela Safra
-    { day: 'Qua', amount: 250 },
-    { day: 'Qui', amount: 0 },
-    { day: 'Sex', amount: 450 },
-    { day: 'Sáb', amount: 680 },
-    { day: 'Dom', amount: 90 },
+    { day: 'Seg', amount: 280 },
+    { day: 'Ter', amount: 450 },
+    { day: 'Qua', amount: 620 },
+    { day: 'Qui', amount: 190 },
+    { day: 'Sex', amount: 850 },
+    { day: 'Sáb', amount: 420 },
+    { day: 'Dom', amount: 180 },
   ]
 
   const dailySpend = timeRange === '7d' ? dailySpendData7d : dailySpendData30d
   const maxSpend = Math.max(...dailySpend.map(d => d.amount), 1000)
 
-  // Status real dos Cartões de Crédito (compromissos de Junho)
+  // Status de Cartões de Exemplo Médico Sanitizados
   const creditCards = [
     {
-      name: 'C6 Carbon Black Mastercard',
-      institution: 'C6 Bank',
-      status: 'Fatura fechada (Junho)',
-      spent: 8749.96,
-      limit: 16858.99,
-      availableLimit: 8109.03,
-      pctUsed: 51.9,
-      badge: 'Concentrador T-Cross (12x)',
+      name: 'Cartão Executivo Black',
+      institution: 'Banco Principal',
+      status: 'Fatura fechada',
+      spent: 4650.00,
+      limit: 35000.00,
+      availableLimit: 30350.00,
+      pctUsed: 13.3,
+      badge: 'Transporte & Pessoal',
       color: 'bg-zinc-800'
     },
     {
-      name: 'Itaú Personnalité Black',
-      institution: 'Banco Itaú',
-      status: 'Fatura paga',
-      spent: 1450.00,
-      limit: 24712.28,
-      availableLimit: 23262.28,
-      pctUsed: 5.87,
-      badge: 'Lava e Seca + Pontuais',
-      color: 'bg-amber-500'
+      name: 'Cartão Corporativo PJ',
+      institution: 'Banco Digital PJ',
+      status: 'Fatura em aberto',
+      spent: 2100.00,
+      limit: 25000.00,
+      availableLimit: 22900.00,
+      pctUsed: 8.4,
+      badge: 'Insumos & Despesas PJ',
+      color: 'bg-amber-600'
     },
     {
-      name: 'Nubank Ultravioleta',
-      institution: 'Nubank',
+      name: 'Cartão Adicional Digital',
+      institution: 'Fintech Digital',
       status: 'Fatura paga',
-      spent: 509.00,
-      limit: 14959.74,
-      availableLimit: 14450.74,
-      pctUsed: 3.4,
-      badge: 'TV TCL + Assinaturas',
+      spent: 680.00,
+      limit: 15000.00,
+      availableLimit: 14320.00,
+      pctUsed: 4.5,
+      badge: 'Assinaturas & Streaming',
       color: 'bg-purple-600'
     }
   ]

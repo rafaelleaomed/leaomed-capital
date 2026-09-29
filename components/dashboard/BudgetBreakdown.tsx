@@ -52,20 +52,16 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false }: Budget
   const [isLoading, setIsLoading] = useState(false)
   const [categoriesData, setCategoriesData] = useState<CategoryGroup[]>([])
 
-  // Estado dos acordeões (todos abertos inicialmente por conveniência visual)
+  // Estado dos acordeões (categorias médicas principais abertas inicialmente)
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
+    'Moradia': true,
     'Transporte': true,
-    'Casa': true,
-    'Compras': true,
-    'Financiamento': false,
-    'Saúde': false,
+    'Saúde': true,
+    'Empresa Médica PJ': true,
+    'Despesas Pessoais': false,
+    'Filhos': false,
     'Lazer': false,
-    'Restaurantes & Delivery': false,
-    'Serviços de Assinaturas': false,
-    'Alimentação': false,
-    'Pets': false,
-    'Impostos e Taxas PF': false,
-    'Viagem': false
+    'Despesas Financeiras & Cartões': false
   })
 
   const toggleCategory = (name: string) => {
@@ -91,6 +87,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false }: Budget
       case 'Transporte':
         return { icon: Car, color: 'from-blue-500 to-indigo-600', is_obligatory: true }
       case 'Casa':
+      case 'Moradia':
         return { icon: Home, color: 'from-emerald-500 to-teal-600', is_obligatory: true }
       case 'Financiamento':
         return { icon: CreditCard, color: 'from-amber-500 to-orange-600', is_obligatory: true }
@@ -101,6 +98,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false }: Budget
       case 'Pets':
         return { icon: Dog, color: 'from-cyan-500 to-blue-500', is_obligatory: true }
       case 'Impostos e Taxas PF':
+      case 'Despesas Pessoais':
         return { icon: Receipt, color: 'from-slate-500 to-zinc-600', is_obligatory: true }
       case 'Compras':
         return { icon: ShoppingBag, color: 'from-purple-500 to-violet-600', is_obligatory: false }
@@ -111,188 +109,189 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false }: Budget
       case 'Restaurantes & Delivery':
         return { icon: Coffee, color: 'from-orange-500 to-amber-500', is_obligatory: false }
       case 'Serviços de Assinaturas':
-        return { icon: Sparkles, color: 'from-indigo-500 to-blue-600', is_obligatory: false }
+      case 'Filhos':
+        return { icon: Sparkles, color: 'from-indigo-500 to-blue-600', is_obligatory: true }
+      case 'Empresa Médica PJ':
+      case 'Empresa - Despesas Fixas':
+        return { icon: Layers, color: 'from-cyan-500 to-blue-600', is_obligatory: true }
       default:
         return { icon: Layers, color: 'from-emerald-500 to-cyan-600', is_obligatory: true }
     }
   }
 
-  // Baseline resiliente da planilha oficial (Junho/26) para renderização imediata sem flash
-  const baselineCategories: CategoryGroup[] = useMemo(() => [
-    {
-      name: 'Transporte',
-      icon: Car,
-      total: 13163.55,
-      color: 'from-blue-500 to-indigo-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Parcela T-Cross Cartão', value: 6837.22, is_fixed: true },
-        { name: 'Parcela T-Cross Financiamento', value: 3336.28, is_fixed: true },
-        { name: 'Combustível', value: 708.32, is_fixed: false },
-        { name: 'Taxas / Imprevistos / Acessórios', value: 700.00, is_fixed: false },
-        { name: 'Estacionamentos', value: 663.75, is_fixed: false },
-        { name: 'Portas WRV', value: 500.00, is_fixed: false },
-        { name: 'Seguro Veículo', value: 336.83, is_fixed: true },
-        { name: 'Táxi / Uber', value: 81.15, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Casa',
-      icon: Home,
-      total: 5662.63,
-      color: 'from-emerald-500 to-teal-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Supermercado', value: 1690.80, is_fixed: false },
-        { name: 'Condomínio', value: 1451.79, is_fixed: true },
-        { name: 'Aluguel', value: 500.00, is_fixed: true },
-        { name: 'IPTU', value: 359.73, is_fixed: true },
-        { name: 'Lava e Seca', value: 355.00, is_fixed: true },
-        { name: 'TV TCL', value: 250.92, is_fixed: true },
-        { name: 'Luz (Cemig)', value: 216.00, is_fixed: true },
-        { name: 'Sofá Sala', value: 197.00, is_fixed: true },
-        { name: 'IPTV', value: 147.00, is_fixed: true },
-        { name: 'Celular (Vivo)', value: 139.99, is_fixed: true },
-        { name: 'Tela Janelas', value: 130.00, is_fixed: true },
-        { name: 'Internet Fibra', value: 89.90, is_fixed: true },
-        { name: 'Lixeira / Utensílios', value: 51.03, is_fixed: false },
-        { name: 'Adega', value: 42.67, is_fixed: true },
-        { name: 'AirFryer', value: 40.80, is_fixed: true }
-      ]
-    },
-    {
-      name: 'Compras',
-      icon: ShoppingBag,
-      total: 2773.75,
-      color: 'from-purple-500 to-violet-600',
-      is_obligatory: false,
-      subcategories: [
-        { name: 'Presentes', value: 950.78, is_fixed: false },
-        { name: 'Suplementos (Growth/Whey)', value: 480.56, is_fixed: false },
-        { name: 'Aliança Solitário (Parcela)', value: 382.37, is_fixed: true },
-        { name: 'BoateBus', value: 310.00, is_fixed: false },
-        { name: 'Samsung S26 Ultra (Parcela)', value: 274.66, is_fixed: true },
-        { name: 'Aliexpress / Shopee', value: 151.78, is_fixed: false },
-        { name: 'Doações', value: 102.00, is_fixed: false },
-        { name: 'Conserto Tela S23U', value: 90.20, is_fixed: false },
-        { name: 'Roupas', value: 31.40, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Financiamento',
-      icon: CreditCard,
-      total: 2302.90,
-      color: 'from-amber-500 to-orange-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Parcela Gramado Parks', value: 1925.41, is_fixed: true },
-        { name: 'Condomínio Buona Vitta', value: 377.49, is_fixed: true }
-      ]
-    },
-    {
-      name: 'Saúde',
-      icon: HeartPulse,
-      total: 1278.01,
-      color: 'from-rose-500 to-pink-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Plano de Saúde', value: 509.00, is_fixed: true },
-        { name: 'Seguro de Vida AZOS', value: 353.76, is_fixed: true },
-        { name: 'Academia', value: 299.98, is_fixed: true },
-        { name: 'Farmácia / Remédios', value: 115.27, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Lazer',
-      icon: Film,
-      total: 803.90,
-      color: 'from-pink-500 to-rose-600',
-      is_obligatory: false,
-      subcategories: [
-        { name: 'Eventos Culturais & Esportivos', value: 492.10, is_fixed: false },
-        { name: 'Encontros Sociais & Família', value: 173.80, is_fixed: false },
-        { name: 'Gastronomia & Lazer Noturno', value: 60.00, is_fixed: false },
-        { name: 'Práticas Esportivas', value: 60.00, is_fixed: false },
-        { name: 'Diversos Lazer', value: 18.00, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Alimentação',
-      icon: UtensilsCrossed,
-      total: 793.09,
-      color: 'from-yellow-500 to-amber-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Almoço / Lanches Diários', value: 793.09, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Viagem',
-      icon: Plane,
-      total: 780.94,
-      color: 'from-sky-500 to-indigo-500',
-      is_obligatory: false,
-      subcategories: [
-        { name: 'Hospedagem', value: 267.24, is_fixed: false },
-        { name: 'Combustível Viagem', value: 224.00, is_fixed: false },
-        { name: 'Compras em Viagem', value: 222.70, is_fixed: false },
-        { name: 'Alimentação em Viagem', value: 67.00, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Restaurantes & Delivery',
-      icon: Coffee,
-      total: 506.71,
-      color: 'from-orange-500 to-amber-500',
-      is_obligatory: false,
-      subcategories: [
-        { name: 'Almoço / Jantar GRI', value: 204.30, is_fixed: false },
-        { name: 'Ifood Delivery', value: 204.26, is_fixed: false },
-        { name: 'Sorvetes / Sobremesas', value: 98.15, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Serviços de Assinaturas',
-      icon: Sparkles,
-      total: 254.53,
-      color: 'from-indigo-500 to-blue-600',
-      is_obligatory: false,
-      subcategories: [
-        { name: 'Empiricus SOROS', value: 123.90, is_fixed: true },
-        { name: 'Curso IA Danilo', value: 56.48, is_fixed: true },
-        { name: 'MyProfit', value: 29.90, is_fixed: true },
-        { name: 'Mobills', value: 29.80, is_fixed: true },
-        { name: 'Ifood Club', value: 7.95, is_fixed: true },
-        { name: 'CapCut Pro', value: 6.50, is_fixed: true }
-      ]
-    },
-    {
-      name: 'Pets',
-      icon: Dog,
-      total: 220.04,
-      color: 'from-cyan-500 to-blue-500',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Areia / Ração / Brinquedos', value: 220.04, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Impostos e Taxas PF',
-      icon: Receipt,
-      total: 189.60,
-      color: 'from-slate-500 to-zinc-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Conselho Profissional', value: 189.60, is_fixed: true }
+  // Planilha Médica Genérica Padrão (Isolada de dados pessoais para Demonstração e Novos Usuários)
+  const genericMedicalCategories: CategoryGroup[] = useMemo(() => {
+    if (currentFilter === 'PJ') {
+      return [
+        {
+          name: 'Empresa Médica PJ',
+          icon: Layers,
+          total: 7800.00,
+          color: 'from-cyan-500 to-blue-600',
+          is_obligatory: true,
+          subcategories: [
+            { name: 'Impostos Simples Nacional / DAS', value: 4200.00, is_fixed: true },
+            { name: 'Insumos & Despesas Médicas PJ', value: 1600.00, is_fixed: false },
+            { name: 'Mensalidade Contador PJ', value: 1200.00, is_fixed: true },
+            { name: 'ISS & Taxas Municipais', value: 800.00, is_fixed: true }
+          ]
+        }
       ]
     }
-  ], [])
 
-  // Carrega dados da rota /api/budget com fallback elegante
+    return [
+      {
+        name: 'Moradia',
+        icon: Home,
+        total: 6849.90,
+        color: 'from-emerald-500 to-teal-600',
+        is_obligatory: true,
+        subcategories: [
+          { name: 'Supermercado & Feira', value: 2400.00, is_fixed: false },
+          { name: 'Condomínio Residencial', value: 1850.00, is_fixed: true },
+          { name: 'Empregados / Diarista', value: 1100.00, is_fixed: true },
+          { name: 'Conta de Energia (Luz)', value: 420.00, is_fixed: true },
+          { name: 'IPTU', value: 380.00, is_fixed: true },
+          { name: 'Itens para Casa & Manutenção', value: 250.00, is_fixed: false },
+          { name: 'Telefonia Celular', value: 180.00, is_fixed: true },
+          { name: 'Internet Banda Larga Fibra', value: 149.90, is_fixed: true },
+          { name: 'TV por Assinatura / Streaming', value: 120.00, is_fixed: true }
+        ]
+      },
+      {
+        name: 'Transporte',
+        icon: Car,
+        total: 4300.00,
+        color: 'from-blue-500 to-indigo-600',
+        is_obligatory: true,
+        subcategories: [
+          { name: 'Financiamento Veicular Modelo', value: 1800.00, is_fixed: true },
+          { name: 'Combustível', value: 950.00, is_fixed: false },
+          { name: 'IPVA + Seguro Obrigatório', value: 450.00, is_fixed: true },
+          { name: 'Seguro Auto', value: 420.00, is_fixed: true },
+          { name: 'Manutenção Veículo / Revisão', value: 380.00, is_fixed: false },
+          { name: 'Estacionamentos & Valet', value: 180.00, is_fixed: false },
+          { name: 'Pedágios (Sem Parar)', value: 120.00, is_fixed: true }
+        ]
+      },
+      {
+        name: 'Saúde',
+        icon: HeartPulse,
+        total: 3200.00,
+        color: 'from-rose-500 to-pink-600',
+        is_obligatory: true,
+        subcategories: [
+          { name: 'Plano de Saúde Familiar', value: 1650.00, is_fixed: true },
+          { name: 'Seguro Saúde & Vida', value: 580.00, is_fixed: true },
+          { name: 'Médicos / Terapeutas / Consultas', value: 400.00, is_fixed: false },
+          { name: 'Farmácia & Medicamentos', value: 350.00, is_fixed: false },
+          { name: 'Dentista / Prevenção', value: 220.00, is_fixed: false }
+        ]
+      },
+      {
+        name: 'Despesas Pessoais',
+        icon: Receipt,
+        total: 2800.00,
+        color: 'from-purple-500 to-violet-600',
+        is_obligatory: false,
+        subcategories: [
+          { name: 'Congressos & Simpósios Médicos', value: 850.00, is_fixed: false },
+          { name: 'Cursos & Atualização Científica', value: 600.00, is_fixed: false },
+          { name: 'Vestuário & Jalecos', value: 420.00, is_fixed: false },
+          { name: 'Anuidade CRM / Sociedades Médicas', value: 380.00, is_fixed: true },
+          { name: 'Academia & Condicionamento', value: 350.00, is_fixed: true },
+          { name: 'Cuidados Pessoais / Barbearia', value: 200.00, is_fixed: false }
+        ]
+      },
+      {
+        name: 'Filhos',
+        icon: Sparkles,
+        total: 2700.00,
+        color: 'from-amber-500 to-orange-600',
+        is_obligatory: true,
+        subcategories: [
+          { name: 'Escola / Mensalidade Escolar', value: 1800.00, is_fixed: true },
+          { name: 'Alimentação & Lanches', value: 400.00, is_fixed: false },
+          { name: 'Mesada', value: 250.00, is_fixed: true },
+          { name: 'Atividades Extras & Material', value: 250.00, is_fixed: false }
+        ]
+      },
+      {
+        name: 'Lazer',
+        icon: Film,
+        total: 2230.00,
+        color: 'from-pink-500 to-rose-600',
+        is_obligatory: false,
+        subcategories: [
+          { name: 'Restaurantes & Gastronomia', value: 950.00, is_fixed: false },
+          { name: 'Viagens & Gastos de Férias', value: 800.00, is_fixed: false },
+          { name: 'Comida Delivery (iFood)', value: 320.00, is_fixed: false },
+          { name: 'Passeios & Cinema', value: 160.00, is_fixed: false }
+        ]
+      },
+      {
+        name: 'Despesas Financeiras & Cartões',
+        icon: CreditCard,
+        total: 320.00,
+        color: 'from-slate-500 to-zinc-600',
+        is_obligatory: false,
+        subcategories: [
+          { name: 'Anuidade / Seguros Cartão', value: 142.00, is_fixed: true },
+          { name: 'Tarifas Bancárias', value: 89.00, is_fixed: true },
+          { name: 'Taxas Tesouro Direto / Custódia', value: 89.00, is_fixed: false }
+        ]
+      }
+    ]
+  }, [currentFilter])
+
+  // Carrega dados da rota /api/budget ou fallback genérico protegido
   useEffect(() => {
+    // Escuta atualizações do Wizard em tempo real
+    const handleUpdate = () => {
+      try {
+        const stored = localStorage.getItem('leaomed_user_custom_setup')
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          if (parsed.categories?.length > 0) {
+            const mapped: CategoryGroup[] = parsed.categories
+              .filter((c: any) => currentFilter === 'CONSOLIDATED' || c.scope === currentFilter || c.scope === 'AMBOS')
+              .map((c: any) => {
+                const meta = getCategoryMeta(c.name)
+                const subs = (c.subcategories || []).map((s: any) => ({
+                  name: s.name,
+                  value: 350.00,
+                  is_fixed: s.isFixed ?? true
+                }))
+                const total = subs.reduce((acc: number, s: any) => acc + s.value, 0)
+                return {
+                  name: c.name,
+                  icon: meta.icon,
+                  total: total > 0 ? total : 1200.00,
+                  color: meta.color,
+                  is_obligatory: meta.is_obligatory,
+                  subcategories: subs
+                }
+              })
+            if (mapped.length > 0) {
+              setCategoriesData(mapped)
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('leaomed_setup_updated', handleUpdate)
+    }
+
     if (isDemo) {
-      setCategoriesData(baselineCategories)
-      return
+      handleUpdate()
+      setCategoriesData(prev => prev.length > 0 ? prev : genericMedicalCategories)
+      return () => {
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('leaomed_setup_updated', handleUpdate)
+        }
+      }
     }
 
     let isMounted = true
@@ -316,20 +315,25 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false }: Budget
           })
           setCategoriesData(mapped)
         } else {
-          setCategoriesData(baselineCategories)
+          setCategoriesData(genericMedicalCategories)
         }
       })
       .catch(() => {
-        if (isMounted) setCategoriesData(baselineCategories)
+        if (isMounted) setCategoriesData(genericMedicalCategories)
       })
       .finally(() => {
         if (isMounted) setIsLoading(false)
       })
 
-    return () => { isMounted = false }
-  }, [currentFilter, baselineCategories])
+    return () => { 
+      isMounted = false
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('leaomed_setup_updated', handleUpdate)
+      }
+    }
+  }, [currentFilter, isDemo, genericMedicalCategories])
 
-  const effectiveCategories = categoriesData.length > 0 ? categoriesData : baselineCategories
+  const effectiveCategories = categoriesData.length > 0 ? categoriesData : genericMedicalCategories
 
   // Cálculos consolidados
   const totalObligatory = useMemo(() => {

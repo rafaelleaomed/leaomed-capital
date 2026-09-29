@@ -1,5 +1,7 @@
 import DashboardUI from '@/components/DashboardUI'
 import { DeliveryPayload, DashboardFilter } from '@/utils/dashboardData'
+import { ThemeToggle } from '@/components/ThemeToggle'
+import { ShieldCheck, LogIn, Sparkles } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,29 +18,56 @@ export default async function DemoPage({
   const demoPayload = getDemoPayload(activeFilter)
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative bg-slate-50 dark:bg-[#070B12] text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* Banner de aviso de Demonstração Pública Premium */}
-      <div className="bg-slate-950 border-b border-amber-500/20 text-slate-200 text-xs py-2.5 px-4 text-center font-medium shadow-lg flex flex-wrap items-center justify-center gap-2">
-        <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
-          Portfólio / Demonstração Pública
+      <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-900 dark:text-amber-200 text-xs py-2 px-4 text-center font-medium shadow-xs flex flex-wrap items-center justify-center gap-2">
+        <span className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider">
+          Portfólio / Modo Demonstração
         </span>
-        <span className="text-slate-300">
-          Dados sintéticos de simulação para apresentação técnica. Nenhuma informação real ou privada está exposta.
+        <span>
+          Planilha médica padrão genérica ativa. Nenhuma informação real ou privada está exposta.
         </span>
-        <a 
-          href="/login" 
-          className="inline-flex items-center gap-1 font-bold text-emerald-400 hover:text-emerald-300 transition-colors ml-1"
-        >
-          Acesso Restrito →
-        </a>
       </div>
 
-      <DashboardUI 
-        payload={demoPayload} 
-        currentFilter={activeFilter} 
-        basePath="/demo" 
-        isDemo={true} 
-      />
+      {/* Topbar Executiva no Demo com ThemeToggle */}
+      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-200 dark:border-white/5 bg-white/80 dark:bg-slate-950/80 px-4 md:px-8 backdrop-blur-xl">
+        <div className="flex items-center gap-3">
+          <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-emerald-500/30 bg-slate-900 shadow-md">
+            <img src="/logo.jpg" alt="LeãoMed Capital Logo" className="h-full w-full object-cover" />
+          </div>
+          <div>
+            <span className="font-display text-base md:text-lg font-bold tracking-tight text-slate-900 dark:text-white block leading-tight">
+              LeãoMed Capital
+            </span>
+            <span className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-bold block">
+              Gestão Médica & Inteligência Financeira
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 md:gap-3">
+          {/* Alternador de Modo Claro / Escuro */}
+          <ThemeToggle />
+
+          <a 
+            href="/login" 
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:text-slate-950 transition-all shadow-xs"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Acesso Restrito</span>
+          </a>
+        </div>
+      </header>
+
+      {/* Conteúdo Principal do Dashboard */}
+      <main className="p-4 md:p-8 max-w-7xl mx-auto">
+        <DashboardUI 
+          payload={demoPayload} 
+          currentFilter={activeFilter} 
+          basePath="/demo" 
+          isDemo={true} 
+        />
+      </main>
     </div>
   )
 }
