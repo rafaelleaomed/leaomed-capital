@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useEffect } from 'react'
-import { AlertTriangle, RefreshCw, LogIn, Home } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { AlertTriangle, RefreshCw, LogIn, Home, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 
 export default function ErrorBoundary({
@@ -11,6 +11,8 @@ export default function ErrorBoundary({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const [showDetails, setShowDetails] = useState(false)
+
   useEffect(() => {
     // Log do erro para monitoramento
     console.error('Erro capturado pelo ErrorBoundary:', error)
@@ -31,9 +33,21 @@ export default function ErrorBoundary({
           Ocorreu uma instabilidade temporária ao processar as informações da sua sessão. Você pode tentar recarregar ou reconectar sua conta.
         </p>
 
-        {error.digest && (
-          <div className="mb-6 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/50 text-[11px] font-mono text-slate-400">
-            ID do erro: {error.digest}
+        {error?.message && (
+          <div className="w-full text-left mb-6 p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 text-[11px] text-slate-400 font-mono">
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="w-full flex items-center justify-between text-slate-300 font-semibold cursor-pointer"
+            >
+              <span>Detalhes técnicos</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
+            </button>
+            {showDetails && (
+              <div className="mt-2 pt-2 border-t border-slate-700/50 break-all whitespace-pre-wrap text-rose-300">
+                {error.message}
+                {error.digest && <div className="text-slate-500 mt-1">Digest: {error.digest}</div>}
+              </div>
+            )}
           </div>
         )}
 

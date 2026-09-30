@@ -73,7 +73,7 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
   const savingsRate = totalAnnualIncome > 0 ? (annualBalance / totalAnnualIncome) * 100 : 0
 
   // Máximo para escala dos gráficos
-  const maxVal = Math.max(...monthlyItems.map(m => Math.max(m.income, m.expenses))) * 1.15
+  const maxVal = Math.max(1, ...monthlyItems.map(m => Math.max(m.income, m.expenses))) * 1.15
 
   // Evolução acumulada do saldo ao longo do ano
   let runningBalance = 0
@@ -185,8 +185,8 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
         {/* Barras SVG Interativas */}
         <div className="h-64 sm:h-72 w-full pt-8 pb-4 flex items-end justify-between gap-2 sm:gap-4 border-b border-slate-200 dark:border-white/10">
           {monthlyItems.map((m) => {
-            const incPct = (m.income / maxVal) * 100
-            const expPct = (m.expenses / maxVal) * 100
+            const incPct = maxVal > 0 ? (m.income / maxVal) * 100 : 0
+            const expPct = maxVal > 0 ? (m.expenses / maxVal) * 100 : 0
             const isSelected = hoveredMonth === m.month
 
             return (
