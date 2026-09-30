@@ -40,9 +40,9 @@ const REAL_USER_MONTHLY_DATA: Record<string, {
   pf: { income: number; expenses: number; card: number; fixed: number };
 }> = {
   '2025-11': { // Dez/25
-    consolidated: { income: 21202.24, expenses: 87868.64, card: 4734.22, fixed: 70680.73 },
+    consolidated: { income: 21202.24, expenses: 22974.76, card: 4734.22, fixed: 18240.54 },
     pj: { income: 10400.00, expenses: 1132.75, card: 0, fixed: 1132.75 },
-    pf: { income: 21202.24, expenses: 86735.89, card: 4734.22, fixed: 69547.98 }
+    pf: { income: 21202.24, expenses: 21842.01, card: 4734.22, fixed: 17107.79 }
   },
   '2026-00': { // Jan/26
     consolidated: { income: 23000.00, expenses: 10860.21, card: 2400.00, fixed: 8926.28 },
