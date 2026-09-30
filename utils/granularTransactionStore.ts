@@ -1,6 +1,7 @@
 import { CategoryRulesEngine } from './categoryRulesEngine'
 import { PJ_REAL_TRANSACTIONS } from './pjTransactionsHistory'
 import { PF_MOBILLS_REAL_TRANSACTIONS } from './pfMobillsTransactionsHistory'
+import { InstallmentStore } from './installmentStore'
 
 export interface GranularTransaction {
   id: string
@@ -89,7 +90,7 @@ export class GranularTransactionStore {
     } catch (_) {}
   }
 
-  // Adiciona uma nova transação com enriquecimento inteligente de categoria
+  // Adiciona uma nova transação com enriquecimento inteligente de categoria e detecção de parcelamentos
   static addTransaction(tx: Omit<GranularTransaction, 'id' | 'isDuplicateSuspect' | 'duplicateReason'>): GranularTransaction {
     const items = this.getAll()
     const isPayment = CategoryRulesEngine.isBillPayment(tx.description)
@@ -103,6 +104,10 @@ export class GranularTransactionStore {
 
     items.unshift(newTx)
     this.save(items)
+
+    // Sincroniza automaticamente com o sistema de parcelamentos se houver indicação de parcela (ex: 10/12)
+    InstallmentStore.syncFromTransaction(newTx)
+
     return newTx
   }
 
@@ -118,6 +123,10 @@ export class GranularTransactionStore {
     }
 
     this.save(items)
+
+    // Sincroniza atualização com o sistema de parcelamentos
+    InstallmentStore.syncFromTransaction(items[index])
+
     return true
   }
 
@@ -176,6 +185,9 @@ export class GranularTransactionStore {
       }
       createdList.push(newTx)
       items.unshift(newTx)
+
+      // Sincroniza automaticamente com o sistema de parcelamentos
+      InstallmentStore.syncFromTransaction(newTx)
     }
 
     this.save(items)
