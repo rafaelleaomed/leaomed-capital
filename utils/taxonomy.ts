@@ -1,7 +1,3 @@
-/**
- * Taxonomia Oficial do Sistema baseada na Planilha e Extratos Reais do Usuário
- */
-
 export interface SubcategoryDef {
   name: string;
   isFixed: boolean;
@@ -12,6 +8,31 @@ export interface CategoryDef {
   name: string;
   scope: 'PF' | 'PJ' | 'AMBOS';
   subcategories: SubcategoryDef[];
+}
+
+export const CATEGORY_CANONICAL_MAP: Record<string, string> = {
+  'Reembolso': 'Reembolso & Devolução',
+  'Reembolso & Devolução': 'Reembolso & Devolução',
+  'Rendimentos de Investimentos': 'Rendimentos & Investimentos',
+  'Rendimentos & Investimentos': 'Rendimentos & Investimentos',
+  'Presente': 'Presentes & PIX Recebidos',
+  'Presentes & PIX Recebidos': 'Presentes & PIX Recebidos',
+  'Pró-Labore / Salário PJ': 'Receita PF & Pró-Labore',
+  'Receita PF & Pró-Labore': 'Receita PF & Pró-Labore',
+  'Empresa - Receitas': 'Faturamento Hospitalar & PJ',
+  'Faturamento Hospitalar & PJ': 'Faturamento Hospitalar & PJ',
+  'Transferência Entre Contas': 'Transferência / Aporte',
+  'Transferência / Aporte': 'Transferência / Aporte',
+  'Pet': 'Pets',
+  'Assinaturas': 'Serviços de Assinaturas',
+  'Restaurante': 'Alimentação',
+  'Impostos': 'Impostos e Taxas PF'
+};
+
+export function normalizeCategoryName(name: string | undefined | null): string {
+  if (!name) return '';
+  const trimmed = name.trim();
+  return CATEGORY_CANONICAL_MAP[trimmed] || trimmed;
 }
 
 export const USER_TAXONOMY: CategoryDef[] = [

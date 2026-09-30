@@ -74,7 +74,7 @@ export function CategoryChart({ categories }: CategoryChartProps) {
       </div>
 
       <div className="pt-3 border-t border-slate-100 dark:border-white/5 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-        <span>Concentrado em Fatura C6 & Financiamentos</span>
+        <span>Distribuição de Gastos & Compromissos Fixos</span>
         <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Categorização 100% Automática</span>
       </div>
     </div>

@@ -39,6 +39,7 @@ import {
   GranularTransaction 
 } from '@/utils/granularTransactionStore'
 import { CategoryRulesEngine } from '@/utils/categoryRulesEngine'
+import { normalizeCategoryName } from '@/utils/taxonomy'
 import { InvestmentLinkModal } from './InvestmentLinkModal'
 
 interface GranularExpenseAuditorProps {
@@ -233,7 +234,10 @@ export function GranularExpenseAuditor({
   const [bulkSubcategory, setBulkSubcategory] = useState<string>('Estacionamentos')
   const [isBulkCustomSubcategory, setIsBulkCustomSubcategory] = useState<boolean>(false)
   const [bulkCustomSubcategory, setBulkCustomSubcategory] = useState<string>('')
+  const [hospitalsList, setHospitalsList] = useState<string[]>(BH_HOSPITALS)
   const [bulkSubdivision, setBulkSubdivision] = useState<string>('')
+  const [isBulkCustomSubdivision, setIsBulkCustomSubdivision] = useState<boolean>(false)
+  const [bulkCustomSubdivision, setBulkCustomSubdivision] = useState<string>('')
   const [bulkLearnRule, setBulkLearnRule] = useState<boolean>(true)
   const [bulkToast, setBulkToast] = useState<string | null>(null)
 
@@ -316,7 +320,11 @@ export function GranularExpenseAuditor({
   // Carrega transações e ouve eventos de atualização
   const loadTransactions = () => {
     const list = GranularTransactionStore.getAll()
-    setTransactions(list)
+    const normalized = list.map(t => ({
+      ...t,
+      category: normalizeCategoryName(t.category)
+    }))
+    setTransactions(normalized)
   }
 
   useEffect(() => {
@@ -629,27 +637,27 @@ export function GranularExpenseAuditor({
   const availableCategories = useMemo(() => {
     const set = new Set<string>()
     // Categorias padrão da taxonomia + categorias existentes nas transações
-    Object.keys(STANDARD_TAXONOMY).forEach(c => set.add(c))
+    Object.keys(STANDARD_TAXONOMY).forEach(c => set.add(normalizeCategoryName(c)))
     transactions.forEach(t => {
-      if (t.category && t.category.trim()) set.add(t.category.trim())
+      if (t.category && t.category.trim()) set.add(normalizeCategoryName(t.category.trim()))
     })
     return Array.from(set).sort()
   }, [transactions])
 
   const expenseCategories = useMemo(() => {
     const set = new Set<string>()
-    Object.keys(EXPENSE_TAXONOMY).forEach(c => set.add(c))
+    Object.keys(EXPENSE_TAXONOMY).forEach(c => set.add(normalizeCategoryName(c)))
     transactions.forEach(t => {
-      if (t.amount < 0 && t.category && t.category.trim()) set.add(t.category.trim())
+      if (t.amount < 0 && t.category && t.category.trim()) set.add(normalizeCategoryName(t.category.trim()))
     })
     return Array.from(set).sort()
   }, [transactions])
 
   const incomeCategories = useMemo(() => {
     const set = new Set<string>()
-    Object.keys(INCOME_TAXONOMY).forEach(c => set.add(c))
+    Object.keys(INCOME_TAXONOMY).forEach(c => set.add(normalizeCategoryName(c)))
     transactions.forEach(t => {
-      if (t.amount > 0 && t.category && t.category.trim()) set.add(t.category.trim())
+      if (t.amount > 0 && t.category && t.category.trim()) set.add(normalizeCategoryName(t.category.trim()))
     })
     return Array.from(set).sort()
   }, [transactions])
@@ -782,12 +790,18 @@ export function GranularExpenseAuditor({
   const handleApplyBulkCategorization = () => {
     if (selectedTxIds.size === 0) return
 
-    const finalCat = isBulkCustomCategory ? bulkCustomCategory.trim() : bulkCategory.trim()
+    const rawCat = isBulkCustomCategory ? bulkCustomCategory.trim() : bulkCategory.trim()
+    const finalCat = normalizeCategoryName(rawCat)
     const finalSubcat = (isBulkCustomCategory || isBulkCustomSubcategory) 
       ? bulkCustomSubcategory.trim() 
       : bulkSubcategory.trim()
+    const finalSubdivision = isBulkCustomSubdivision ? bulkCustomSubdivision.trim() : bulkSubdivision.trim()
 
     if (!finalCat) return
+
+    if (finalSubdivision && !hospitalsList.includes(finalSubdivision)) {
+      setHospitalsList(prev => [...prev, finalSubdivision])
+    }
 
     const count = selectedTxIds.size
     const targets = Array.from(selectedTxIds)
@@ -807,7 +821,7 @@ export function GranularExpenseAuditor({
             pattern: tx.description,
             category: finalCat,
             subcategory: finalSubcat || 'Outros',
-            subdivision: bulkSubdivision.trim() || undefined,
+            subdivision: finalSubdivision || undefined,
             entityType: tx.entityType,
             alwaysApply: true
           })
@@ -816,7 +830,7 @@ export function GranularExpenseAuditor({
           amount: finalAmount,
           category: finalCat,
           subcategory: finalSubcat || 'Outros',
-          subdivision: bulkSubdivision.trim() || tx.subdivision
+          subdivision: finalSubdivision || tx.subdivision
         })
       }
     })
@@ -824,6 +838,8 @@ export function GranularExpenseAuditor({
     setSelectedTxIds(new Set())
     setIsBulkCustomCategory(false)
     setIsBulkCustomSubcategory(false)
+    setIsBulkCustomSubdivision(false)
+    setBulkCustomSubdivision('')
     loadTransactions()
     setBulkToast(`✅ ${count} lançamento(s) recategorizado(s) com sucesso em "${finalCat} > ${finalSubcat || 'Outros'}"!`)
     setTimeout(() => setBulkToast(null), 4500)
@@ -2557,16 +2573,44 @@ export function GranularExpenseAuditor({
                   <MapPin className="w-3 h-3" />
                   Hospital / Local (Opcional)
                 </label>
-                <select
-                  value={bulkSubdivision}
-                  onChange={(e) => setBulkSubdivision(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-indigo-500/30 text-indigo-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer"
-                >
-                  <option value="">Nenhum / Não alterar</option>
-                  {BH_HOSPITALS.map(hosp => (
-                    <option key={hosp} value={hosp}>🏥 {hosp}</option>
-                  ))}
-                </select>
+                {!isBulkCustomSubdivision ? (
+                  <select
+                    value={bulkSubdivision}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val === 'NEW_HOSPITAL') {
+                        setIsBulkCustomSubdivision(true)
+                      } else {
+                        setIsBulkCustomSubdivision(false)
+                        setBulkSubdivision(val)
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-indigo-500/30 text-indigo-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer"
+                  >
+                    <option value="">Nenhum / Não alterar</option>
+                    {hospitalsList.map(hosp => (
+                      <option key={hosp} value={hosp}>🏥 {hosp}</option>
+                    ))}
+                    <option value="NEW_HOSPITAL">➕ + Criar Novo Hospital / Local...</option>
+                  </select>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      placeholder="Novo Hospital / Local..."
+                      value={bulkCustomSubdivision}
+                      onChange={(e) => setBulkCustomSubdivision(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-indigo-500 text-indigo-300 text-xs font-bold focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setIsBulkCustomSubdivision(false)}
+                      className="text-[10px] text-slate-400 hover:text-white p-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

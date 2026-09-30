@@ -131,9 +131,9 @@ export default function DashboardUI({
             </span>
           </div>
           <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {isDemo 
-              ? 'Controle automatizado: Gestão Médica Integrada PJ (Clínica/Plantões) + PF & Investimentos' 
-              : 'Controle automatizado: Inter PJ + Itaú, Nubank e C6 Carbon Black PF'}
+            {isOwner 
+              ? 'Controle automatizado: Inter PJ + Itaú, Nubank e C6 Carbon Black PF' 
+              : 'Controle automatizado: Gestão Médica Integrada PJ (Clínica/Plantões) + PF & Investimentos'}
           </p>
         </div>
         

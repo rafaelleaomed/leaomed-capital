@@ -105,7 +105,7 @@ function getEmptyUserPayload(filter: DashboardFilter, period: string): DeliveryP
     alerts: [
       {
         type: 'opportunity',
-        message: 'Bem-vindo ao LeãoMed Capital! Comece importando suas faturas de cartão (C6, Nubank, Itaú) ou extratos PJ.',
+        message: 'Bem-vindo ao LeãoMed Capital! Comece importando suas faturas de cartão de crédito ou extratos bancários de plantões PJ.',
         impact: 'high'
       }
     ]

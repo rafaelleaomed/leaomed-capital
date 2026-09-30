@@ -62,7 +62,7 @@ export function CashFlowChart({ totalIncome, totalExpenses }: CashFlowChartProps
 
       <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-3">
         <span>Faturamento PJ + Pró-labore</span>
-        <span>Cartões C6 / Itaú / Nubank + Tributos</span>
+        <span>Faturas de Cartões & Tributos</span>
       </div>
     </div>
   )

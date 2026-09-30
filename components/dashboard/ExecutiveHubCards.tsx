@@ -91,7 +91,7 @@ export function ExecutiveHubCards({
             </h2>
             
             <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
-              Arraste suas faturas de cartões (C6 Carbon Black, Nubank, Itaú) ou tire foto de extratos bancários de plantões PJ. O motor inteligente aplica sua taxonomia personalizada e memoriza regras para nunca mais precisar classificar manualmente.
+              Arraste suas faturas de cartões de crédito ou tire foto de extratos bancários de plantões PJ. O motor inteligente aplica sua taxonomia personalizada e memoriza regras para nunca mais precisar classificar manualmente.
             </p>
           </div>
 
