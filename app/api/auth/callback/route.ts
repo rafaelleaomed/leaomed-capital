@@ -1,24 +1,40 @@
 import { createSupabaseServerClient } from '@/utils/supabase-server';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 /**
- * Rota de callback OAuth e Magic Link do Supabase.
- * Troca o código de autorização por uma sessão válida.
+ * Rota de callback OAuth (Google) e Magic Link / Confirmação do Supabase.
+ * Troca o código de autorização por uma sessão válida nos cookies.
  */
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/dashboard';
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get('code');
+  const next = requestUrl.searchParams.get('next') ?? '/dashboard';
+  
+  // Determina o host público correto (Vercel ou custom domain)
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+  const origin = forwardedHost 
+    ? `${forwardedProto}://${forwardedHost}` 
+    : (process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin);
 
   if (code) {
-    const supabase = await createSupabaseServerClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    try {
+      const supabase = await createSupabaseServerClient();
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      if (!error && data?.session) {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
+      if (error) {
+        console.error('Erro ao trocar código por sessão no Supabase:', error.message);
+      }
+    } catch (e) {
+      console.error('Exceção no auth callback:', e);
     }
   }
 
-  // Em caso de erro, redireciona para login com mensagem
+  // Fallback: redireciona para login com mensagem clara
   return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
 }

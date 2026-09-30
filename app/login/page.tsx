@@ -14,10 +14,34 @@ import {
   LogIn, 
   User, 
   Stethoscope,
-  ArrowRight,
-  ShieldCheck,
-  Sparkles
+  ArrowRight, 
+  ShieldCheck, 
+  Sparkles,
+  Loader2
 } from 'lucide-react';
+
+function GoogleIcon() {
+  return (
+    <svg className="w-4 h-4" viewBox="0 0 24 24">
+      <path
+        fill="#4285F4"
+        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.27 21.41 7.33 24 12 24z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.27 2.59 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+      />
+    </svg>
+  );
+}
 
 function LoginForm() {
   const router = useRouter();
@@ -34,6 +58,7 @@ function LoginForm() {
   const [crm, setCrm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [resetSent, setResetSent] = useState(false);
@@ -47,7 +72,37 @@ function LoginForm() {
     });
   }, [router, redirectTo, supabase]);
 
-  // Login de Usuário Existente
+  // Autenticação com Google OAuth com 1 Clique
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    setError(null);
+    try {
+      const redirectUrl = typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')
+        ? `${window.location.origin}/api/auth/callback`
+        : (process.env.NEXT_PUBLIC_SITE_URL || 'https://leaomed-capital-rafael-leaos-projects-e3cb079d.vercel.app') + '/api/auth/callback';
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+
+      if (error) {
+        setError(`Erro ao autenticar com Google: ${error.message}`);
+        setGoogleLoading(false);
+      }
+    } catch (err: any) {
+      setError('Falha ao inicializar o login do Google.');
+      setGoogleLoading(false);
+    }
+  };
+
+  // Login com E-mail e Senha
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -69,7 +124,7 @@ function LoginForm() {
     router.refresh();
   };
 
-  // Cadastro de Novo Usuário (Médico / Pessoa Física ou Jurídica)
+  // Cadastro Simplificado de Novo Usuário (com Auto-Login Imediato)
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -114,14 +169,22 @@ function LoginForm() {
       return;
     }
 
-    // Se a confirmação de e-mail estiver desabilitada no Supabase, a sessão já existe
+    // Se já gerou sessão direta (auto-confirm ativo no Supabase), entra imediatamente
     if (data.session) {
-      router.replace('/dashboard?onboarding=true');
+      router.replace('/dashboard');
       router.refresh();
       return;
     }
 
-    // Caso contrário, informa que a conta foi criada
+    // Tenta autenticar diretamente
+    const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInData?.session && !signInErr) {
+      router.replace('/dashboard');
+      router.refresh();
+      return;
+    }
+
+    // Caso a confirmação de e-mail esteja estritamente ativada no projeto Supabase
     setSignupSuccess(true);
     setLoading(false);
   };
@@ -152,7 +215,7 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-8 relative">
-      {/* Background gradient de alta performance */}
+      {/* Background gradient */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
@@ -184,8 +247,7 @@ function LoginForm() {
                 Conta criada com sucesso!
               </h2>
               <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-                Enviamos um link de confirmação para <strong className="text-white">{email}</strong>.
-                Acesse sua caixa de entrada para ativar sua conta e iniciar o onboarding personalizado.
+                Enviamos um link de ativação para <strong className="text-white">{email}</strong>.
               </p>
               <div className="pt-4 border-t border-slate-800 flex flex-col gap-2">
                 <button
@@ -203,7 +265,6 @@ function LoginForm() {
               </div>
             </div>
           ) : mode === 'reset' && resetSent ? (
-            /* Tela de Confirmação de Recuperação de Senha */
             <div className="text-center py-4 space-y-4">
               <div className="w-14 h-14 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mx-auto shadow-inner border border-blue-500/30">
                 <Mail className="w-7 h-7" />
@@ -212,7 +273,7 @@ function LoginForm() {
                 E-mail de recuperação enviado!
               </h2>
               <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-                Verifique sua caixa de entrada em <strong className="text-white">{email}</strong> para redefinir sua senha de acesso.
+                Verifique sua caixa de entrada em <strong className="text-white">{email}</strong> para redefinir sua senha.
               </p>
               <button
                 onClick={() => { setMode('login'); setResetSent(false); }}
@@ -223,13 +284,37 @@ function LoginForm() {
             </div>
           ) : (
             <>
+              {/* Botão Oficial: Login com Google com 1 Clique */}
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={googleLoading || loading}
+                className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs sm:text-sm flex items-center justify-center gap-3 transition-all duration-200 shadow-md active:scale-98 cursor-pointer disabled:opacity-60 mb-5"
+              >
+                {googleLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-slate-700" />
+                ) : (
+                  <GoogleIcon />
+                )}
+                <span>Continuar com o Google</span>
+              </button>
+
+              {/* Divisor com "ou continue com e-mail" */}
+              <div className="relative flex items-center justify-center mb-5">
+                <div className="border-t border-slate-800 w-full" />
+                <span className="bg-slate-900 px-3 text-[11px] uppercase tracking-wider font-semibold text-slate-500 shrink-0">
+                  ou continue com e-mail
+                </span>
+                <div className="border-t border-slate-800 w-full" />
+              </div>
+
               {/* Seletor de Modo: Entrar vs Criar Conta */}
               {mode !== 'reset' && (
-                <div className="grid grid-cols-2 p-1 bg-slate-950/80 rounded-2xl border border-slate-800 mb-6 text-xs font-bold">
+                <div className="grid grid-cols-2 p-1 bg-slate-950/80 rounded-2xl border border-slate-800 mb-5 text-xs font-bold">
                   <button
                     type="button"
                     onClick={() => { setMode('login'); setError(null); }}
-                    className={`py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                       mode === 'login'
                         ? 'bg-slate-800 text-white shadow-sm'
                         : 'text-slate-400 hover:text-white'
@@ -241,7 +326,7 @@ function LoginForm() {
                   <button
                     type="button"
                     onClick={() => { setMode('signup'); setError(null); }}
-                    className={`py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                       mode === 'signup'
                         ? 'bg-emerald-500 text-slate-950 font-black shadow-sm shadow-emerald-500/30'
                         : 'text-slate-400 hover:text-white'
@@ -253,27 +338,9 @@ function LoginForm() {
                 </div>
               )}
 
-              {/* Título de Boas-vindas */}
-              <div className="mb-5">
-                <h2 className="text-lg font-bold text-white">
-                  {mode === 'login'
-                    ? 'Acesse seu painel financeiro'
-                    : mode === 'signup'
-                    ? 'Criar nova conta de médico'
-                    : 'Recuperar acesso'}
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {mode === 'login'
-                    ? 'Entre com suas credenciais para gerenciar suas contas.'
-                    : mode === 'signup'
-                    ? 'Inicie com a planilha padrão médica e personalize suas categorias.'
-                    : 'Digite seu e-mail para receber as instruções de recuperação.'}
-                </p>
-              </div>
-
               {/* Mensagem de Erro */}
               {error && (
-                <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/20 rounded-xl p-3.5 mb-5 text-red-300 text-xs">
+                <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4 text-red-300 text-xs">
                   <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
                   <p className="leading-relaxed font-medium">{error}</p>
                 </div>
@@ -281,9 +348,9 @@ function LoginForm() {
 
               <form 
                 onSubmit={mode === 'login' ? handleLogin : mode === 'signup' ? handleSignUp : handleReset} 
-                className="space-y-3.5"
+                className="space-y-3"
               >
-                {/* Campos adicionais exclusivos de cadastro */}
+                {/* Campos adicionais de cadastro */}
                 {mode === 'signup' && (
                   <>
                     <div className="space-y-1">
@@ -302,7 +369,7 @@ function LoginForm() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
                         <label className="text-xs font-semibold text-slate-300">
                           Especialidade <span className="text-slate-500 font-normal">(Opcional)</span>
@@ -314,7 +381,7 @@ function LoginForm() {
                             value={specialty}
                             onChange={(e) => setSpecialty(e.target.value)}
                             placeholder="Ex: Cirurgia Geral"
-                            className="w-full bg-slate-800/60 border border-slate-700 text-white placeholder-slate-500 rounded-xl pl-9 pr-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                            className="w-full bg-slate-800/60 border border-slate-700 text-white placeholder-slate-500 rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
                           />
                         </div>
                       </div>
@@ -328,7 +395,7 @@ function LoginForm() {
                           value={crm}
                           onChange={(e) => setCrm(e.target.value)}
                           placeholder="123456/MG"
-                          className="w-full bg-slate-800/60 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                          className="w-full bg-slate-800/60 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
                         />
                       </div>
                     </div>
@@ -354,7 +421,7 @@ function LoginForm() {
                   </div>
                 </div>
 
-                {/* Password */}
+                {/* Senha */}
                 {mode !== 'reset' && (
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
@@ -418,10 +485,13 @@ function LoginForm() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-black rounded-xl py-3 text-xs sm:text-sm transition-all duration-200 shadow-lg shadow-emerald-500/25 cursor-pointer mt-4 flex items-center justify-center gap-2"
+                  className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-black rounded-xl py-3 text-xs sm:text-sm transition-all duration-200 shadow-lg shadow-emerald-500/25 cursor-pointer mt-3 flex items-center justify-center gap-2"
                 >
                   {loading ? (
-                    'Processando...'
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Processando...
+                    </span>
                   ) : mode === 'login' ? (
                     <>
                       <span>Entrar no Painel</span>
@@ -438,8 +508,8 @@ function LoginForm() {
                 </button>
               </form>
 
-              {/* Links de navegação entre Login, Cadastro e Recuperação */}
-              <div className="mt-5 pt-4 border-t border-slate-800/80 text-center">
+              {/* Links de navegação */}
+              <div className="mt-4 pt-3 border-t border-slate-800/80 text-center">
                 {mode === 'login' ? (
                   <p className="text-xs text-slate-400">
                     Não tem uma conta ainda?{' '}
@@ -477,7 +547,7 @@ function LoginForm() {
         </div>
 
         {/* Link para o Modo Demonstração Pública */}
-        <div className="text-center mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
+        <div className="text-center mt-5 flex items-center justify-center gap-2 text-xs text-slate-500">
           <ShieldCheck className="w-4 h-4 text-emerald-500" />
           <span>Quer conhecer antes de criar conta?</span>
           <a 
