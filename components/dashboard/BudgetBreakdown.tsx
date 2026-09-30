@@ -584,16 +584,117 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
       subcategories: [
         { name: 'Retirada de Pró-Labore da Clínica', value: 22000.00, is_fixed: true },
         { name: 'Consultório Particular Presencial', value: 6200.00, is_fixed: false },
-        { name: 'Rendimentos FIIs & Caixa', value: 3000.00, is_fixed: false }
       ]
     }
   ], [])
 
-  // Selecionar fontes ativas baseadas no flag isDemo
-  const baseExpensePFCategories = isDemo ? demoExpensePFCategories : realExpensePFCategories
-  const baseExpensePJCategories = isDemo ? demoExpensePJCategories : realExpensePJCategories
-  const baseIncomePJCategories = isDemo ? demoIncomePJCategories : realIncomePJCategories
-  const baseIncomePFCategories = isDemo ? demoIncomePFCategories : realIncomePFCategories
+  // Categorias Zeradas para Novos Usuários
+  const emptyExpensePFCategories: CategoryGroup[] = useMemo(() => [
+    {
+      name: 'Transporte',
+      icon: Car,
+      total: 0.00,
+      color: 'from-blue-500 to-cyan-500',
+      is_obligatory: true,
+      subcategories: [
+        { name: 'Combustível', value: 0.00, is_fixed: false },
+        { name: 'Seguro Auto', value: 0.00, is_fixed: true },
+        { name: 'Estacionamento & Táxi/Uber', value: 0.00, is_fixed: false },
+        { name: 'Manutenção / Revisão', value: 0.00, is_fixed: false }
+      ]
+    },
+    {
+      name: 'Casa & Moradia',
+      icon: Home,
+      total: 0.00,
+      color: 'from-emerald-500 to-teal-600',
+      is_obligatory: true,
+      subcategories: [
+        { name: 'Aluguel / Condomínio', value: 0.00, is_fixed: true },
+        { name: 'Supermercado Familiar', value: 0.00, is_fixed: false },
+        { name: 'Energia, Internet & Celular', value: 0.00, is_fixed: true }
+      ]
+    },
+    {
+      name: 'Saúde & Bem-Estar',
+      icon: HeartPulse,
+      total: 0.00,
+      color: 'from-rose-500 to-pink-600',
+      is_obligatory: true,
+      subcategories: [
+        { name: 'Plano de Saúde', value: 0.00, is_fixed: true },
+        { name: 'Farmácia & Medicamentos', value: 0.00, is_fixed: false },
+        { name: 'Academia & Esportes', value: 0.00, is_fixed: true }
+      ]
+    },
+    {
+      name: 'Compras & Lazer',
+      icon: ShoppingBag,
+      total: 0.00,
+      color: 'from-amber-500 to-orange-500',
+      is_obligatory: false,
+      subcategories: [
+        { name: 'Compras & Presentes', value: 0.00, is_fixed: false },
+        { name: 'Restaurantes & Delivery', value: 0.00, is_fixed: false },
+        { name: 'Lazer & Viagens', value: 0.00, is_fixed: false }
+      ]
+    }
+  ], [])
+
+  const emptyExpensePJCategories: CategoryGroup[] = useMemo(() => [
+    {
+      name: 'Tributos & Impostos PJ',
+      icon: Building2,
+      total: 0.00,
+      color: 'from-blue-600 to-indigo-700',
+      is_obligatory: true,
+      subcategories: [
+        { name: 'Simples Nacional / DAS', value: 0.00, is_fixed: true },
+        { name: 'Mensalidade Assessoria Contábil', value: 0.00, is_fixed: true },
+        { name: 'Tarifas Bancárias PJ', value: 0.00, is_fixed: false }
+      ]
+    }
+  ], [])
+
+  const emptyIncomePJCategories: CategoryGroup[] = useMemo(() => [
+    {
+      name: 'Receitas PJ (Plantões & Contratos)',
+      icon: Stethoscope,
+      total: 0.00,
+      color: 'from-emerald-600 to-teal-700',
+      is_obligatory: true,
+      subcategories: [
+        { name: 'Plantão Hospitalar / Clínica', value: 0.00, is_fixed: true },
+        { name: 'Repasses & Convênios', value: 0.00, is_fixed: false }
+      ]
+    }
+  ], [])
+
+  const emptyIncomePFCategories: CategoryGroup[] = useMemo(() => [
+    {
+      name: 'Receitas PF (Pró-Labore & Entradas)',
+      icon: Briefcase,
+      total: 0.00,
+      color: 'from-purple-500 to-indigo-600',
+      is_obligatory: true,
+      subcategories: [
+        { name: 'Pró-Labore PJ ➔ PF', value: 0.00, is_fixed: true },
+        { name: 'Consultório Particular', value: 0.00, is_fixed: false },
+        { name: 'Rendimentos de Investimentos', value: 0.00, is_fixed: false }
+      ]
+    }
+  ], [])
+
+  // Selecionar fontes ativas: se for demo ou se o usuário autenticado for o Dr. Rafael Leão
+  const isOwnerUser = typeof window !== 'undefined' && Boolean(
+    localStorage.getItem('leaomed_current_user_email')?.toLowerCase().includes('rafael') ||
+    localStorage.getItem('leaomed_current_user_email')?.toLowerCase() === 'rafaelleaobh@gmail.com'
+  )
+
+  const baseExpensePFCategories = isDemo ? demoExpensePFCategories : isOwnerUser ? realExpensePFCategories : emptyExpensePFCategories
+  const baseExpensePJCategories = isDemo ? demoExpensePJCategories : isOwnerUser ? realExpensePJCategories : emptyExpensePJCategories
+  const baseIncomePJCategories = isDemo ? demoIncomePJCategories : isOwnerUser ? realIncomePJCategories : emptyIncomePJCategories
+  const baseIncomePFCategories = isDemo ? demoIncomePFCategories : isOwnerUser ? realIncomePFCategories : emptyIncomePFCategories
 
   // Estados locais para permitir edição e exclusão persistidas
   const [expensePFCats, setExpensePFCats] = useState<CategoryGroup[]>(baseExpensePFCategories)
@@ -601,7 +702,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
   const [incomePJCats, setIncomePJCats] = useState<CategoryGroup[]>(baseIncomePJCategories)
   const [incomePFCats, setIncomePFCats] = useState<CategoryGroup[]>(baseIncomePFCategories)
 
-  // Atualizar quando mudar isDemo
+  // Atualizar quando mudar isDemo ou status de usuário
   useEffect(() => {
     setExpensePFCats(baseExpensePFCategories)
     setExpensePJCats(baseExpensePJCategories)
@@ -609,9 +710,17 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
     setIncomePFCats(baseIncomePFCategories)
   }, [baseExpensePFCategories, baseExpensePJCategories, baseIncomePJCategories, baseIncomePFCategories])
 
-  // Carregar edições e exclusões locais salvas no localStorage
+  // Carregar edições e exclusões locais salvas no localStorage isolado por usuário
   useEffect(() => {
     try {
+      const userEmail = localStorage.getItem('leaomed_current_user_email') || ''
+      const isOwner = userEmail.toLowerCase().includes('rafael') || userEmail.toLowerCase() === 'rafaelleaobh@gmail.com'
+      if (!isDemo && !isOwner) {
+        // Novo usuário: histórico de PJ inicia zerado
+        setPjTaxHistory([])
+        return
+      }
+
       const storedDeleted = localStorage.getItem('leaomed_deleted_budget_items')
       const deletedKeys: string[] = storedDeleted ? JSON.parse(storedDeleted) : []
 

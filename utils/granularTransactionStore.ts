@@ -37,44 +37,59 @@ export interface GranularTransaction {
   categorizationError?: string
 }
 
-const STORAGE_KEY = 'leaomed_granular_transactions_v5'
+function getStorageKey(): string {
+  if (typeof window === 'undefined') return 'leaomed_granular_transactions_v5'
+  try {
+    const pathname = window.location.pathname
+    if (pathname.startsWith('/demo')) return 'leaomed_granular_transactions_demo'
+    
+    // Recupera usuário atual do cache de sessão
+    const userEmail = localStorage.getItem('leaomed_current_user_email') || ''
+    if (userEmail && (userEmail.toLowerCase().includes('rafael') || userEmail.toLowerCase() === 'rafaelleaobh@gmail.com')) {
+      return 'leaomed_granular_transactions_v5'
+    }
+    if (userEmail) {
+      return `leaomed_granular_txs_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}`
+    }
+  } catch (_) {}
+  return 'leaomed_granular_transactions_user'
+}
+
+function shouldLoadSeedData(): boolean {
+  if (typeof window === 'undefined') return false
+  const pathname = window.location.pathname
+  if (pathname.startsWith('/demo')) return true
+  const userEmail = localStorage.getItem('leaomed_current_user_email') || ''
+  return Boolean(userEmail && (userEmail.toLowerCase().includes('rafael') || userEmail.toLowerCase() === 'rafaelleaobh@gmail.com'))
+}
 
 // Base histórica real auditada consolidada (PF Mobills + PJ Banco Inter)
 const INITIAL_TRANSACTIONS: GranularTransaction[] = [
-  // 1. Pessoa Física Real (Extrato Mobills Mar/2026 a Set/2026 - 936 Lançamentos Reais Categorizados)
   ...(PF_MOBILLS_REAL_TRANSACTIONS as unknown as GranularTransaction[]),
-
-  // 2. Pessoa Jurídica Real (Extrato Banco Inter dos Últimos 2 Anos - 132 Lançamentos Reais)
   ...(PJ_REAL_TRANSACTIONS as unknown as GranularTransaction[])
 ]
 
 export class GranularTransactionStore {
-  // Busca todas as transações persistidas
+  // Busca todas as transações persistidas isoladas por usuário
   static getAll(): GranularTransaction[] {
-    if (typeof window === 'undefined') return INITIAL_TRANSACTIONS
+    if (typeof window === 'undefined') return []
+    const key = getStorageKey()
+    const canLoadSeed = shouldLoadSeedData()
+    const seed = canLoadSeed ? INITIAL_TRANSACTIONS : []
+
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
+      const raw = localStorage.getItem(key)
       if (!raw) {
-        // Se existir v3 ou v2 antigo, preserva transações adicionadas e mescla com as novas
-        const oldV4 = localStorage.getItem('leaomed_granular_transactions_v4')
-        const oldV3 = localStorage.getItem('leaomed_granular_transactions_v3')
-        const oldV2 = localStorage.getItem('leaomed_granular_transactions_v2')
-        let initialList = INITIAL_TRANSACTIONS
-        const candidateOld = oldV4 || oldV3 || oldV2
-        if (candidateOld) {
-          try {
-            const parsedOld = JSON.parse(candidateOld) as GranularTransaction[]
-            // Adiciona transações customizadas que o usuário possa ter criado
-            const customUserTxs = parsedOld.filter(t => !INITIAL_TRANSACTIONS.some(init => init.id === t.id))
-            initialList = [...INITIAL_TRANSACTIONS, ...customUserTxs]
-          } catch (_) {}
+        if (canLoadSeed) {
+          localStorage.setItem(key, JSON.stringify(seed))
+        } else {
+          localStorage.setItem(key, JSON.stringify([]))
         }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialList))
-        return initialList
+        return seed
       }
       return JSON.parse(raw) as GranularTransaction[]
     } catch (_) {
-      return INITIAL_TRANSACTIONS
+      return seed
     }
   }
 
@@ -99,7 +114,8 @@ export class GranularTransactionStore {
   private static save(items: GranularTransaction[]): void {
     if (typeof window === 'undefined') return
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
+      const key = getStorageKey()
+      localStorage.setItem(key, JSON.stringify(items))
       window.dispatchEvent(new CustomEvent('leaomed_transactions_updated', { detail: { count: items.length } }))
     } catch (_) {}
   }
@@ -253,7 +269,10 @@ export class GranularTransactionStore {
   static resetToDefault(): void {
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_TRANSACTIONS))
+        const key = getStorageKey()
+        const canLoadSeed = shouldLoadSeedData()
+        const initialList = canLoadSeed ? INITIAL_TRANSACTIONS : []
+        localStorage.setItem(key, JSON.stringify(initialList))
         window.dispatchEvent(new CustomEvent('leaomed_transactions_updated'))
       } catch (_) {}
     }

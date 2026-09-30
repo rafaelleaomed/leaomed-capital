@@ -48,15 +48,20 @@ export default async function DashboardPage({
     const accounts = (accountsData || []) as Account[]
     const transactions = (transactionsData || []) as Transaction[]
 
+    const isOwner = user.email === 'rafaelleaobh@gmail.com' || user.email?.includes('rafael')
+
     if (transactions.length > 0 && accounts.length > 0) {
       const engineResult = runFinancialEngine(transactions, accounts, daysInMonth, currentDay)
       payload = buildDashboardPayload(engineResult, period, activeFilter, daysInMonth, currentDay)
-    } else {
+    } else if (isOwner) {
       payload = getBaselinePayload(activeFilter, period)
+    } else {
+      payload = getEmptyUserPayload(activeFilter, period)
     }
   } catch (err) {
     console.error("Conectando via fallback resiliente:", err)
-    payload = getBaselinePayload(activeFilter, period)
+    const isOwner = user?.email === 'rafaelleaobh@gmail.com' || user?.email?.includes('rafael')
+    payload = isOwner ? getBaselinePayload(activeFilter, period) : getEmptyUserPayload(activeFilter, period)
   }
 
   return (
@@ -64,6 +69,45 @@ export default async function DashboardPage({
       <DashboardUI payload={payload} currentFilter={activeFilter} />
     </div>
   )
+}
+
+/**
+ * Payload Inicial Limpo e Seguro para Novos Usuários Cadastrados
+ */
+function getEmptyUserPayload(filter: DashboardFilter, period: string): DeliveryPayload {
+  return {
+    period,
+    balances: {
+      consolidated: 0,
+      pf: 0,
+      pj: 0,
+      investments: 0
+    },
+    cash_flow: {
+      total_income: 0,
+      total_expenses: 0,
+      fixed_expenses: 0,
+      variable_expenses: 0
+    },
+    categories: [],
+    investments_detail: {
+      total_value: 0,
+      by_class: [],
+      profitability: 0
+    },
+    projections: {
+      projected_end_balance: 0,
+      safe_daily_spend: 0,
+      available_to_invest: 0
+    },
+    alerts: [
+      {
+        type: 'opportunity',
+        message: 'Bem-vindo ao LeãoMed Capital! Comece importando suas faturas de cartão (C6, Nubank, Itaú) ou extratos PJ.',
+        impact: 'high'
+      }
+    ]
+  }
 }
 
 

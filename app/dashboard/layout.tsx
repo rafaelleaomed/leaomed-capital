@@ -21,7 +21,7 @@ export default async function DashboardLayout({
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
       userEmail = user.email || userEmail
-      userName = user.user_metadata?.full_name || user.user_metadata?.name || 'Dr. Rafael Leão'
+      userName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Doutor(a)'
     }
   } catch (e) {
     // fallback seguro caso sem sessao ativa
