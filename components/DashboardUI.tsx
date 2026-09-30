@@ -25,12 +25,14 @@ export default function DashboardUI({
   payload, 
   currentFilter,
   basePath = '/dashboard',
-  isDemo = false
+  isDemo = false,
+  isOwner
 }: { 
   payload: DeliveryPayload
   currentFilter: DashboardFilter
   basePath?: string
   isDemo?: boolean
+  isOwner?: boolean
 }) {
   const router = useRouter()
   const [isWizardOpen, setIsWizardOpen] = useState(false)
@@ -98,9 +100,10 @@ export default function DashboardUI({
       currentFilter,
       investmentTargetPct,
       obligatoryExpenses,
-      isDemo
+      isDemo,
+      isOwner
     )
-  }, [selectedMonth, selectedYear, currentFilter, investmentTargetPct, obligatoryExpenses, isDemo])
+  }, [selectedMonth, selectedYear, currentFilter, investmentTargetPct, obligatoryExpenses, isDemo, isOwner])
 
   const displayIncome = monthlyData.totalIncome
   const displayExpenses = monthlyData.totalExpenses

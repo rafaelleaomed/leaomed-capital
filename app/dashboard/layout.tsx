@@ -18,10 +18,12 @@ export default async function DashboardLayout({
 
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      userEmail = user.email || userEmail
-      userName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Doutor(a)'
+    if (supabase) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        userEmail = user.email || userEmail
+        userName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Doutor(a)'
+      }
     }
   } catch (e) {
     // fallback seguro caso sem sessao ativa

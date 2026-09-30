@@ -209,38 +209,41 @@ export function getMonthlyFinancialData(
   filter: 'CONSOLIDATED' | 'PF' | 'PJ' = 'CONSOLIDATED',
   customInvestmentPct?: number,
   customObligatoryExpenses?: number,
-  isDemo: boolean = false
+  isDemo: boolean = false,
+  isOwnerParam?: boolean
 ): MonthlyFinancialSummary {
-  // Se for novo usuário em produção (não demo e não proprietário), verifica se possui dados
-  if (!isDemo && typeof window !== 'undefined') {
-    const userEmail = localStorage.getItem('leaomed_current_user_email') || ''
-    const isOwner = Boolean(userEmail && (userEmail.toLowerCase().includes('rafael') || userEmail.toLowerCase() === 'rafaelleaobh@gmail.com'))
-    
-    if (!isOwner) {
-      const daysInMonth = getDaysInMonth(month, year)
-      const daysLeft = getDaysLeftInCycle(month, year)
-      const periodLabel = `${SHORT_MONTHS[month]}/${String(year).slice(-2)}`
+  // Determina se é o proprietário (Dr. Rafael Leão)
+  let isOwner = isOwnerParam;
+  if (isOwner === undefined && !isDemo && typeof window !== 'undefined') {
+    const userEmail = localStorage.getItem('leaomed_current_user_email') || '';
+    isOwner = Boolean(userEmail && (userEmail.toLowerCase().includes('rafael') || userEmail.toLowerCase() === 'rafaelleaobh@gmail.com'));
+  }
 
-      return {
-        month,
-        year,
-        periodLabel,
-        daysInMonth,
-        daysLeft,
-        totalIncome: 0,
-        totalExpenses: 0,
-        balance: 0,
-        creditCardTotal: 0,
-        fixedExpenses: 0,
-        variableExpenses: 0,
-        investmentTargetPct: customInvestmentPct || 10,
-        investmentTargetAmount: 0,
-        availableVariableBudget: 0,
-        safeDailySpend: 0,
-        categories: [],
-        incomeSources: [],
-        dailySpendData: []
-      }
+  // Se não for proprietário e não for modo demonstração, novo usuário inicia limpo
+  if (!isDemo && isOwner === false) {
+    const daysInMonth = getDaysInMonth(month, year)
+    const daysLeft = getDaysLeftInCycle(month, year)
+    const periodLabel = `${SHORT_MONTHS[month]}/${String(year).slice(-2)}`
+
+    return {
+      month,
+      year,
+      periodLabel,
+      daysInMonth,
+      daysLeft,
+      totalIncome: 0,
+      totalExpenses: 0,
+      balance: 0,
+      creditCardTotal: 0,
+      fixedExpenses: 0,
+      variableExpenses: 0,
+      investmentTargetPct: customInvestmentPct || 10,
+      investmentTargetAmount: 0,
+      availableVariableBudget: 0,
+      safeDailySpend: 0,
+      categories: [],
+      incomeSources: [],
+      dailySpendData: []
     }
   }
 

@@ -4,40 +4,65 @@ import { cookies } from 'next/headers';
 /**
  * Cria um cliente Supabase autenticado para uso em Server Components e Route Handlers.
  * Lê a sessão do usuário a partir dos cookies HTTP-only (seguro contra XSS).
+ * Retorna null com segurança se as variáveis de ambiente não estiverem configuradas.
  */
 export async function createSupabaseServerClient() {
-  const cookieStore = await cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('[Supabase Server] Variáveis NEXT_PUBLIC_SUPABASE_URL ou NEXT_PUBLIC_SUPABASE_ANON_KEY ausentes.');
+    return null;
+  }
+
+  try {
+    const cookieStore = await cookies();
+
+    return createServerClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      {
+        cookies: {
+          getAll() {
+            try {
+              return cookieStore.getAll();
+            } catch {
+              return [];
+            }
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                cookieStore.set(name, value, options);
+              });
+            } catch {
+              // Server Component — ignorar erros de cookie set (só ocorre em RSC)
+            }
+          },
         },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
-            });
-          } catch {
-            // Server Component — ignorar erros de cookie set (só ocorre em RSC)
-          }
-        },
-      },
-    }
-  );
+      }
+    );
+  } catch (err) {
+    console.error('[Supabase Server] Falha ao inicializar cliente:', err);
+    return null;
+  }
 }
 
 /**
  * Retorna o usuário autenticado atual ou null se não estiver logado.
- * Use em Server Components para proteger dados sensíveis.
+ * 100% blindado contra erros de runtime para evitar telas de 500 no Next.js.
  */
 export async function getAuthenticatedUser() {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
+  try {
+    const supabase = await createSupabaseServerClient();
+    if (!supabase) return null;
 
-  if (error || !user) return null;
-  return user;
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) return null;
+    
+    return user;
+  } catch (err) {
+    console.error('[Supabase Server] Erro ao recuperar sessão do usuário:', err);
+    return null;
+  }
 }

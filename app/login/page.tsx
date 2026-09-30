@@ -68,9 +68,23 @@ function LoginForm() {
   // Se já estiver logado, redireciona diretamente
   useEffect(() => {
     supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
-      if (data.user) router.replace(redirectTo);
+      if (data?.user) router.replace(redirectTo);
     });
   }, [router, redirectTo, supabase]);
+
+  // Captura erros vindos de callbacks de autenticação
+  useEffect(() => {
+    const urlError = searchParams.get('error');
+    if (urlError) {
+      if (urlError === 'auth_callback_failed' || urlError === 'missing_auth_parameters') {
+        setError('Não foi possível validar seu link de acesso. Por favor, tente entrar novamente.');
+      } else if (urlError === 'auth_config_error') {
+        setError('Serviço de autenticação temporariamente indisponível. Tente novamente.');
+      } else {
+        setError(decodeURIComponent(urlError));
+      }
+    }
+  }, [searchParams]);
 
   // Autenticação com Google OAuth com 1 Clique
   const handleGoogleLogin = async () => {

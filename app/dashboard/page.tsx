@@ -48,7 +48,7 @@ export default async function DashboardPage({
     const accounts = (accountsData || []) as Account[]
     const transactions = (transactionsData || []) as Transaction[]
 
-    const isOwner = user.email === 'rafaelleaobh@gmail.com' || user.email?.includes('rafael')
+    const isOwner = Boolean(user.email && (user.email.toLowerCase() === 'rafaelleaobh@gmail.com' || user.email.toLowerCase().includes('rafael')))
 
     if (transactions.length > 0 && accounts.length > 0) {
       const engineResult = runFinancialEngine(transactions, accounts, daysInMonth, currentDay)
@@ -60,13 +60,15 @@ export default async function DashboardPage({
     }
   } catch (err) {
     console.error("Conectando via fallback resiliente:", err)
-    const isOwner = user?.email === 'rafaelleaobh@gmail.com' || user?.email?.includes('rafael')
+    const isOwner = Boolean(user?.email && (user.email.toLowerCase() === 'rafaelleaobh@gmail.com' || user.email.toLowerCase().includes('rafael')))
     payload = isOwner ? getBaselinePayload(activeFilter, period) : getEmptyUserPayload(activeFilter, period)
   }
 
+  const isOwner = Boolean(user?.email && (user.email.toLowerCase() === 'rafaelleaobh@gmail.com' || user.email.toLowerCase().includes('rafael')))
+
   return (
     <div className="min-h-screen">
-      <DashboardUI payload={payload} currentFilter={activeFilter} />
+      <DashboardUI payload={payload} currentFilter={activeFilter} isOwner={isOwner} />
     </div>
   )
 }
