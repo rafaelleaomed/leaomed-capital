@@ -87,6 +87,10 @@ function LoginForm() {
       return;
     }
 
+    const redirectUrl = typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')
+      ? `${window.location.origin}/api/auth/callback`
+      : (process.env.NEXT_PUBLIC_SITE_URL || 'https://leaomed-capital-rafael-leaos-projects-e3cb079d.vercel.app') + '/api/auth/callback';
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -96,7 +100,7 @@ function LoginForm() {
           specialty: specialty.trim() || undefined,
           crm: crm.trim() || undefined,
         },
-        emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+        emailRedirectTo: redirectUrl,
       },
     });
 
@@ -128,8 +132,12 @@ function LoginForm() {
     setLoading(true);
     setError(null);
 
+    const redirectUrl = typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')
+      ? `${window.location.origin}/api/auth/callback`
+      : (process.env.NEXT_PUBLIC_SITE_URL || 'https://leaomed-capital-rafael-leaos-projects-e3cb079d.vercel.app') + '/api/auth/callback';
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/api/auth/callback`,
+      redirectTo: redirectUrl,
     });
 
     if (error) {
