@@ -182,6 +182,7 @@ export function GranularExpenseAuditor({
 }: GranularExpenseAuditorProps) {
   const [transactions, setTransactions] = useState<GranularTransaction[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [txTypeFilter, setTxTypeFilter] = useState<'ALL' | 'EXPENSE' | 'INCOME'>('ALL')
   const [selectedAccount, setSelectedAccount] = useState<string>('ALL')
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
   const [selectedSubdivision, setSelectedSubdivision] = useState<string>('ALL')
@@ -374,6 +375,10 @@ export function GranularExpenseAuditor({
       if (currentFilter === 'PF' && t.entityType !== 'PF') return false
       if (currentFilter === 'PJ' && t.entityType !== 'PJ') return false
 
+      // Filtro de Tipo (Despesas x Receitas x Todos)
+      if (txTypeFilter === 'EXPENSE' && t.amount > 0) return false
+      if (txTypeFilter === 'INCOME' && t.amount < 0) return false
+
       // Filtro por Mês / Período
       if (selectedPeriod !== 'ALL' && (!t.date || !t.date.startsWith(selectedPeriod))) return false
 
@@ -406,7 +411,7 @@ export function GranularExpenseAuditor({
 
       return true
     })
-  }, [transactions, currentFilter, selectedPeriod, onlyUncategorized, selectedAccount, selectedCategory, selectedSubdivision, showIgnored, searchTerm])
+  }, [transactions, currentFilter, txTypeFilter, selectedPeriod, onlyUncategorized, selectedAccount, selectedCategory, selectedSubdivision, showIgnored, searchTerm])
 
   // Lista de períodos disponíveis a partir das transações reais + mês ativo
   const availablePeriods = useMemo(() => {
@@ -463,16 +468,28 @@ export function GranularExpenseAuditor({
   }, [filteredList, sortField, sortDirection])
 
   // Métricas do extrato granular
-  const totalActive = useMemo(() => {
-    return filteredList
-      .filter(t => !t.isIgnored)
-      .reduce((acc, t) => acc + Math.abs(t.amount), 0)
-  }, [filteredList])
+  const metrics = useMemo(() => {
+    let incomeActive = 0
+    let expenseActive = 0
+    let deduplicatedVal = 0
 
-  const totalDeduplicated = useMemo(() => {
-    return filteredList
-      .filter(t => t.isIgnored)
-      .reduce((acc, t) => acc + Math.abs(t.amount), 0)
+    filteredList.forEach(t => {
+      if (t.isIgnored) {
+        deduplicatedVal += Math.abs(t.amount)
+      } else if (t.amount > 0) {
+        incomeActive += t.amount
+      } else {
+        expenseActive += Math.abs(t.amount)
+      }
+    })
+
+    return {
+      incomeActive,
+      expenseActive,
+      netBalance: incomeActive - expenseActive,
+      deduplicatedVal,
+      count: filteredList.length
+    }
   }, [filteredList])
 
   // Lista única de contas e cartões existentes (Sem contas fictícias harcoded)
@@ -1058,6 +1075,17 @@ export function GranularExpenseAuditor({
 
           {/* Filtros em Linha */}
           <div className="flex flex-wrap items-center gap-2">
+            {/* Filtro por Tipo (Despesas x Receitas x Todos) */}
+            <select
+              value={txTypeFilter}
+              onChange={(e) => setTxTypeFilter(e.target.value as 'ALL' | 'EXPENSE' | 'INCOME')}
+              className="rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">🌐 Todos os Lançamentos</option>
+              <option value="EXPENSE">🔴 Apenas Despesas (-)</option>
+              <option value="INCOME">🟢 Apenas Receitas (+)</option>
+            </select>
+
             {/* Filtro por Mês / Período */}
             <select
               value={selectedPeriod}
@@ -1136,24 +1164,44 @@ export function GranularExpenseAuditor({
               <span>{showIgnored ? 'Ocultar Deduplicados' : 'Ver Deduplicados'}</span>
             </button>
 
-            {/* Botão de Adicionar Despesa Manual */}
+            {/* Botão de Adicionar Novo Lançamento Manual */}
             <button
               onClick={() => setIsAddModalOpen(true)}
               className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
-              <span>+ Adicionar Despesa</span>
+              <span>+ Novo Lançamento</span>
             </button>
           </div>
         </div>
 
         {/* Resumo de Totais do Extrato */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-white/5 text-xs">
-          <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400">
-            <span>Lançamentos exibidos: <strong className="text-slate-900 dark:text-white font-mono">{filteredList.length}</strong></span>
-            <span>Ativos computados: <strong className="text-rose-600 dark:text-rose-400 font-mono">R$ {totalActive.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-            {totalDeduplicated > 0 && (
-              <span className="text-amber-600 dark:text-amber-400">Deduplicados/Ignorados: <strong className="font-mono">R$ {totalDeduplicated.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <span className="text-slate-500 dark:text-slate-400">
+              Lançamentos: <strong className="text-slate-900 dark:text-white font-mono">{metrics.count}</strong>
+            </span>
+
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
+              🟢 Receitas (+): <strong className="font-mono">R$ {metrics.incomeActive.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+            </span>
+
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 font-bold">
+              🔴 Despesas (-): <strong className="font-mono">R$ {metrics.expenseActive.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+            </span>
+
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-bold ${
+              metrics.netBalance >= 0 
+                ? 'bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-300' 
+                : 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-300'
+            }`}>
+              ⚖️ Saldo Líquido: <strong className="font-mono">{metrics.netBalance >= 0 ? '+' : ''}R$ {metrics.netBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+            </span>
+
+            {metrics.deduplicatedVal > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 font-medium">
+                👁️ Deduplicados: <strong className="font-mono">R$ {metrics.deduplicatedVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+              </span>
             )}
           </div>
           <span className="text-[11px] text-slate-400 hidden md:inline">
