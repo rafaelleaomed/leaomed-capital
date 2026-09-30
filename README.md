@@ -63,10 +63,14 @@ A plataforma adota a arquitetura **A.N.T. (Architecture, Navigation, Tools)** co
 - **Cálculo da Alíquota Efetiva:** Exibição da carga tributária real em percentual sobre o faturamento bruto PJ, com alternância para incluir ou excluir custos contábeis.
 - **Histórico Mensal de Impostos:** Comparativo mês a mês da evolução dos encargos da pessoa jurídica.
 
-### 3. Categorização Inteligente com Memória de Regras & Sugestão Preditiva
-- **IA Preditiva & Heurística Médica:** Sugere a categoria e subcategoria exata para cada lançamento ao importar faturas de cartões ou extratos bancários.
-- **Aprendizado de Máquina Contínuo:** Opção de memorizar *"Sempre categorizar lançamentos contendo '[Nome]' nesta categoria"* (ex: McDonald's em Alimentação, DARF em Impostos PJ, Drogaria em Saúde).
-- **Zero Trabalho Repetitivo:** Em faturas futuras, o sistema detecta os padrões e aplica as regras automaticamente.
+### 3. Categorização Inteligente em 2 Camadas (Jev TypeSafe AI & Regras)
+- **Camada 1 (Regras Locais & PostgreSQL `category_rules`):** Avaliação determinística em cascata (regra exata do usuário ➔ regra de estabelecimento por substring ➔ heurística médica/comercial).
+- **Camada 2 (Jev System One - TypeSafe AI):** Classificador estruturado de alta performance para os lançamentos não resolvidos localmente:
+  - Primitiva **Choice**: Sugere categoria e subcategoria restritas estritamente à taxonomia oficial (`USER_TAXONOMY`) com score de confiança calibrado.
+  - Primitiva **Noul**: Identifica probabilidade de despesa fixa/recorrência e probabilidade de ambiguidade que exija revisão.
+- **Modo Sombra (Shadow Mode):** O sistema opera em modo sombra — o Jev apenas gera sugestões, sem modificar dados automaticamente, permitindo comparação e validação humana com 1 clique.
+- **Blindagem de Categorias Sensíveis:** Impostos (DARF/Simples), aportes, resgates, faturas e pró-labore são bloqueados de auto-apply e exigem confirmação explícita.
+- **Zero Vazamento de PII:** Sanitização prévia de CPFs, números de cartão e tokens confidenciais antes de qualquer chamada externa.
 
 ### 4. Extrato Item a Item, Seleção Múltipla & Categorização em Lote
 - **Auditoria Granular:** Aba dedicada na planilha com extrato completo transação por transação (data, estabelecimento, conta/cartão, categoria e valor).

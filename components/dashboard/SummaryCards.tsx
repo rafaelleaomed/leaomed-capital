@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Wallet, Sparkles, ArrowUpRight, TrendingDown, ArrowDownRight, Landmark, Sliders } from 'lucide-react'
 import { DailySpendModal } from './DailySpendModal'
+import { usePrivacy } from '@/context/PrivacyContext'
 
 interface SummaryCardsProps {
   currentBalance: number;
@@ -34,6 +35,7 @@ export function SummaryCards({
   onInvestmentPctChange
 }: SummaryCardsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const { maskValue } = usePrivacy()
   const isPositive = currentBalance >= 0
 
   return (
@@ -52,7 +54,7 @@ export function SummaryCards({
           <div className={`font-mono text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums ${
             isPositive ? 'text-slate-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'
           }`}>
-            R$ {currentBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {maskValue(currentBalance)}
           </div>
           <p className="text-[10px] md:text-[11px] text-slate-500 dark:text-slate-400 mt-1 md:mt-2 flex items-center gap-1 truncate">
             <span className={`h-1.5 w-1.5 rounded-full ${isPositive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
@@ -79,7 +81,7 @@ export function SummaryCards({
             </div>
           </div>
           <div className="font-mono text-xl sm:text-2xl lg:text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight tabular-nums">
-            R$ {availableToInvest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {maskValue(availableToInvest)}
           </div>
           <p className="text-[10px] md:text-[11px] text-emerald-700/80 dark:text-emerald-200/70 mt-1 md:mt-2 truncate flex items-center justify-between">
             <span>Aporte mensal planejado</span>
@@ -105,7 +107,7 @@ export function SummaryCards({
             </div>
           </div>
           <div className="font-mono text-xl sm:text-2xl lg:text-3xl font-black text-blue-600 dark:text-blue-400 tracking-tight tabular-nums">
-            R$ {safeDailySpend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {maskValue(safeDailySpend)}
             <span className="text-xs font-bold text-blue-500/80"> / dia</span>
           </div>
           <p className="text-[10px] md:text-[11px] text-slate-500 dark:text-slate-400 mt-1 md:mt-2 truncate flex items-center justify-between">
@@ -125,12 +127,12 @@ export function SummaryCards({
             </div>
           </div>
           <div className="font-mono text-xl sm:text-2xl lg:text-3xl font-black text-rose-600 dark:text-rose-400 tracking-tight tabular-nums">
-            - R$ {totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            - {maskValue(totalExpenses)}
           </div>
           <div className="flex items-center justify-between text-[10px] md:text-[11px] text-slate-500 dark:text-slate-400 mt-1 md:mt-2 pt-1.5 border-t border-slate-100 dark:border-white/5 truncate">
             <span className="truncate">Receitas:</span>
             <span className="text-emerald-600 dark:text-emerald-400 font-bold font-mono tabular-nums">
-              + R$ {totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+              + {maskValue(totalIncome)}
             </span>
           </div>
         </div>

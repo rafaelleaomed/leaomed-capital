@@ -27,7 +27,12 @@ import {
   MapPin,
   PieChart,
   HelpCircle,
-  Sparkles
+  Sparkles,
+  BrainCircuit,
+  Loader2,
+  ThumbsUp,
+  ThumbsDown,
+  Info
 } from 'lucide-react'
 import { 
   GranularTransactionStore, 
@@ -188,6 +193,22 @@ export function GranularExpenseAuditor({
   const [selectedSubdivision, setSelectedSubdivision] = useState<string>('ALL')
   const [showIgnored, setShowIgnored] = useState(true)
   const [onlyUncategorized, setOnlyUncategorized] = useState(false)
+  
+  // Filtros Avançados de Inteligência Artificial & Jev
+  type AiFilterType = 'ALL' | 'PENDING' | 'JEV_SUGGESTIONS' | 'LOW_CONFIDENCE' | 'NEEDS_REVIEW'
+  const [aiFilter, setAiFilter] = useState<AiFilterType>('ALL')
+
+  // Processamento em Lote com Jev
+  const [isAiBatchRunning, setIsAiBatchRunning] = useState(false)
+  const [aiBatchProgress, setAiBatchProgress] = useState<{ current: number; total: number } | null>(null)
+  const [aiBatchSummary, setAiBatchSummary] = useState<{
+    total_processed: number
+    auto_applied_count: number
+    suggested_count: number
+    needs_review_count: number
+    error_count: number
+    estimated_cost_usd: string
+  } | null>(null)
 
   // Período no formato 'YYYY-MM' (Baseado no Mês/Ano selecionado no painel)
   const initialPeriod = useMemo(() => {
@@ -385,6 +406,12 @@ export function GranularExpenseAuditor({
       // Filtro exclusivo de pendentes
       if (onlyUncategorized && !GranularTransactionStore.isUncategorized(t)) return false
 
+      // Filtros Específicos de Inteligência Artificial / Jev
+      if (aiFilter === 'PENDING' && !GranularTransactionStore.isUncategorized(t) && t.categorizationStatus !== 'pending') return false
+      if (aiFilter === 'JEV_SUGGESTIONS' && t.categorySource !== 'jev' && !t.aiSuggestedCategory) return false
+      if (aiFilter === 'LOW_CONFIDENCE' && (!(typeof t.categoryConfidence === 'number' && t.categoryConfidence < 0.70))) return false
+      if (aiFilter === 'NEEDS_REVIEW' && !t.aiReviewRequired && t.categorizationStatus !== 'needs_review') return false
+
       // Filtro de conta/cartão
       if (selectedAccount !== 'ALL' && t.accountOrCard !== selectedAccount) return false
 
@@ -411,7 +438,103 @@ export function GranularExpenseAuditor({
 
       return true
     })
-  }, [transactions, currentFilter, txTypeFilter, selectedPeriod, onlyUncategorized, selectedAccount, selectedCategory, selectedSubdivision, showIgnored, searchTerm])
+  }, [transactions, currentFilter, txTypeFilter, selectedPeriod, onlyUncategorized, aiFilter, selectedAccount, selectedCategory, selectedSubdivision, showIgnored, searchTerm])
+
+  // Executa Categorização em Lote de Lançamentos Pendentes via API do Jev
+  const handleCategorizePendingWithAi = async () => {
+    const pendings = transactions.filter(t => GranularTransactionStore.isUncategorized(t) || t.categorizationStatus === 'pending')
+    if (pendings.length === 0) {
+      setBulkToast('Nenhum lançamento pendente encontrado para categorização.')
+      setTimeout(() => setBulkToast(null), 3000)
+      return
+    }
+
+    setIsAiBatchRunning(true)
+    setAiBatchProgress({ current: 0, total: pendings.length })
+
+    try {
+      const resp = await fetch('/api/categorize/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: pendings.map(p => ({
+            id: p.id,
+            description: p.description,
+            amount: p.amount,
+            date: p.date,
+            account_scope: p.entityType,
+            payment_method: p.accountOrCard,
+            current_category: p.category,
+            current_subcategory: p.subcategory
+          }))
+        })
+      })
+
+      if (!resp.ok) {
+        throw new Error('Falha na comunicação com a API de categorização.')
+      }
+
+      const data = await resp.json()
+      if (data.success && data.results) {
+        // Atualiza transações no store com as sugestões retornadas (Modo Sombra)
+        data.results.forEach((res: any) => {
+          GranularTransactionStore.updateTransaction(res.transaction_id, {
+            categorySource: res.source,
+            decisionType: res.decision_type,
+            certaintyLabel: res.certainty_label,
+            categoryConfidence: res.choice_confidence,
+            isFixedProbability: res.is_fixed_probability,
+            needsReviewProbability: res.needs_review_probability,
+            aiSuggestedCategory: res.suggested_category,
+            aiSuggestedSubcategory: res.suggested_subcategory,
+            aiSuggestedIsFixed: res.is_fixed,
+            aiReviewRequired: res.review_required,
+            categorizationStatus: res.categorization_status,
+            categorizationError: res.error_message
+          })
+        })
+
+        loadTransactions()
+        setAiBatchSummary(data.summary)
+      }
+    } catch (err: any) {
+      setBulkToast(`Erro ao processar lote: ${err?.message || 'Falha de conexão'}`)
+      setTimeout(() => setBulkToast(null), 4000)
+    } finally {
+      setIsAiBatchRunning(false)
+      setAiBatchProgress(null)
+    }
+  }
+
+  // Aceita sugestão do Jev / IA em 1 clique
+  const handleAcceptAiSuggestion = (tx: GranularTransaction) => {
+    if (!tx.aiSuggestedCategory) return
+
+    GranularTransactionStore.updateTransaction(tx.id, {
+      category: tx.aiSuggestedCategory,
+      subcategory: tx.aiSuggestedSubcategory || 'Outros',
+      isFixed: tx.aiSuggestedIsFixed ?? tx.isFixed,
+      categorySource: 'manual',
+      categorizationStatus: 'confirmed',
+      aiReviewRequired: false
+    })
+
+    loadTransactions()
+    setBulkToast(`✅ Sugestão "${tx.aiSuggestedCategory} > ${tx.aiSuggestedSubcategory}" confirmada!`)
+    setTimeout(() => setBulkToast(null), 2500)
+  }
+
+  // Rejeita sugestão do Jev
+  const handleRejectAiSuggestion = (tx: GranularTransaction) => {
+    GranularTransactionStore.updateTransaction(tx.id, {
+      categorizationStatus: 'rejected',
+      aiReviewRequired: true
+    })
+
+    loadTransactions()
+    setBulkToast(`Sugestão rejeitada para "${tx.description}". Classifique manualmente.`)
+    setTimeout(() => setBulkToast(null), 2500)
+  }
 
   // Lista de períodos disponíveis a partir das transações reais + mês ativo
   const availablePeriods = useMemo(() => {
@@ -1136,18 +1259,41 @@ export function GranularExpenseAuditor({
               </select>
             )}
 
-            {/* Toggle de Pendentes */}
-            <button
-              onClick={() => setOnlyUncategorized(!onlyUncategorized)}
-              className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                onlyUncategorized 
-                  ? 'border-amber-500 bg-amber-500/20 text-amber-500 ring-2 ring-amber-500/30' 
-                  : 'border-slate-200 dark:border-white/10 text-slate-500 hover:text-slate-700'
-              }`}
-              title="Exibir apenas lançamentos sem categoria ou sem subcategoria"
+            {/* Filtro Inteligente com IA & Jev */}
+            <select
+              value={aiFilter}
+              onChange={(e) => setAiFilter(e.target.value as any)}
+              className="rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/30 px-3 py-2 text-xs font-semibold text-indigo-700 dark:text-indigo-300 focus:outline-none cursor-pointer"
             >
-              <AlertTriangle className="w-3.5 h-3.5" />
-              <span>Pendentes ({uncategorizedItems.length})</span>
+              <option value="ALL">Filtro IA: Todos</option>
+              <option value="PENDING">⚠️ Somente Pendentes ({uncategorizedItems.length})</option>
+              <option value="JEV_SUGGESTIONS">✨ Sugestões Jev (Modo Sombra)</option>
+              <option value="LOW_CONFIDENCE">🔍 Baixa Confiança (&lt;70%)</option>
+              <option value="NEEDS_REVIEW">🛡️ Revisão Obrigatória</option>
+            </select>
+
+            {/* Botão de Categorização em Lote com Jev (TypeSafe AI) */}
+            <button
+              onClick={handleCategorizePendingWithAi}
+              disabled={isAiBatchRunning || uncategorizedItems.length === 0}
+              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50 ${
+                isAiBatchRunning 
+                  ? 'bg-indigo-600 text-white' 
+                  : 'bg-indigo-500 hover:bg-indigo-400 text-white shadow-indigo-500/25 active:scale-95'
+              }`}
+              title="Aciona o Jev em fila concorrente para sugerir categorias para todos os lançamentos pendentes em modo sombra"
+            >
+              {isAiBatchRunning ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Processando Jev ({aiBatchProgress?.current || 0}/{aiBatchProgress?.total || 0})...</span>
+                </>
+              ) : (
+                <>
+                  <BrainCircuit className="w-4 h-4" />
+                  <span>✨ Categorizar Pendentes com IA</span>
+                </>
+              )}
             </button>
 
             {/* Alternar Visualização de Ignorados */}
@@ -1295,6 +1441,9 @@ export function GranularExpenseAuditor({
                     <span className="text-[11px]">{sortField === 'category' ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}</span>
                   </div>
                 </th>
+                <th className="py-3 px-4 text-center">
+                  <span>Origem / IA</span>
+                </th>
                 <th 
                   onClick={() => handleSort('amount')} 
                   className="py-3 px-4 text-right cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
@@ -1405,7 +1554,70 @@ export function GranularExpenseAuditor({
                               </span>
                             )}
                           </div>
+
+                          {/* Bloco de Sugestão Jev (Modo Sombra) */}
+                          {tx.aiSuggestedCategory && tx.categorizationStatus !== 'confirmed' && (
+                            <div className="mt-1.5 p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-between gap-1.5 animate-in fade-in">
+                              <div className="flex items-center gap-1 text-[10px] text-indigo-300 font-medium truncate">
+                                <Sparkles className="w-3 h-3 text-indigo-400 shrink-0" />
+                                <span>
+                                  <strong>{tx.aiSuggestedCategory}</strong> &gt; {tx.aiSuggestedSubcategory}
+                                </span>
+                                {typeof tx.categoryConfidence === 'number' && (
+                                  <span className="text-[9px] font-mono font-bold text-indigo-200 bg-indigo-500/20 px-1 py-0.2 rounded">
+                                    {(tx.categoryConfidence * 100).toFixed(0)}%
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleAcceptAiSuggestion(tx)}
+                                  className="px-1.5 py-0.5 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-bold flex items-center gap-0.5 transition-colors cursor-pointer"
+                                  title="Aceitar sugestão da IA"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  <span>Aceitar</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRejectAiSuggestion(tx)}
+                                  className="px-1 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 text-[10px] font-bold transition-colors cursor-pointer"
+                                  title="Rejeitar sugestão"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
+                      </td>
+
+                      {/* Coluna Origem / IA */}
+                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                        {tx.categorySource === 'local_rule' ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30" title={tx.certaintyLabel || 'Regra memorizada'}>
+                            <BookmarkCheck className="w-3 h-3" />
+                            Regra
+                          </span>
+                        ) : tx.categorySource === 'jev' || tx.aiSuggestedCategory ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30" title="Sugestão gerada pelo Jev em Modo Sombra">
+                            <BrainCircuit className="w-3 h-3 text-indigo-400" />
+                            Jev
+                          </span>
+                        ) : tx.categorySource === 'manual' ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                            Manual
+                          </span>
+                        ) : isUncat ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            Pendente
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400">
+                            Importado
+                          </span>
+                        )}
                       </td>
                       <td className={`py-3 px-4 text-right font-mono font-bold whitespace-nowrap ${
                         tx.isIgnored 
@@ -2393,6 +2605,67 @@ export function GranularExpenseAuditor({
                 <span>Aplicar a Todos ({selectedTxIds.size})</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Resumo da Categorização com IA / Jev */}
+      {aiBatchSummary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-indigo-500/30 text-white p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                  <BrainCircuit className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="font-bold text-base text-white">Resumo da Execução Jev (Modo Sombra)</h3>
+                  <p className="text-xs text-slate-400">Classificação inteligente em 2 camadas concluída</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setAiBatchSummary(null)} 
+                className="text-slate-400 hover:text-white p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-slate-800/80 border border-white/5 space-y-0.5">
+                <span className="text-slate-400 text-[10px] uppercase font-semibold">Total Processado</span>
+                <p className="text-lg font-mono font-bold text-white">{aiBatchSummary.total_processed} itens</p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 space-y-0.5">
+                <span className="text-indigo-300 text-[10px] uppercase font-semibold">Sugestões Geradas</span>
+                <p className="text-lg font-mono font-bold text-indigo-300">{aiBatchSummary.suggested_count + aiBatchSummary.auto_applied_count}</p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-0.5">
+                <span className="text-amber-300 text-[10px] uppercase font-semibold">Revisão Humana Obrigatória</span>
+                <p className="text-lg font-mono font-bold text-amber-300">{aiBatchSummary.needs_review_count}</p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-800/80 border border-white/5 space-y-0.5">
+                <span className="text-slate-400 text-[10px] uppercase font-semibold">Custo Estimado</span>
+                <p className="text-lg font-mono font-bold text-emerald-400">${aiBatchSummary.estimated_cost_usd} USD</p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/20 text-[11px] text-indigo-200 flex items-start gap-2">
+              <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+              <span>
+                <strong>Modo Sombra Ativo:</strong> As sugestões estão visíveis diretamente na tabela com badges roxos. Você pode confirmar com 1 clique (✓) ou rejeitar (✕). Nenhuma categoria foi modificada automaticamente sem o seu consentimento.
+              </span>
+            </div>
+
+            <button
+              onClick={() => setAiBatchSummary(null)}
+              className="w-full py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs transition-colors cursor-pointer"
+            >
+              Entendido, ver sugestões na tabela
+            </button>
           </div>
         </div>
       )}

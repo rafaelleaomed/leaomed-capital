@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { CategoryRulesEngine, PredictionResult } from '@/utils/categoryRulesEngine'
 import { GranularTransactionStore } from '@/utils/granularTransactionStore'
+import { USER_TAXONOMY, USER_TAXONOMY_MAP, getCategoriesByScope, getSubcategoriesForCategory } from '@/utils/taxonomy'
 
 export interface IncomingTransaction {
   id?: string
@@ -53,21 +54,6 @@ interface ReviewedItem {
   ruleKeyword: string
 }
 
-// Categorias e Subcategorias padrão da plataforma médica
-const CATEGORY_OPTIONS: Record<string, string[]> = {
-  'Alimentação': ['Restaurantes & Fast Food', 'Supermercado Familiar', 'Delivery & Lanches', 'Padaria & Confeitaria', 'Cafeteria & Lanches'],
-  'Transporte': ['Estacionamentos', 'Combustível', 'Transporte por Aplicativo', 'Manutenção Veicular', 'Estacionamento & Pedágios', 'Seguro Auto'],
-  'Moradia': ['Condomínio Residencial', 'Supermercado Familiar', 'Energia Elétrica', 'Água e Esgoto', 'Internet & Telefonia', 'Manutenção da Casa'],
-  'Saúde': ['Medicamentos & Farmácia', 'Plano de Saúde', 'Consultas & Exames', 'Odontologia'],
-  'Investimentos & Aplicações': ['Aporte de Capital', 'Renda Fixa / CDB', 'Tesouro Selic / IPCA', 'Ações', 'FIIs Imobiliários'],
-  'Resgate de Investimentos': ['Resgate de Capital'],
-  'Despesas Pessoais': ['Educação Médica & Livros', 'Congressos & Atualização', 'Vestuário & Uso Pessoal', 'Anuidade CRM/CFM', 'Educação / Escola'],
-  'Financiamento': ['Parcelas CDC Veicular', 'Fração Imobiliária Resort', 'Amortização de Dívidas'],
-  'Lazer': ['Streaming & Assinaturas', 'Viagens & Hospedagem', 'Passeios & Cultura', 'Esportes & Academia'],
-  'Empresa Médica PJ': ['DARF Simples Nacional', 'Previdência INSS', 'ISSQN Municipal', 'Assessoria Contábil', 'Despesas Operacionais Clínica'],
-  'Pagamento de Fatura': ['Deduplicado / Débito de Cartão']
-}
-
 export function SmartCategorizationModal({
   isOpen,
   onClose,
@@ -83,8 +69,19 @@ export function SmartCategorizationModal({
     if (!isOpen || !transactions || transactions.length === 0) return
 
     const prepared: ReviewedItem[] = transactions.map((t, idx) => {
-      const pred = CategoryRulesEngine.predict(t.description, t.entityType || 'PF')
+      const entityScope = t.entityType || 'PF'
+      const pred = CategoryRulesEngine.predict(t.description, entityScope)
       
+      // Valida se a categoria fornecida ou prevista existe na taxonomia oficial
+      const validCategory = (t.category && USER_TAXONOMY_MAP[t.category]) 
+        ? t.category 
+        : (USER_TAXONOMY_MAP[pred.category] ? pred.category : (entityScope === 'PJ' ? 'Empresa - Despesas Fixas' : 'Casa'))
+      
+      const availableSubcats = getSubcategoriesForCategory(validCategory)
+      const validSubcat = (t.subcategory && availableSubcats.includes(t.subcategory))
+        ? t.subcategory
+        : (availableSubcats.includes(pred.subcategory) ? pred.subcategory : (availableSubcats[0] || 'Diversos'))
+
       // Extrai a primeira palavra ou termo representativo para sugestão de regra
       const words = t.description.trim().split(/\s+/)
       const defaultKeyword = words[0]?.length > 2 ? words[0] : (words[1] || t.description)
@@ -95,9 +92,9 @@ export function SmartCategorizationModal({
         description: t.description,
         amount: t.amount,
         accountOrCard: t.accountOrCard || 'Cartão de Crédito',
-        entityType: t.entityType || 'PF',
-        category: t.category || pred.category,
-        subcategory: t.subcategory || pred.subcategory,
+        entityType: entityScope,
+        category: validCategory,
+        subcategory: validSubcat,
         subdivision: pred.subdivision,
         source: pred.source,
         isCardBillPayment: pred.isCardBillPayment,
@@ -115,8 +112,8 @@ export function SmartCategorizationModal({
   const handleCategoryChange = (index: number, newCat: string) => {
     const updated = [...items]
     updated[index].category = newCat
-    const subcats = CATEGORY_OPTIONS[newCat] || ['Diversos']
-    updated[index].subcategory = subcats[0]
+    const subcats = getSubcategoriesForCategory(newCat)
+    updated[index].subcategory = subcats[0] || 'Diversos'
     setItems(updated)
   }
 
@@ -246,7 +243,9 @@ export function SmartCategorizationModal({
           <div className="space-y-3">
             {items.map((item, idx) => {
               const isPositive = item.amount > 0
-              const subcats = CATEGORY_OPTIONS[item.category] || ['Diversos']
+              const scopeTaxonomy = getCategoriesByScope(item.entityType || 'PF')
+              const availableCategories = Object.keys(scopeTaxonomy).length > 0 ? Object.keys(scopeTaxonomy) : Object.keys(USER_TAXONOMY_MAP)
+              const subcats = getSubcategoriesForCategory(item.category)
 
               return (
                 <div 
@@ -302,7 +301,7 @@ export function SmartCategorizationModal({
                           onChange={(e) => handleCategoryChange(idx, e.target.value)}
                           className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
                         >
-                          {Object.keys(CATEGORY_OPTIONS).map(cat => (
+                          {availableCategories.map(cat => (
                             <option key={cat} value={cat}>{cat}</option>
                           ))}
                         </select>

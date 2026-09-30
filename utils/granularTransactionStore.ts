@@ -21,6 +21,20 @@ export interface GranularTransaction {
   isDuplicateSuspect?: boolean
   duplicateReason?: string
   source: 'INITIAL_AUDIT' | 'MANUAL' | 'INVOICE' | 'OCR' | 'OPEN_FINANCE'
+  
+  // Metadados do Sistema de Categorização Inteligente (Jev / Regras / Modo Sombra)
+  decisionType?: 'deterministic' | 'probabilistic' | 'manual' | 'unclassified'
+  certaintyLabel?: string
+  categorySource?: 'manual' | 'local_rule' | 'jev' | 'llm' | 'imported' | 'unknown'
+  categoryConfidence?: number | null // Calibrado via Choice (0 a 1)
+  isFixedProbability?: number | null // Calibrado via Noul (0 a 1)
+  needsReviewProbability?: number | null // Calibrado via Noul (0 a 1)
+  aiSuggestedCategory?: string
+  aiSuggestedSubcategory?: string
+  aiSuggestedIsFixed?: boolean
+  aiReviewRequired?: boolean
+  categorizationStatus?: 'pending' | 'suggested' | 'confirmed' | 'auto_applied' | 'needs_review' | 'rejected' | 'error'
+  categorizationError?: string
 }
 
 const STORAGE_KEY = 'leaomed_granular_transactions_v5'

@@ -25,6 +25,7 @@ import { MonthSelectorModal } from './MonthSelectorModal'
 import { AnnualConsolidatedView } from './AnnualConsolidatedView'
 import CreditCardModal from './CreditCardModal'
 import { CreditCardStore, CreditCardItem } from '@/utils/creditCardStore'
+import { usePrivacy } from '@/context/PrivacyContext'
 
 interface CategoryItem {
   name: string
@@ -73,6 +74,7 @@ export function MobillsAnalytics({
   onMonthChange,
   isDemo = false
 }: MobillsAnalyticsProps) {
+  const { maskValue } = usePrivacy()
   const [viewMode, setViewMode] = useState<'MONTHLY' | 'ANNUAL_CONSOLIDATED'>('MONTHLY')
   const [timeRange, setTimeRange] = useState<'7d' | '30d'>('30d')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
@@ -532,7 +534,7 @@ export function MobillsAnalytics({
             </div>
           </div>
           <div className={`font-mono text-xl sm:text-2xl font-black tabular-nums tracking-tight ${isSurplus ? 'text-slate-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'}`}>
-            {isSurplus ? '+' : ''} R$ {calculatedBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {isSurplus ? '+' : ''} {maskValue(calculatedBalance)}
           </div>
           <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1.5">
             <span>{currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'} • {SHORT_MONTH_NAMES[activeMonth]}/{String(activeYear).slice(2)}</span>
@@ -557,7 +559,7 @@ export function MobillsAnalytics({
             </div>
           </div>
           <div className="font-mono text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tight">
-            R$ {calculatedTotalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {maskValue(calculatedTotalIncome)}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 flex items-center justify-between">
             <span>{currentFilter === 'PJ' ? 'Contratos / Faturamento PJ' : currentFilter === 'PF' ? 'Pró-labore + Reembolsos' : 'Faturamento Externo Real'}</span>
@@ -583,7 +585,7 @@ export function MobillsAnalytics({
             </div>
           </div>
           <div className="font-mono text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tabular-nums tracking-tight">
-            R$ {calculatedTotalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {maskValue(calculatedTotalExpenses)}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 flex items-center justify-between">
             <span>{currentFilter === 'PJ' ? 'Simples Nacional + Tarifas' : 'Gastos Fixos + Cartões'}</span>
@@ -602,7 +604,7 @@ export function MobillsAnalytics({
             </div>
           </div>
           <div className="font-mono text-xl sm:text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
-            R$ {creditCardTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {maskValue(creditCardTotal)}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
             {currentFilter === 'PJ' ? 'Pessoa Jurídica: 100% Débito em Conta' : 'C6 Carbon + Itaú + Nubank'}
@@ -639,7 +641,7 @@ export function MobillsAnalytics({
               </svg>
               <div className="absolute text-center">
                 <span className="font-mono text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums block">
-                  R$ {calculatedTotalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {maskValue(calculatedTotalExpenses)}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-rose-500 transition-colors">
                   Ver Planilha
@@ -656,7 +658,7 @@ export function MobillsAnalytics({
                     <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[130px]">{cat.name}</span>
                   </div>
                   <div className="flex items-center gap-2 font-mono tabular-nums">
-                    <span className="font-bold text-slate-900 dark:text-white">R$ {cat.value.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{maskValue(cat.value)}</span>
                     <span className="text-[10px] text-slate-400 w-11 text-right font-sans">({cat.percentage.toFixed(1)}%)</span>
                   </div>
                 </div>
@@ -692,7 +694,7 @@ export function MobillsAnalytics({
               </svg>
               <div className="absolute text-center">
                 <span className="font-mono text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums block">
-                  R$ {calculatedTotalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {maskValue(calculatedTotalIncome)}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-emerald-500 transition-colors">
                   Ver Planilha

@@ -1,6 +1,9 @@
+import { USER_TAXONOMY } from '@/utils/taxonomy'
+
 export interface CategorizationRule {
   id: string
   pattern: string
+  match_type?: 'exact' | 'contains' | 'starts_with' | 'regex'
   category: string
   subcategory: string
   subdivision?: string
@@ -15,141 +18,78 @@ export interface PredictionResult {
   subcategory: string
   subdivision?: string
   source: 'USER_RULE' | 'SMART_HEURISTIC' | 'DEFAULT'
+  decisionType: 'deterministic' | 'probabilistic'
+  certaintyLabel: string
   matchedRuleId?: string
   matchedPattern?: string
-  confidence: number // 0 a 1
+  confidence?: number | null // Reservado para Jev Choice/Score
   isCardBillPayment: boolean
 }
 
-// Chave no localStorage para guardar as regras aprendidas
+export function normalizeText(str: string): string {
+  if (!str) return ''
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+}
+
+// Chave no localStorage para cache local transitório das regras aprendidas
 const STORAGE_KEY = 'leaomed_categorization_rules'
 
-// Regras base inteligentes pré-configuradas (Taxonomia Médica e Cotidiano Brasileiro)
-const DEFAULT_HEURISTIC_RULES: Array<{
+// Constrói regras heurísticas inteligentes pré-configuradas baseadas na taxonomia oficial USER_TAXONOMY
+const buildTaxonomyHeuristics = (): Array<{
   pattern: string
   category: string
   subcategory: string
   subdivision?: string
   isBillPayment?: boolean
-}> = [
-  // Detecção de Pagamento de Fatura (Candidatos a Deduplicação / Duplicidade)
-  { pattern: 'pagamento fatura', category: 'Pagamento de Fatura', subcategory: 'Deduplicado / Débito de Cartão', isBillPayment: true },
-  { pattern: 'pgto fatura', category: 'Pagamento de Fatura', subcategory: 'Deduplicado / Débito de Cartão', isBillPayment: true },
-  { pattern: 'pagto fatura', category: 'Pagamento de Fatura', subcategory: 'Deduplicado / Débito de Cartão', isBillPayment: true },
-  { pattern: 'pagamento cartao', category: 'Pagamento de Fatura', subcategory: 'Deduplicado / Débito de Cartão', isBillPayment: true },
-  { pattern: 'debito fatura', category: 'Pagamento de Fatura', subcategory: 'Deduplicado / Débito de Cartão', isBillPayment: true },
-  { pattern: 'deb autom fatura', category: 'Pagamento de Fatura', subcategory: 'Deduplicado / Débito de Cartão', isBillPayment: true },
-  { pattern: 'pagto titulo c6', category: 'Pagamento de Fatura', subcategory: 'Deduplicado / Débito de Cartão', isBillPayment: true },
-  { pattern: 'pagamento c6 bank', category: 'Pagamento de Fatura', subcategory: 'Deduplicado / Débito de Cartão', isBillPayment: true },
-  { pattern: 'pagamento itaucard', category: 'Pagamento de Fatura', subcategory: 'Deduplicado / Débito de Cartão', isBillPayment: true },
-  { pattern: 'pagamento nubank', category: 'Pagamento de Fatura', subcategory: 'Deduplicado / Débito de Cartão', isBillPayment: true },
+}> => {
+  const rules: Array<{
+    pattern: string
+    category: string
+    subcategory: string
+    subdivision?: string
+    isBillPayment?: boolean
+  }> = [
+    // Detecção de Pagamento de Fatura (Candidatos a Deduplicação / Duplicidade)
+    { pattern: 'pagamento fatura', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
+    { pattern: 'pgto fatura', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
+    { pattern: 'pagto fatura', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
+    { pattern: 'pagamento cartao', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
+    { pattern: 'debito fatura', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
+    { pattern: 'deb autom fatura', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
+    { pattern: 'pagto titulo c6', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
+    { pattern: 'pagamento c6 bank', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
+    { pattern: 'pagamento itaucard', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
+    { pattern: 'pagamento nubank', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true }
+  ]
 
-  // Investimentos & Aplicações vs Resgates
-  { pattern: 'aporte', category: 'Investimentos & Aplicações', subcategory: 'Aporte de Capital' },
-  { pattern: 'aplicacao cdb', category: 'Investimentos & Aplicações', subcategory: 'Renda Fixa / CDB' },
-  { pattern: 'tesouro direto', category: 'Investimentos & Aplicações', subcategory: 'Tesouro Selic / IPCA' },
-  { pattern: 'xp investimentos', category: 'Investimentos & Aplicações', subcategory: 'Aporte de Capital' },
-  { pattern: 'btg pactual', category: 'Investimentos & Aplicações', subcategory: 'Aporte de Capital' },
-  { pattern: 'resgate investimento', category: 'Resgate de Investimentos', subcategory: 'Resgate de Capital' },
-  { pattern: 'resgate cdb', category: 'Resgate de Investimentos', subcategory: 'Resgate de Capital' },
-  { pattern: 'resgate fundo', category: 'Resgate de Investimentos', subcategory: 'Resgate de Capital' },
+  // Adiciona keywords cadastradas na taxonomia oficial do usuário normalizadas
+  USER_TAXONOMY.forEach(cat => {
+    cat.subcategories.forEach(sub => {
+      if (sub.keywords && Array.isArray(sub.keywords)) {
+        sub.keywords.forEach(kw => {
+          if (kw && kw.trim().length >= 2) {
+            rules.push({
+              pattern: normalizeText(kw),
+              category: cat.name,
+              subcategory: sub.name
+            })
+          }
+        })
+      }
+    })
+  })
 
-  // Estacionamentos com Subdivisão Nível 3 (Hospitais Médicos de BH)
-  { pattern: 'madre teresa', category: 'Transporte', subcategory: 'Estacionamentos', subdivision: 'Hospital Madre Teresa' },
-  { pattern: 'mater dei', category: 'Transporte', subcategory: 'Estacionamentos', subdivision: 'Hospital Mater Dei' },
-  { pattern: 'lifecenter', category: 'Transporte', subcategory: 'Estacionamentos', subdivision: 'Hospital Lifecenter' },
-  { pattern: 'felicio rocho', category: 'Transporte', subcategory: 'Estacionamentos', subdivision: 'Hospital Felício Rocho' },
-  { pattern: 'vila da serra', category: 'Transporte', subcategory: 'Estacionamentos', subdivision: 'Hospital Vila da Serra' },
-  { pattern: 'vera cruz', category: 'Transporte', subcategory: 'Estacionamentos', subdivision: 'Hospital Vera Cruz' },
-  { pattern: 'santa casa', category: 'Transporte', subcategory: 'Estacionamentos', subdivision: 'Santa Casa BH' },
+  return rules
+}
 
-  // Alimentação & Restaurantes
-  { pattern: 'mcdonald', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
-  { pattern: 'mc donald', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
-  { pattern: 'burger king', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
-  { pattern: 'ifood', category: 'Alimentação', subcategory: 'Delivery & Lanches' },
-  { pattern: 'outback', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
-  { pattern: 'restaurante', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
-  { pattern: 'churrascaria', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
-  { pattern: 'padaria', category: 'Alimentação', subcategory: 'Padaria & Confeitaria' },
-  { pattern: 'cafe', category: 'Alimentação', subcategory: 'Cafeteria & Lanches' },
-  { pattern: 'pizzaria', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
-
-  // Transporte & Veículos
-  { pattern: 'posto', category: 'Transporte', subcategory: 'Combustível' },
-  { pattern: 'ipiranga', category: 'Transporte', subcategory: 'Combustível' },
-  { pattern: 'shell', category: 'Transporte', subcategory: 'Combustível' },
-  { pattern: 'petrobras', category: 'Transporte', subcategory: 'Combustível' },
-  { pattern: 'combustivel', category: 'Transporte', subcategory: 'Combustível' },
-  { pattern: 'uber', category: 'Transporte', subcategory: 'Transporte por Aplicativo' },
-  { pattern: '99app', category: 'Transporte', subcategory: 'Transporte por Aplicativo' },
-  { pattern: 'estacionamento', category: 'Transporte', subcategory: 'Estacionamentos' },
-  { pattern: 'estapar', category: 'Transporte', subcategory: 'Estacionamentos' },
-  { pattern: 'indigo', category: 'Transporte', subcategory: 'Estacionamentos' },
-  { pattern: 'pare bem', category: 'Transporte', subcategory: 'Estacionamentos' },
-  { pattern: 'sem parar', category: 'Transporte', subcategory: 'Estacionamento & Pedágios' },
-  { pattern: 'veloe', category: 'Transporte', subcategory: 'Estacionamento & Pedágios' },
-  { pattern: 'oficina', category: 'Transporte', subcategory: 'Manutenção Veicular' },
-  { pattern: 'pneu', category: 'Transporte', subcategory: 'Manutenção Veicular' },
-
-  // Moradia & Supermercados
-  { pattern: 'supermercado', category: 'Moradia', subcategory: 'Supermercado Familiar' },
-  { pattern: 'verdemar', category: 'Moradia', subcategory: 'Supermercado Familiar' },
-  { pattern: 'supernosso', category: 'Moradia', subcategory: 'Supermercado Familiar' },
-  { pattern: 'carrefour', category: 'Moradia', subcategory: 'Supermercado Familiar' },
-  { pattern: 'pao de acucar', category: 'Moradia', subcategory: 'Supermercado Familiar' },
-  { pattern: 'bh supermercados', category: 'Moradia', subcategory: 'Supermercado Familiar' },
-  { pattern: 'condominio', category: 'Moradia', subcategory: 'Condomínio Residencial' },
-  { pattern: 'cemig', category: 'Moradia', subcategory: 'Energia Elétrica' },
-  { pattern: 'copasa', category: 'Moradia', subcategory: 'Água e Esgoto' },
-  { pattern: 'sabesp', category: 'Moradia', subcategory: 'Água e Esgoto' },
-  { pattern: 'claro', category: 'Moradia', subcategory: 'Internet & Telefonia' },
-  { pattern: 'vivo', category: 'Moradia', subcategory: 'Internet & Telefonia' },
-
-  // Saúde & Farmácia
-  { pattern: 'drogaria', category: 'Saúde', subcategory: 'Medicamentos & Farmácia' },
-  { pattern: 'farmacia', category: 'Saúde', subcategory: 'Medicamentos & Farmácia' },
-  { pattern: 'araujo', category: 'Saúde', subcategory: 'Medicamentos & Farmácia' },
-  { pattern: 'raia', category: 'Saúde', subcategory: 'Medicamentos & Farmácia' },
-  { pattern: 'drogasil', category: 'Saúde', subcategory: 'Medicamentos & Farmácia' },
-  { pattern: 'pacheco', category: 'Saúde', subcategory: 'Medicamentos & Farmácia' },
-  { pattern: 'unimed', category: 'Saúde', subcategory: 'Plano de Saúde' },
-  { pattern: 'bradesco saude', category: 'Saúde', subcategory: 'Plano de Saúde' },
-  { pattern: 'sulamerica saude', category: 'Saúde', subcategory: 'Plano de Saúde' },
-
-  // Educação & Formação Médica
-  { pattern: 'uptodate', category: 'Despesas Pessoais', subcategory: 'Educação Médica & Livros' },
-  { pattern: 'congresso', category: 'Despesas Pessoais', subcategory: 'Congressos & Atualização' },
-  { pattern: 'crm', category: 'Despesas Pessoais', subcategory: 'Anuidade CRM/CFM' },
-  { pattern: 'cfm', category: 'Despesas Pessoais', subcategory: 'Anuidade CRM/CFM' },
-  { pattern: 'amb', category: 'Despesas Pessoais', subcategory: 'Sociedades Médicas' },
-  { pattern: 'colegio', category: 'Despesas Pessoais', subcategory: 'Educação / Escola' },
-  { pattern: 'escola', category: 'Despesas Pessoais', subcategory: 'Educação / Escola' },
-
-  // Lazer & Assinaturas
-  { pattern: 'netflix', category: 'Lazer', subcategory: 'Streaming & Assinaturas' },
-  { pattern: 'spotify', category: 'Lazer', subcategory: 'Streaming & Assinaturas' },
-  { pattern: 'amazon prime', category: 'Lazer', subcategory: 'Streaming & Assinaturas' },
-  { pattern: 'apple.com', category: 'Lazer', subcategory: 'Assinaturas & Apple' },
-  { pattern: 'cinema', category: 'Lazer', subcategory: 'Passeios & Cultura' },
-  { pattern: 'teatro', category: 'Lazer', subcategory: 'Passeios & Cultura' },
-
-  // Financiamentos
-  { pattern: 'financiamento', category: 'Financiamento', subcategory: 'Parcelas CDC / Imóveis' },
-  { pattern: 'cota turistica', category: 'Financiamento', subcategory: 'Fração Imobiliária Resort' },
-  { pattern: 'resort', category: 'Financiamento', subcategory: 'Fração Imobiliária Resort' },
-
-  // Pessoa Jurídica (Tributos & Serviços)
-  { pattern: 'darf', category: 'Empresa Médica PJ', subcategory: 'Tributos Federais (DARF)' },
-  { pattern: 'simples nacional', category: 'Empresa Médica PJ', subcategory: 'DAS Simples Nacional' },
-  { pattern: 'contabil', category: 'Empresa Médica PJ', subcategory: 'Assessoria Contábil' },
-  { pattern: 'contador', category: 'Empresa Médica PJ', subcategory: 'Assessoria Contábil' },
-  { pattern: 'inss', category: 'Empresa Médica PJ', subcategory: 'Previdência INSS' },
-  { pattern: 'iss', category: 'Empresa Médica PJ', subcategory: 'ISSQN Municipal' }
-]
+const DEFAULT_HEURISTIC_RULES = buildTaxonomyHeuristics()
 
 export class CategoryRulesEngine {
-  // Carrega regras aprendidas pelo usuário do LocalStorage
+  // Carrega regras do LocalStorage como cache rápido
   static getCustomRules(): CategorizationRule[] {
     if (typeof window === 'undefined') return []
     try {
@@ -161,9 +101,40 @@ export class CategoryRulesEngine {
     }
   }
 
-  // Salva uma nova regra ou atualiza regra existente
+  // Sincroniza regras do PostgreSQL no client
+  static async syncFromPostgres(): Promise<CategorizationRule[]> {
+    if (typeof window === 'undefined') return []
+    try {
+      const resp = await fetch('/api/category-rules')
+      if (resp.ok) {
+        const data = await resp.json()
+        if (data.rules && Array.isArray(data.rules)) {
+          const rules: CategorizationRule[] = data.rules.map((r: any) => ({
+            id: r.id,
+            pattern: r.pattern,
+            match_type: r.match_type,
+            category: r.category,
+            subcategory: r.subcategory,
+            subdivision: r.subdivision,
+            entityType: r.entity_type,
+            alwaysApply: r.always_apply,
+            createdAt: r.created_at,
+            hitCount: r.hit_count
+          }))
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(rules))
+          return rules
+        }
+      }
+    } catch (e) {
+      console.warn('Falha na sincronização de regras com o banco:', e)
+    }
+    return this.getCustomRules()
+  }
+
+  // Salva uma nova regra no PostgreSQL e atualiza o cache local
   static saveRule(params: {
     pattern: string
+    match_type?: 'exact' | 'contains' | 'starts_with' | 'regex'
     category: string
     subcategory: string
     subdivision?: string
@@ -173,12 +144,12 @@ export class CategoryRulesEngine {
     const rules = this.getCustomRules()
     const cleanPattern = params.pattern.trim().toLowerCase()
     
-    // Verifica se já existe uma regra para este padrão
     const existingIndex = rules.findIndex(r => r.pattern.toLowerCase() === cleanPattern)
 
     const updatedRule: CategorizationRule = {
       id: existingIndex >= 0 ? rules[existingIndex].id : `rule_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
       pattern: cleanPattern,
+      match_type: params.match_type || 'contains',
       category: params.category,
       subcategory: params.subcategory,
       subdivision: params.subdivision,
@@ -198,102 +169,129 @@ export class CategoryRulesEngine {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(rules))
         window.dispatchEvent(new CustomEvent('leaomed_rules_updated', { detail: { rule: updatedRule } }))
+
+        // Envia de forma assíncrona para o PostgreSQL
+        fetch('/api/category-rules', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pattern: updatedRule.pattern,
+            match_type: updatedRule.match_type,
+            category: updatedRule.category,
+            subcategory: updatedRule.subcategory,
+            subdivision: updatedRule.subdivision,
+            entity_type: updatedRule.entityType,
+            always_apply: updatedRule.alwaysApply
+          })
+        }).catch(err => console.warn('Aviso: falha ao persistir regra no PostgreSQL:', err))
+
       } catch (_) {}
     }
 
     return updatedRule
   }
 
-  // Deleta uma regra do usuário
+  // Deleta uma regra
   static deleteRule(id: string): void {
     const rules = this.getCustomRules().filter(r => r.id !== id)
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(rules))
         window.dispatchEvent(new CustomEvent('leaomed_rules_updated'))
-      } catch (_) {}
-    }
-  }
-
-  // Limpa todas as regras customizadas
-  static clearCustomRules(): void {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem(STORAGE_KEY)
-        window.dispatchEvent(new CustomEvent('leaomed_rules_updated'))
+        fetch(`/api/category-rules?id=${id}`, { method: 'DELETE' }).catch(() => {})
       } catch (_) {}
     }
   }
 
   // Verifica se uma descrição é pagamento de fatura (candidato à duplicidade)
   static isBillPayment(description: string): boolean {
-    const lower = description.toLowerCase()
+    const lower = (description || '').toLowerCase()
     return DEFAULT_HEURISTIC_RULES.some(r => r.isBillPayment && lower.includes(r.pattern))
   }
 
-  // Prediz categoria e subcategoria com base na descrição
+  // Predição em Cascata Determinística Local
   static predict(description: string, entityType: 'PF' | 'PJ' = 'PF'): PredictionResult {
     if (!description) {
       return {
-        category: 'Despesas Pessoais',
-        subcategory: 'Outros Lançamentos',
+        category: 'Casa',
+        subcategory: 'Supermercado',
         source: 'DEFAULT',
-        confidence: 0.1,
+        decisionType: 'deterministic',
+        certaintyLabel: 'padrão inicial',
         isCardBillPayment: false
       }
     }
 
-    const clean = description.toLowerCase().trim()
-    const isPayment = this.isBillPayment(clean)
+    const clean = normalizeText(description)
+    const isPayment = this.isBillPayment(description)
 
-    // 1. Prioridade Máxima: Regras Aprendidas pelo Usuário
+    // 1. Regra Exata do Usuário
     const customRules = this.getCustomRules()
-    const matchedCustom = customRules.find(r => clean.includes(r.pattern.toLowerCase()))
+    const exactMatch = customRules.find(r => normalizeText(r.pattern) === clean)
 
-    if (matchedCustom) {
+    if (exactMatch) {
       return {
-        category: matchedCustom.category,
-        subcategory: matchedCustom.subcategory,
-        subdivision: matchedCustom.subdivision,
+        category: exactMatch.category,
+        subcategory: exactMatch.subcategory,
+        subdivision: exactMatch.subdivision,
         source: 'USER_RULE',
-        matchedRuleId: matchedCustom.id,
-        matchedPattern: matchedCustom.pattern,
-        confidence: 0.98,
+        decisionType: 'deterministic',
+        certaintyLabel: 'regra local exata',
+        matchedRuleId: exactMatch.id,
+        matchedPattern: exactMatch.pattern,
         isCardBillPayment: isPayment
       }
     }
 
-    // 2. Heurística Padrão Médica & Comercial
-    const matchedHeuristic = DEFAULT_HEURISTIC_RULES.find(r => clean.includes(r.pattern))
+    // 2. Regra de Estabelecimento por Substring
+    const substringMatch = customRules.find(r => clean.includes(normalizeText(r.pattern)))
+    if (substringMatch) {
+      return {
+        category: substringMatch.category,
+        subcategory: substringMatch.subcategory,
+        subdivision: substringMatch.subdivision,
+        source: 'USER_RULE',
+        decisionType: 'deterministic',
+        certaintyLabel: 'regra memorizada',
+        matchedRuleId: substringMatch.id,
+        matchedPattern: substringMatch.pattern,
+        isCardBillPayment: isPayment
+      }
+    }
 
+    // 3. Heurística Especializada Padrão da Taxonomia Oficial
+    const matchedHeuristic = DEFAULT_HEURISTIC_RULES.find(r => clean.includes(r.pattern))
     if (matchedHeuristic) {
       return {
         category: matchedHeuristic.category,
         subcategory: matchedHeuristic.subcategory,
         subdivision: matchedHeuristic.subdivision,
         source: 'SMART_HEURISTIC',
+        decisionType: 'deterministic',
+        certaintyLabel: 'heurística local',
         matchedPattern: matchedHeuristic.pattern,
-        confidence: 0.85,
         isCardBillPayment: isPayment
       }
     }
 
-    // 3. Fallback inteligente
+    // 4. Fallback Padrão
     if (entityType === 'PJ') {
       return {
-        category: 'Empresa Médica PJ',
-        subcategory: 'Despesas Operacionais',
+        category: 'Empresa - Despesas Fixas',
+        subcategory: 'Outras taxas',
         source: 'DEFAULT',
-        confidence: 0.3,
+        decisionType: 'deterministic',
+        certaintyLabel: 'fallback pj',
         isCardBillPayment: isPayment
       }
     }
 
     return {
-      category: 'Despesas Pessoais',
-      subcategory: 'Diversos',
+      category: 'Casa',
+      subcategory: 'Supermercado',
       source: 'DEFAULT',
-      confidence: 0.2,
+      decisionType: 'deterministic',
+      certaintyLabel: 'fallback pf',
       isCardBillPayment: isPayment
     }
   }
@@ -302,7 +300,7 @@ export class CategoryRulesEngine {
   static applyToBatch<T extends { desc?: string; description?: string; cat?: string; category?: string; subcategory?: string; subdivision?: string }>(
     items: T[],
     entityType: 'PF' | 'PJ' = 'PF'
-  ): (T & { suggestedCategory: string; suggestedSubcategory: string; suggestedSubdivision?: string; isUserRule: boolean; isBillPayment: boolean })[] {
+  ): (T & { suggestedCategory: string; suggestedSubcategory: string; suggestedSubdivision?: string; isUserRule: boolean; isBillPayment: boolean; certaintyLabel: string })[] {
     return items.map(item => {
       const text = item.description || item.desc || ''
       const pred = this.predict(text, entityType)
@@ -312,7 +310,8 @@ export class CategoryRulesEngine {
         suggestedSubcategory: pred.subcategory,
         suggestedSubdivision: pred.subdivision,
         isUserRule: pred.source === 'USER_RULE',
-        isBillPayment: pred.isCardBillPayment
+        isBillPayment: pred.isCardBillPayment,
+        certaintyLabel: pred.certaintyLabel
       }
     })
   }

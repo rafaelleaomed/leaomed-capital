@@ -19,6 +19,7 @@ import { HistoricalOverview } from './dashboard/HistoricalOverview'
 import { OnboardingWizardModal } from './dashboard/OnboardingWizardModal'
 import { QuickTransactionModal } from './dashboard/QuickTransactionModal'
 import { AppleMobileTabBar } from './dashboard/AppleMobileTabBar'
+import { ExecutiveHubCards } from './dashboard/ExecutiveHubCards'
 
 export default function DashboardUI({ 
   payload, 
@@ -177,48 +178,72 @@ export default function DashboardUI({
       {/* Alertas Consultivos Determinísticos & IA */}
       <InsightsPanel alerts={payload.alerts} />
 
-      {/* MÓDULO VISUAL MOBILLS: Gráficos circulares de Despesas e Receitas, Frequência de Gastos e Cartões */}
-      <MobillsAnalytics 
+      {/* ── COMANDO EXECUTIVO: DESTAQUE PARA INGESTÃO DE FATURAS E CARDS DE NAVEGAÇÃO RÁPIDA ── */}
+      <ExecutiveHubCards 
         currentFilter={currentFilter}
-        currentBalance={displayBalance}
-        totalIncome={displayIncome}
-        totalExpenses={displayExpenses}
+        displayBalance={displayBalance}
+        displayIncome={displayIncome}
+        displayExpenses={displayExpenses}
         creditCardTotal={displayCreditCard}
-        categories={displayCategories}
-        incomeSources={monthlyData.incomeSources}
-        dailySpendData={monthlyData.dailySpendData}
-        selectedMonth={selectedMonth}
-        selectedYear={selectedYear}
-        onMonthChange={(m, y) => {
-          setSelectedMonth(m)
-          setSelectedYear(y)
+        availableToInvest={availableToInvest}
+        onOpenIngestion={() => {
+          const el = document.getElementById('central-ingestao')
+          if (el) el.scrollIntoView({ behavior: 'smooth' })
         }}
+        onOpenQuickTx={() => setIsQuickTxOpen(true)}
         isDemo={isDemo}
       />
 
+      {/* MÓDULO VISUAL MOBILLS: Gráficos circulares de Despesas e Receitas, Frequência de Gastos e Cartões */}
+      <div id="visao-geral-graficos" className="scroll-mt-24">
+        <MobillsAnalytics 
+          currentFilter={currentFilter}
+          currentBalance={displayBalance}
+          totalIncome={displayIncome}
+          totalExpenses={displayExpenses}
+          creditCardTotal={displayCreditCard}
+          categories={displayCategories}
+          incomeSources={monthlyData.incomeSources}
+          dailySpendData={monthlyData.dailySpendData}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          onMonthChange={(m, y) => {
+            setSelectedMonth(m)
+            setSelectedYear(y)
+          }}
+          isDemo={isDemo}
+        />
+      </div>
+
       {/* Linha 1: Cards de Decisão Rápida (Executivo) */}
-      <SummaryCards 
-        currentBalance={displayBalance}
-        totalIncome={displayIncome}
-        totalExpenses={displayExpenses}
-        safeDailySpend={safeDailySpend}
-        availableToInvest={availableToInvest}
-        currentFilter={currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter}
-        periodLabel={periodLabel}
-        fixedExpenses={obligatoryExpenses}
-        daysInMonth={monthlyData.daysInMonth}
-        daysLeft={monthlyData.daysLeft}
-        investmentTargetPct={investmentTargetPct}
-        onInvestmentPctChange={(newPct) => setInvestmentTargetPct(newPct)}
-      />
+      <div id="resumo-executivo" className="scroll-mt-24">
+        <SummaryCards 
+          currentBalance={displayBalance}
+          totalIncome={displayIncome}
+          totalExpenses={displayExpenses}
+          safeDailySpend={safeDailySpend}
+          availableToInvest={availableToInvest}
+          currentFilter={currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter}
+          periodLabel={periodLabel}
+          fixedExpenses={obligatoryExpenses}
+          daysInMonth={monthlyData.daysInMonth}
+          daysLeft={monthlyData.daysLeft}
+          investmentTargetPct={investmentTargetPct}
+          onInvestmentPctChange={(newPct) => setInvestmentTargetPct(newPct)}
+        />
+      </div>
 
       {/* Linha 2: ESPINHA DORSAL DA PLANILHA (Gastos Obrigatórios vs Não Obrigatórios) */}
-      <BudgetBreakdown 
-        currentFilter={currentFilter} 
-        isDemo={isDemo} 
-        selectedMonth={selectedMonth} 
-        selectedYear={selectedYear} 
-      />
+      <div id="categorias-planilha" className="scroll-mt-24">
+        <div id="divisao-orcamentaria" className="scroll-mt-24">
+          <BudgetBreakdown 
+            currentFilter={currentFilter} 
+            isDemo={isDemo} 
+            selectedMonth={selectedMonth} 
+            selectedYear={selectedYear} 
+          />
+        </div>
+      </div>
 
       {/* Linha 3: Otimizador de Aportes & Rebalanceamento da Carteira */}
       <div id="balanceamento-investimentos" className="scroll-mt-24">
@@ -242,8 +267,10 @@ export default function DashboardUI({
       </div>
 
       {/* Linha 6: Central Multicanal de Ingestão de Dados (Fatura, OCR/Print, Manual, Open Finance) */}
-      <div id="upload-documentos" className="scroll-mt-24">
-        <DataIngestionCenter isDemo={isDemo} />
+      <div id="central-ingestao" className="scroll-mt-24">
+        <div id="upload-documentos" className="scroll-mt-24">
+          <DataIngestionCenter isDemo={isDemo} />
+        </div>
       </div>
 
       {/* Linha 7: Série Temporal Histórica */}

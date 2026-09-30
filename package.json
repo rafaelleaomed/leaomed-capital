@@ -21,7 +21,8 @@
     "react": "latest",
     "react-dom": "latest",
     "react-pluggy-connect": "^1.1.1",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@types/node": "latest",

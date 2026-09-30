@@ -204,6 +204,27 @@ export const USER_TAXONOMY: CategoryDef[] = [
   }
 ];
 
+export const USER_TAXONOMY_MAP: Record<string, string[]> = USER_TAXONOMY.reduce((acc, cat) => {
+  acc[cat.name] = cat.subcategories.map(s => s.name);
+  return acc;
+}, {} as Record<string, string[]>);
+
+export function getCategoriesByScope(scope?: 'PF' | 'PJ' | 'AMBOS'): Record<string, string[]> {
+  const filtered = USER_TAXONOMY.filter(cat => {
+    if (!scope || scope === 'AMBOS') return true;
+    return cat.scope === scope || cat.scope === 'AMBOS';
+  });
+  return filtered.reduce((acc, cat) => {
+    acc[cat.name] = cat.subcategories.map(s => s.name);
+    return acc;
+  }, {} as Record<string, string[]>);
+}
+
+export function getSubcategoriesForCategory(categoryName: string): string[] {
+  const found = USER_TAXONOMY.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+  return found ? found.subcategories.map(s => s.name) : ['Diversos'];
+}
+
 export interface InvestmentTargetDef {
   assetClass: string;
   targetPercentage: number;
