@@ -54,7 +54,7 @@ export const BH_HOSPITALS = [
   'Hospital Baleia'
 ]
 
-export const STANDARD_TAXONOMY: Record<string, string[]> = {
+export const EXPENSE_TAXONOMY: Record<string, string[]> = {
   'Transporte': [
     'Estacionamentos',
     'Combustível',
@@ -118,17 +118,60 @@ export const STANDARD_TAXONOMY: Record<string, string[]> = {
     'Criptoativos',
     'Aporte Geral'
   ],
-  'Resgate de Investimentos': [
-    'Resgate de Capital',
-    'Resgate de Emergência',
-    'Outros'
-  ],
   'Pagamento de Fatura': [
     'Deduplicado / Débito de Cartão',
     'Fatura Cartão C6',
     'Fatura Itaú',
     'Fatura Nubank'
   ]
+}
+
+export const INCOME_TAXONOMY: Record<string, string[]> = {
+  'Faturamento Hospitalar & PJ': [
+    'Plantão Camarinha',
+    'UPAs Contagem',
+    'Hospital Madre Teresa',
+    'Hospital Mater Dei',
+    'Hospital Felício Rocho',
+    'Santa Casa BH',
+    'Outros Plantões'
+  ],
+  'Receita PF & Pró-Labore': [
+    'Pró-Labore Camarinha',
+    'Salários & Remunerações',
+    'Consultas Particulares',
+    'Reembolso / Transferências',
+    'Venda de Bens',
+    'Outras Receitas PF'
+  ],
+  'Reembolso & Devolução': [
+    'Reembolso de Despesas',
+    'Reembolso Plano de Saúde',
+    'Estorno de Compra',
+    'Outros Reembolsos'
+  ],
+  'Rendimentos & Investimentos': [
+    'Rendimentos CDB / Renda Fixa',
+    'Dividendos & JCP',
+    'Resgate de Aplicações',
+    'Venda de Ativos'
+  ],
+  'Presentes & PIX Recebidos': [
+    'Presente / Aniversário / Casamento',
+    'Transferência Familiar',
+    'PIX Comercial / Serviço',
+    'Outros Recebimentos'
+  ],
+  'Resgate de Investimentos': [
+    'Resgate de Capital',
+    'Resgate de Emergência',
+    'Outros'
+  ]
+}
+
+export const STANDARD_TAXONOMY: Record<string, string[]> = {
+  ...INCOME_TAXONOMY,
+  ...EXPENSE_TAXONOMY
 }
 
 export function GranularExpenseAuditor({ 
@@ -161,8 +204,13 @@ export function GranularExpenseAuditor({
 
   // Seleção Múltipla & Categorização em Lote
   const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set())
+  const [bulkTxType, setBulkTxType] = useState<'EXPENSE' | 'INCOME' | 'ALL'>('EXPENSE')
   const [bulkCategory, setBulkCategory] = useState<string>('Transporte')
+  const [isBulkCustomCategory, setIsBulkCustomCategory] = useState<boolean>(false)
+  const [bulkCustomCategory, setBulkCustomCategory] = useState<string>('')
   const [bulkSubcategory, setBulkSubcategory] = useState<string>('Estacionamentos')
+  const [isBulkCustomSubcategory, setIsBulkCustomSubcategory] = useState<boolean>(false)
+  const [bulkCustomSubcategory, setBulkCustomSubcategory] = useState<string>('')
   const [bulkSubdivision, setBulkSubdivision] = useState<string>('')
   const [bulkLearnRule, setBulkLearnRule] = useState<boolean>(true)
   const [bulkToast, setBulkToast] = useState<string | null>(null)
@@ -204,12 +252,17 @@ export function GranularExpenseAuditor({
 
   // Formulário de Edição
   const [editForm, setEditForm] = useState({
+    txType: 'EXPENSE' as 'EXPENSE' | 'INCOME',
     description: '',
     amount: '',
     date: '',
     accountOrCard: '',
     category: '',
+    customCategory: '',
+    isCustomCategory: false,
     subcategory: '',
+    customSubcategory: '',
+    isCustomSubcategory: false,
     subdivision: '',
     investmentAsset: '',
     investmentAction: null as 'APORTE' | 'RESGATE' | null,
@@ -217,14 +270,19 @@ export function GranularExpenseAuditor({
     updateRuleToo: true
   })
 
-  // Formulário de Nova Despesa
+  // Formulário de Novo Lançamento Manual
   const [newForm, setNewForm] = useState({
+    txType: 'EXPENSE' as 'EXPENSE' | 'INCOME',
     description: '',
     amount: '',
     date: new Date().toISOString().split('T')[0],
     accountOrCard: 'Cartão C6 Carbon Black',
     category: 'Alimentação',
+    customCategory: '',
+    isCustomCategory: false,
     subcategory: 'Restaurantes & Fast Food',
+    customSubcategory: '',
+    isCustomSubcategory: false,
     subdivision: '',
     investmentAsset: '',
     investmentAction: null as 'APORTE' | 'RESGATE' | null,
@@ -438,6 +496,58 @@ export function GranularExpenseAuditor({
     return Array.from(set).sort()
   }, [transactions])
 
+  const expenseCategories = useMemo(() => {
+    const set = new Set<string>()
+    Object.keys(EXPENSE_TAXONOMY).forEach(c => set.add(c))
+    transactions.forEach(t => {
+      if (t.amount < 0 && t.category && t.category.trim()) set.add(t.category.trim())
+    })
+    return Array.from(set).sort()
+  }, [transactions])
+
+  const incomeCategories = useMemo(() => {
+    const set = new Set<string>()
+    Object.keys(INCOME_TAXONOMY).forEach(c => set.add(c))
+    transactions.forEach(t => {
+      if (t.amount > 0 && t.category && t.category.trim()) set.add(t.category.trim())
+    })
+    return Array.from(set).sort()
+  }, [transactions])
+
+  // Auto-detecta se os lançamentos selecionados são receitas ou despesas
+  useEffect(() => {
+    if (selectedTxIds.size > 0) {
+      let pos = 0
+      let neg = 0
+      selectedTxIds.forEach(id => {
+        const tx = transactions.find(t => t.id === id)
+        if (tx) {
+          if (tx.amount > 0) pos++
+          else neg++
+        }
+      })
+      if (pos > neg) {
+        setBulkTxType('INCOME')
+        const firstCat = incomeCategories[0] || 'Receita PF & Pró-Labore'
+        setBulkCategory(firstCat)
+        const setOfSubs = new Set<string>()
+        if (STANDARD_TAXONOMY[firstCat]) STANDARD_TAXONOMY[firstCat].forEach(s => setOfSubs.add(s))
+        const subList = Array.from(setOfSubs)
+        setBulkSubcategory(subList[0] || 'Outros')
+      } else {
+        setBulkTxType('EXPENSE')
+        const firstCat = expenseCategories[0] || 'Transporte'
+        setBulkCategory(firstCat)
+        const setOfSubs = new Set<string>()
+        if (STANDARD_TAXONOMY[firstCat]) STANDARD_TAXONOMY[firstCat].forEach(s => setOfSubs.add(s))
+        const subList = Array.from(setOfSubs)
+        setBulkSubcategory(subList[0] || 'Outros')
+      }
+      setIsBulkCustomCategory(false)
+      setIsBulkCustomSubcategory(false)
+    }
+  }, [selectedTxIds])
+
   const availableSubdivisions = useMemo(() => {
     const set = new Set<string>()
     transactions.forEach(t => {
@@ -517,15 +627,27 @@ export function GranularExpenseAuditor({
   }
 
   const handleBulkCategoryChange = (cat: string) => {
-    setBulkCategory(cat)
-    if (STANDARD_TAXONOMY[cat] && STANDARD_TAXONOMY[cat].length > 0) {
-      setBulkSubcategory(STANDARD_TAXONOMY[cat][0])
+    if (cat === 'NEW_CATEGORY') {
+      setIsBulkCustomCategory(true)
+      setIsBulkCustomSubcategory(true)
+    } else {
+      setIsBulkCustomCategory(false)
+      setBulkCategory(cat)
+      const availableSubs = getSubcategoriesForCategory(cat)
+      setBulkSubcategory(availableSubs[0] || 'Outros')
+      setIsBulkCustomSubcategory(false)
     }
   }
 
   const handleApplyBulkCategorization = () => {
     if (selectedTxIds.size === 0) return
-    if (!bulkCategory.trim()) return
+
+    const finalCat = isBulkCustomCategory ? bulkCustomCategory.trim() : bulkCategory.trim()
+    const finalSubcat = (isBulkCustomCategory || isBulkCustomSubcategory) 
+      ? bulkCustomSubcategory.trim() 
+      : bulkSubcategory.trim()
+
+    if (!finalCat) return
 
     const count = selectedTxIds.size
     const targets = Array.from(selectedTxIds)
@@ -533,27 +655,37 @@ export function GranularExpenseAuditor({
     targets.forEach(id => {
       const tx = transactions.find(t => t.id === id)
       if (tx) {
+        let finalAmount = tx.amount
+        if (bulkTxType === 'INCOME' && tx.amount < 0) {
+          finalAmount = Math.abs(tx.amount)
+        } else if (bulkTxType === 'EXPENSE' && tx.amount > 0) {
+          finalAmount = -Math.abs(tx.amount)
+        }
+
         if (bulkLearnRule && tx.description) {
           CategoryRulesEngine.saveRule({
             pattern: tx.description,
-            category: bulkCategory.trim(),
-            subcategory: bulkSubcategory.trim(),
+            category: finalCat,
+            subcategory: finalSubcat || 'Outros',
             subdivision: bulkSubdivision.trim() || undefined,
             entityType: tx.entityType,
             alwaysApply: true
           })
         }
         GranularTransactionStore.updateTransaction(id, {
-          category: bulkCategory.trim(),
-          subcategory: bulkSubcategory.trim(),
+          amount: finalAmount,
+          category: finalCat,
+          subcategory: finalSubcat || 'Outros',
           subdivision: bulkSubdivision.trim() || tx.subdivision
         })
       }
     })
 
     setSelectedTxIds(new Set())
+    setIsBulkCustomCategory(false)
+    setIsBulkCustomSubcategory(false)
     loadTransactions()
-    setBulkToast(`✅ ${count} lançamentos categorizados com sucesso em "${bulkCategory} > ${bulkSubcategory}"!`)
+    setBulkToast(`✅ ${count} lançamento(s) recategorizado(s) com sucesso em "${finalCat} > ${finalSubcat || 'Outros'}"!`)
     setTimeout(() => setBulkToast(null), 4500)
   }
 
@@ -587,13 +719,19 @@ export function GranularExpenseAuditor({
 
   const handleOpenEdit = (tx: GranularTransaction) => {
     setEditingTx(tx)
+    const isInc = tx.amount > 0
     setEditForm({
+      txType: isInc ? 'INCOME' : 'EXPENSE',
       description: tx.description,
       amount: Math.abs(tx.amount).toFixed(2),
       date: tx.date,
       accountOrCard: tx.accountOrCard,
-      category: tx.category,
-      subcategory: tx.subcategory,
+      category: tx.category || '',
+      customCategory: '',
+      isCustomCategory: false,
+      subcategory: tx.subcategory || '',
+      customSubcategory: '',
+      isCustomSubcategory: false,
       subdivision: tx.subdivision || '',
       investmentAsset: tx.investmentAsset || '',
       investmentAction: tx.investmentAction || null,
@@ -606,27 +744,32 @@ export function GranularExpenseAuditor({
     if (!editingTx) return
 
     const parsedVal = parseFloat(editForm.amount) || 0
-    const finalVal = editingTx.amount < 0 ? -Math.abs(parsedVal) : Math.abs(parsedVal)
+    const finalVal = editForm.txType === 'INCOME' ? Math.abs(parsedVal) : -Math.abs(parsedVal)
+    const finalCat = editForm.isCustomCategory ? editForm.customCategory.trim() : editForm.category.trim()
+    const finalSubcat = (editForm.isCustomCategory || editForm.isCustomSubcategory) 
+      ? editForm.customSubcategory.trim() 
+      : editForm.subcategory.trim()
+
+    const fallbackCat = editForm.txType === 'INCOME' ? 'Receita PF & Pró-Labore' : 'Despesas Pessoais'
 
     GranularTransactionStore.updateTransaction(editingTx.id, {
       description: editForm.description.trim(),
       amount: finalVal,
       date: editForm.date,
       accountOrCard: editForm.accountOrCard,
-      category: editForm.category.trim() || 'Despesas Pessoais',
-      subcategory: editForm.subcategory.trim() || 'Diversos',
+      category: finalCat || fallbackCat,
+      subcategory: finalSubcat || 'Outros',
       subdivision: editForm.subdivision.trim() || undefined,
       investmentAsset: editForm.investmentAsset.trim() || undefined,
       investmentAction: editForm.investmentAction || undefined,
       isFixed: editForm.isFixed
     })
 
-    // Se marcou para salvar como regra permanente
     if (editForm.updateRuleToo && editForm.description.trim().length >= 2) {
       CategoryRulesEngine.saveRule({
         pattern: editForm.description.trim().split(' ')[0],
-        category: editForm.category,
-        subcategory: editForm.subcategory,
+        category: finalCat || fallbackCat,
+        subcategory: finalSubcat || 'Outros',
         subdivision: editForm.subdivision.trim() || undefined,
         entityType: editingTx.entityType,
         alwaysApply: true
@@ -641,15 +784,22 @@ export function GranularExpenseAuditor({
     if (!newForm.description || !newForm.amount) return
 
     const val = parseFloat(newForm.amount) || 0
+    const finalVal = newForm.txType === 'INCOME' ? Math.abs(val) : -Math.abs(val)
+    const finalCat = newForm.isCustomCategory ? newForm.customCategory.trim() : newForm.category.trim()
+    const finalSubcat = (newForm.isCustomCategory || newForm.isCustomSubcategory) 
+      ? newForm.customSubcategory.trim() 
+      : newForm.subcategory.trim()
+
+    const fallbackCat = newForm.txType === 'INCOME' ? 'Receita PF & Pró-Labore' : 'Despesas Pessoais'
 
     GranularTransactionStore.addTransaction({
       entityType: newForm.entityType,
       date: newForm.date,
       description: newForm.description.trim(),
-      amount: -Math.abs(val),
+      amount: finalVal,
       accountOrCard: newForm.accountOrCard,
-      category: newForm.category.trim() || 'Despesas Pessoais',
-      subcategory: newForm.subcategory.trim() || 'Diversos',
+      category: finalCat || fallbackCat,
+      subcategory: finalSubcat || 'Outros',
       subdivision: newForm.subdivision.trim() || undefined,
       investmentAsset: newForm.investmentAsset.trim() || undefined,
       investmentAction: newForm.investmentAction || undefined,
@@ -663,8 +813,8 @@ export function GranularExpenseAuditor({
       if (kw.length >= 2) {
         CategoryRulesEngine.saveRule({
           pattern: kw,
-          category: newForm.category,
-          subcategory: newForm.subcategory,
+          category: finalCat || fallbackCat,
+          subcategory: finalSubcat || 'Outros',
           subdivision: newForm.subdivision.trim() || undefined,
           entityType: newForm.entityType,
           alwaysApply: true
@@ -674,12 +824,17 @@ export function GranularExpenseAuditor({
 
     setIsAddModalOpen(false)
     setNewForm({
+      txType: 'EXPENSE',
       description: '',
       amount: '',
       date: new Date().toISOString().split('T')[0],
-      accountOrCard: 'Cartão C6 Carbon Black',
+      accountOrCard: availableAccounts[0] || 'Cartão C6 Carbon Black',
       category: 'Alimentação',
+      customCategory: '',
+      isCustomCategory: false,
       subcategory: 'Restaurantes & Fast Food',
+      customSubcategory: '',
+      isCustomSubcategory: false,
       subdivision: '',
       investmentAsset: '',
       investmentAction: null,
@@ -1266,7 +1421,7 @@ export function GranularExpenseAuditor({
         </div>
       </div>
 
-      {/* 6. MODAL DE EDIÇÃO INDIVIDUAL DA DESPESA */}
+      {/* 6. MODAL DE EDIÇÃO INDIVIDUAL DA DESPESA / RECEITA */}
       {editingTx && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-150">
           <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900 text-slate-100 shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -1284,6 +1439,59 @@ export function GranularExpenseAuditor({
             </div>
 
             <div className="space-y-3">
+              {/* TOGGLE: DESPESA (-) VS RECEITA (+) */}
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Tipo de Lançamento
+                </label>
+                <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-950 border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const firstCat = expenseCategories[0] || 'Transporte'
+                      const availableSubs = getSubcategoriesForCategory(firstCat)
+                      setEditForm(prev => ({
+                        ...prev,
+                        txType: 'EXPENSE',
+                        category: firstCat,
+                        isCustomCategory: false,
+                        subcategory: availableSubs.length > 0 ? availableSubs[0] : 'Outros',
+                        isCustomSubcategory: false
+                      }))
+                    }}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      editForm.txType === 'EXPENSE'
+                        ? 'bg-rose-600 text-white font-black shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>🔴 Despesa (-)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const firstCat = incomeCategories[0] || 'Receita PF & Pró-Labore'
+                      const availableSubs = getSubcategoriesForCategory(firstCat)
+                      setEditForm(prev => ({
+                        ...prev,
+                        txType: 'INCOME',
+                        category: firstCat,
+                        isCustomCategory: false,
+                        subcategory: availableSubs.length > 0 ? availableSubs[0] : 'Outros',
+                        isCustomSubcategory: false
+                      }))
+                    }}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      editForm.txType === 'INCOME'
+                        ? 'bg-emerald-600 text-white font-black shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>🟢 Receita (+)</span>
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
                   Estabelecimento / Descrição
@@ -1326,7 +1534,7 @@ export function GranularExpenseAuditor({
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
-                      Categoria
+                      Categoria ({editForm.txType === 'INCOME' ? 'Receita' : 'Despesa'})
                     </label>
                     <button
                       type="button"
@@ -1337,42 +1545,103 @@ export function GranularExpenseAuditor({
                       <span>{editForm.investmentAsset ? 'Ativo OK' : 'Investimento?'}</span>
                     </button>
                   </div>
-                  <select
-                    value={editForm.category}
-                    onChange={(e) => {
-                      const newCat = e.target.value
-                      const availableSubs = getSubcategoriesForCategory(newCat)
-                      setEditForm(prev => ({
-                        ...prev,
-                        category: newCat,
-                        subcategory: availableSubs.length > 0 ? availableSubs[0] : prev.subcategory
-                      }))
-                    }}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
-                  >
-                    <option value="">-- Selecione uma Categoria --</option>
-                    {availableCategories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+
+                  {!editForm.isCustomCategory ? (
+                    <select
+                      value={editForm.category}
+                      onChange={(e) => {
+                        const newCat = e.target.value
+                        if (newCat === 'NEW_CATEGORY') {
+                          setEditForm(prev => ({ 
+                            ...prev, 
+                            isCustomCategory: true, 
+                            customCategory: '', 
+                            isCustomSubcategory: true, 
+                            customSubcategory: '' 
+                          }))
+                        } else {
+                          const availableSubs = getSubcategoriesForCategory(newCat)
+                          setEditForm(prev => ({
+                            ...prev,
+                            category: newCat,
+                            isCustomCategory: false,
+                            subcategory: availableSubs.length > 0 ? availableSubs[0] : prev.subcategory,
+                            isCustomSubcategory: false
+                          }))
+                        }
+                      }}
+                      className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                    >
+                      <option value="">-- Selecione uma Categoria --</option>
+                      {(editForm.txType === 'INCOME' ? incomeCategories : expenseCategories).map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                      <option value="NEW_CATEGORY">✨ + Criar Nova Categoria...</option>
+                    </select>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        placeholder="Nome da Nova Categoria"
+                        value={editForm.customCategory}
+                        onChange={(e) => setEditForm({ ...editForm, customCategory: e.target.value })}
+                        className="w-full rounded-xl bg-slate-950 border border-emerald-500 px-3 py-2 text-xs font-bold text-emerald-300 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setEditForm({ ...editForm, isCustomCategory: false, category: expenseCategories[0] || '' })}
+                        className="text-[10px] text-slate-400 hover:text-white p-1"
+                        title="Voltar às categorias existentes"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
                 </div>
+
                 <div>
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
                     Subcategoria
                   </label>
-                  <select
-                    value={editForm.subcategory}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, subcategory: e.target.value }))}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
-                  >
-                    <option value="">-- Selecione uma Subcategoria --</option>
-                    {getSubcategoriesForCategory(editForm.category).map(sub => (
-                      <option key={sub} value={sub}>{sub}</option>
-                    ))}
-                    {!getSubcategoriesForCategory(editForm.category).includes(editForm.subcategory) && editForm.subcategory && (
-                      <option value={editForm.subcategory}>{editForm.subcategory}</option>
-                    )}
-                  </select>
+                  {(!editForm.isCustomCategory && !editForm.isCustomSubcategory) ? (
+                    <select
+                      value={editForm.subcategory}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (val === 'NEW_SUBCATEGORY') {
+                          setEditForm(prev => ({ ...prev, isCustomSubcategory: true, customSubcategory: '' }))
+                        } else {
+                          setEditForm(prev => ({ ...prev, subcategory: val, isCustomSubcategory: false }))
+                        }
+                      }}
+                      className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                    >
+                      <option value="">-- Selecione uma Subcategoria --</option>
+                      {getSubcategoriesForCategory(editForm.category).map(sub => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                      <option value="NEW_SUBCATEGORY">✨ + Criar Nova Subcategoria...</option>
+                    </select>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        placeholder="Nome da Nova Subcategoria"
+                        value={editForm.customSubcategory}
+                        onChange={(e) => setEditForm({ ...editForm, customSubcategory: e.target.value })}
+                        className="w-full rounded-xl bg-slate-950 border border-emerald-500 px-3 py-2 text-xs font-bold text-emerald-300 focus:outline-none"
+                      />
+                      {!editForm.isCustomCategory && (
+                        <button
+                          type="button"
+                          onClick={() => setEditForm({ ...editForm, isCustomSubcategory: false })}
+                          className="text-[10px] text-slate-400 hover:text-white p-1"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1474,14 +1743,14 @@ export function GranularExpenseAuditor({
         </div>
       )}
 
-      {/* 7. MODAL DE ADIÇÃO MANUAL DE NOVA DESPESA */}
+      {/* 7. MODAL DE ADIÇÃO MANUAL DE NOVO LANÇAMENTO */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-150">
           <form onSubmit={handleCreateNew} className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900 text-slate-100 shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="font-bold text-base text-white flex items-center gap-2">
                 <PlusCircle className="w-4 h-4 text-emerald-400" />
-                Nova Despesa Manual
+                Novo Lançamento Manual
               </h3>
               <button 
                 type="button"
@@ -1493,6 +1762,59 @@ export function GranularExpenseAuditor({
             </div>
 
             <div className="space-y-3">
+              {/* TOGGLE: NOVAN DESPESA (-) VS NOVA RECEITA (+) */}
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Tipo de Lançamento
+                </label>
+                <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-950 border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const firstCat = expenseCategories[0] || 'Alimentação'
+                      const availableSubs = getSubcategoriesForCategory(firstCat)
+                      setNewForm(prev => ({
+                        ...prev,
+                        txType: 'EXPENSE',
+                        category: firstCat,
+                        isCustomCategory: false,
+                        subcategory: availableSubs.length > 0 ? availableSubs[0] : 'Outros',
+                        isCustomSubcategory: false
+                      }))
+                    }}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      newForm.txType === 'EXPENSE'
+                        ? 'bg-rose-600 text-white font-black shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>🔴 Nova Despesa (-)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const firstCat = incomeCategories[0] || 'Receita PF & Pró-Labore'
+                      const availableSubs = getSubcategoriesForCategory(firstCat)
+                      setNewForm(prev => ({
+                        ...prev,
+                        txType: 'INCOME',
+                        category: firstCat,
+                        isCustomCategory: false,
+                        subcategory: availableSubs.length > 0 ? availableSubs[0] : 'Outros',
+                        isCustomSubcategory: false
+                      }))
+                    }}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      newForm.txType === 'INCOME'
+                        ? 'bg-emerald-600 text-white font-black shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>🟢 Nova Receita (+)</span>
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
                   Estabelecimento / Descrição
@@ -1500,7 +1822,7 @@ export function GranularExpenseAuditor({
                 <input 
                   type="text"
                   required
-                  placeholder="Ex: McDonald's, Estacionamento Madre Teresa, Supermercado..."
+                  placeholder="Ex: Pix recebido, McDonald's, Plantão Camarinha..."
                   value={newForm.description}
                   onChange={(e) => {
                     const desc = e.target.value
@@ -1508,8 +1830,8 @@ export function GranularExpenseAuditor({
                     setNewForm(prev => ({ 
                       ...prev, 
                       description: desc,
-                      category: pred.category,
-                      subcategory: pred.subcategory,
+                      category: pred.category || prev.category,
+                      subcategory: pred.subcategory || prev.subcategory,
                       subdivision: pred.subdivision || prev.subdivision
                     }))
                   }}
@@ -1565,7 +1887,7 @@ export function GranularExpenseAuditor({
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
-                      Categoria Sugerida
+                      Categoria ({newForm.txType === 'INCOME' ? 'Receita' : 'Despesa'})
                     </label>
                     <button
                       type="button"
@@ -1576,24 +1898,58 @@ export function GranularExpenseAuditor({
                       <span>{newForm.investmentAsset ? 'Ativo OK' : 'Investimento?'}</span>
                     </button>
                   </div>
-                  <select
-                    value={newForm.category}
-                    onChange={(e) => {
-                      const newCat = e.target.value
-                      const availableSubs = getSubcategoriesForCategory(newCat)
-                      setNewForm(prev => ({
-                        ...prev,
-                        category: newCat,
-                        subcategory: availableSubs.length > 0 ? availableSubs[0] : prev.subcategory
-                      }))
-                    }}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
-                  >
-                    <option value="">-- Selecione uma Categoria --</option>
-                    {availableCategories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+
+                  {!newForm.isCustomCategory ? (
+                    <select
+                      value={newForm.category}
+                      onChange={(e) => {
+                        const newCat = e.target.value
+                        if (newCat === 'NEW_CATEGORY') {
+                          setNewForm(prev => ({ 
+                            ...prev, 
+                            isCustomCategory: true, 
+                            customCategory: '', 
+                            isCustomSubcategory: true, 
+                            customSubcategory: '' 
+                          }))
+                        } else {
+                          const availableSubs = getSubcategoriesForCategory(newCat)
+                          setNewForm(prev => ({
+                            ...prev,
+                            category: newCat,
+                            isCustomCategory: false,
+                            subcategory: availableSubs.length > 0 ? availableSubs[0] : prev.subcategory,
+                            isCustomSubcategory: false
+                          }))
+                        }
+                      }}
+                      className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                    >
+                      <option value="">-- Selecione uma Categoria --</option>
+                      {(newForm.txType === 'INCOME' ? incomeCategories : expenseCategories).map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                      <option value="NEW_CATEGORY">✨ + Criar Nova Categoria...</option>
+                    </select>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        placeholder="Nome da Nova Categoria"
+                        value={newForm.customCategory}
+                        onChange={(e) => setNewForm({ ...newForm, customCategory: e.target.value })}
+                        className="w-full rounded-xl bg-slate-950 border border-emerald-500 px-3 py-2 text-xs font-bold text-emerald-300 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setNewForm({ ...newForm, isCustomCategory: false, category: expenseCategories[0] || '' })}
+                        className="text-[10px] text-slate-400 hover:text-white p-1"
+                        title="Voltar às categorias existentes"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1602,19 +1958,45 @@ export function GranularExpenseAuditor({
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
                     Subcategoria
                   </label>
-                  <select
-                    value={newForm.subcategory}
-                    onChange={(e) => setNewForm(prev => ({ ...prev, subcategory: e.target.value }))}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
-                  >
-                    <option value="">-- Selecione uma Subcategoria --</option>
-                    {getSubcategoriesForCategory(newForm.category).map(sub => (
-                      <option key={sub} value={sub}>{sub}</option>
-                    ))}
-                    {!getSubcategoriesForCategory(newForm.category).includes(newForm.subcategory) && newForm.subcategory && (
-                      <option value={newForm.subcategory}>{newForm.subcategory}</option>
-                    )}
-                  </select>
+                  {(!newForm.isCustomCategory && !newForm.isCustomSubcategory) ? (
+                    <select
+                      value={newForm.subcategory}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (val === 'NEW_SUBCATEGORY') {
+                          setNewForm(prev => ({ ...prev, isCustomSubcategory: true, customSubcategory: '' }))
+                        } else {
+                          setNewForm(prev => ({ ...prev, subcategory: val, isCustomSubcategory: false }))
+                        }
+                      }}
+                      className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                    >
+                      <option value="">-- Selecione uma Subcategoria --</option>
+                      {getSubcategoriesForCategory(newForm.category).map(sub => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                      <option value="NEW_SUBCATEGORY">✨ + Criar Nova Subcategoria...</option>
+                    </select>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        placeholder="Nome da Nova Subcategoria"
+                        value={newForm.customSubcategory}
+                        onChange={(e) => setNewForm({ ...newForm, customSubcategory: e.target.value })}
+                        className="w-full rounded-xl bg-slate-950 border border-emerald-500 px-3 py-2 text-xs font-bold text-emerald-300 focus:outline-none"
+                      />
+                      {!newForm.isCustomCategory && (
+                        <button
+                          type="button"
+                          onClick={() => setNewForm({ ...newForm, isCustomSubcategory: false })}
+                          className="text-[10px] text-slate-400 hover:text-white p-1"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -1681,7 +2063,7 @@ export function GranularExpenseAuditor({
                     onChange={(e) => setNewForm({ ...newForm, isFixed: e.target.checked })}
                     className="rounded border-white/20 bg-slate-950 text-emerald-500 focus:ring-emerald-400 w-4 h-4 cursor-pointer"
                   />
-                  <span>Despesa fixa recorrente</span>
+                  <span>Lançamento fixo recorrente</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer text-xs text-emerald-400 font-semibold">
@@ -1709,7 +2091,7 @@ export function GranularExpenseAuditor({
                 className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
-                <span>Salvar Despesa</span>
+                <span>Salvar Lançamento</span>
               </button>
             </div>
           </form>
@@ -1767,53 +2149,165 @@ export function GranularExpenseAuditor({
             </div>
           </div>
 
-          {/* Seletores de Categoria e Subcategoria */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Categoria
-              </label>
-              <select
-                value={bulkCategory}
-                onChange={(e) => handleBulkCategoryChange(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-white/10 text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
-              >
-                {Object.keys(STANDARD_TAXONOMY).map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+          {/* Seletores de Categoria e Subcategoria com Filtro Despesa vs Receita */}
+          <div className="space-y-3">
+            {/* TOGGLE DESPESA VS RECEITA NA BARRA DE LOTE */}
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 bg-slate-800 p-1 rounded-xl border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBulkTxType('EXPENSE')
+                    const firstCat = expenseCategories[0] || 'Transporte'
+                    setBulkCategory(firstCat)
+                    const subs = getSubcategoriesForCategory(firstCat)
+                    setBulkSubcategory(subs[0] || 'Outros')
+                    setIsBulkCustomCategory(false)
+                    setIsBulkCustomSubcategory(false)
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    bulkTxType === 'EXPENSE'
+                      ? 'bg-rose-600 text-white font-black shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>🔴 Despesas</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBulkTxType('INCOME')
+                    const firstCat = incomeCategories[0] || 'Receita PF & Pró-Labore'
+                    setBulkCategory(firstCat)
+                    const subs = getSubcategoriesForCategory(firstCat)
+                    setBulkSubcategory(subs[0] || 'Outros')
+                    setIsBulkCustomCategory(false)
+                    setIsBulkCustomSubcategory(false)
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    bulkTxType === 'INCOME'
+                      ? 'bg-emerald-600 text-white font-black shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>🟢 Receitas</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBulkTxType('ALL')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    bulkTxType === 'ALL'
+                      ? 'bg-indigo-600 text-white font-black shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>🌐 Todas</span>
+                </button>
+              </div>
+
+              <span className="text-[10px] text-slate-400">
+                Lançamentos marcados serão ajustados para {bulkTxType === 'INCOME' ? 'Receitas (+)' : bulkTxType === 'EXPENSE' ? 'Despesas (-)' : 'o tipo original'}
+              </span>
             </div>
 
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                Subcategoria
-              </label>
-              <select
-                value={bulkSubcategory}
-                onChange={(e) => setBulkSubcategory(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-white/10 text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
-              >
-                {(STANDARD_TAXONOMY[bulkCategory] || ['Outros']).map(sub => (
-                  <option key={sub} value={sub}>{sub}</option>
-                ))}
-              </select>
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Categoria ({bulkTxType === 'INCOME' ? 'Receitas' : bulkTxType === 'EXPENSE' ? 'Despesas' : 'Todas'})
+                </label>
 
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 block mb-1 flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                Hospital / Local (Opcional)
-              </label>
-              <select
-                value={bulkSubdivision}
-                onChange={(e) => setBulkSubdivision(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-indigo-500/30 text-indigo-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer"
-              >
-                <option value="">Nenhum / Não alterar</option>
-                {BH_HOSPITALS.map(hosp => (
-                  <option key={hosp} value={hosp}>🏥 {hosp}</option>
-                ))}
-              </select>
+                {!isBulkCustomCategory ? (
+                  <select
+                    value={bulkCategory}
+                    onChange={(e) => handleBulkCategoryChange(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-white/10 text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                  >
+                    {(bulkTxType === 'INCOME' ? incomeCategories : bulkTxType === 'EXPENSE' ? expenseCategories : availableCategories).map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                    <option value="NEW_CATEGORY">✨ + Criar Nova Categoria...</option>
+                  </select>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      placeholder="Nova Categoria..."
+                      value={bulkCustomCategory}
+                      onChange={(e) => setBulkCustomCategory(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-emerald-500 text-emerald-300 text-xs font-bold focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setIsBulkCustomCategory(false)}
+                      className="text-[10px] text-slate-400 hover:text-white p-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Subcategoria
+                </label>
+                {(!isBulkCustomCategory && !isBulkCustomSubcategory) ? (
+                  <select
+                    value={bulkSubcategory}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val === 'NEW_SUBCATEGORY') {
+                        setIsBulkCustomSubcategory(true)
+                      } else {
+                        setIsBulkCustomSubcategory(false)
+                        setBulkSubcategory(val)
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-white/10 text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                  >
+                    {getSubcategoriesForCategory(bulkCategory).map(sub => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                    <option value="NEW_SUBCATEGORY">✨ + Criar Nova Subcategoria...</option>
+                  </select>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      placeholder="Nova Subcategoria..."
+                      value={bulkCustomSubcategory}
+                      onChange={(e) => setBulkCustomSubcategory(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-emerald-500 text-emerald-300 text-xs font-bold focus:outline-none"
+                    />
+                    {!isBulkCustomCategory && (
+                      <button
+                        type="button"
+                        onClick={() => setIsBulkCustomSubcategory(false)}
+                        className="text-[10px] text-slate-400 hover:text-white p-1"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 block mb-1 flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  Hospital / Local (Opcional)
+                </label>
+                <select
+                  value={bulkSubdivision}
+                  onChange={(e) => setBulkSubdivision(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-indigo-500/30 text-indigo-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer"
+                >
+                  <option value="">Nenhum / Não alterar</option>
+                  {BH_HOSPITALS.map(hosp => (
+                    <option key={hosp} value={hosp}>🏥 {hosp}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
