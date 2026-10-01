@@ -23,7 +23,103 @@ import {
 } from '@/utils/installmentStore'
 import { CreditCardStore } from '@/utils/creditCardStore'
 
-export function InstallmentsProjection({ isDemo = false }: { isDemo?: boolean }) {
+interface InstallmentsProjectionProps {
+  isDemo?: boolean
+  selectedMonth?: number // 0-11
+  selectedYear?: number  // ex: 2026
+}
+
+const PT_MONTHS_MAP: Record<string, number> = {
+  'janeiro': 0, 'fevereiro': 1, 'março': 2, 'marco': 2, 'abril': 3,
+  'maio': 4, 'junho': 5, 'julho': 6, 'agosto': 7, 'setembro': 8,
+  'outubro': 9, 'novembro': 10, 'dezembro': 11
+}
+
+export function computeDynamicInstallment(
+  item: InstallmentItem,
+  viewedMonth?: number,
+  viewedYear?: number
+) {
+  if (item.isPerpetual) {
+    return {
+      currentInstallment: 1,
+      totalInstallments: 1,
+      isConcluded: false,
+      isLastInstallment: false,
+      statusLabel: 'Mensalidade Contínua',
+      badgeClass: 'text-amber-500 dark:text-amber-400',
+      progress: 100
+    }
+  }
+
+  const now = new Date()
+  const vMonth = viewedMonth !== undefined ? viewedMonth : now.getMonth()
+  const vYear = viewedYear !== undefined ? viewedYear : now.getFullYear()
+
+  const endMatch = item.endMonthYear.toLowerCase().match(/([a-zç]+)\/(\d{4})/)
+  if (endMatch) {
+    const endMStr = endMatch[1]
+    const endY = parseInt(endMatch[2], 10)
+    const endM = PT_MONTHS_MAP[endMStr]
+
+    if (endM !== undefined && !isNaN(endY)) {
+      // Diferença em meses entre o mês de término e o mês sendo visualizado no painel
+      // Se estamos em Set/2026 (mês 8) e termina em Out/2026 (mês 9): diffMonths = 1 (falta 1 mês -> parcela 9 de 10)
+      const diffMonths = (endY - vYear) * 12 + (endM - vMonth)
+
+      if (diffMonths < 0) {
+        return {
+          currentInstallment: item.totalInstallments,
+          totalInstallments: item.totalInstallments,
+          isConcluded: true,
+          isLastInstallment: false,
+          statusLabel: `Quitado em ${item.endMonthYear}`,
+          badgeClass: 'text-emerald-600 dark:text-emerald-400 font-bold',
+          progress: 100
+        }
+      }
+
+      const calculatedCurrent = item.totalInstallments - diffMonths
+      const current = Math.max(1, Math.min(item.totalInstallments, calculatedCurrent))
+      const isLast = current === item.totalInstallments
+      const progress = (current / item.totalInstallments) * 100
+
+      return {
+        currentInstallment: current,
+        totalInstallments: item.totalInstallments,
+        isConcluded: false,
+        isLastInstallment: isLast,
+        statusLabel: isLast 
+          ? `Última Parcela (${current}/${item.totalInstallments})` 
+          : `Parcela ${current} de ${item.totalInstallments}`,
+        badgeClass: isLast 
+          ? 'text-amber-600 dark:text-amber-400 font-bold' 
+          : 'text-slate-700 dark:text-slate-300 font-medium',
+        progress
+      }
+    }
+  }
+
+  const current = item.currentInstallment
+  const isLast = current >= item.totalInstallments
+  return {
+    currentInstallment: current,
+    totalInstallments: item.totalInstallments,
+    isConcluded: current > item.totalInstallments,
+    isLastInstallment: isLast,
+    statusLabel: isLast 
+      ? `Última Parcela (${current}/${item.totalInstallments})` 
+      : `Parcela ${current} de ${item.totalInstallments}`,
+    badgeClass: 'text-slate-700 dark:text-slate-300 font-medium',
+    progress: (current / item.totalInstallments) * 100
+  }
+}
+
+export function InstallmentsProjection({ 
+  isDemo = false, 
+  selectedMonth, 
+  selectedYear 
+}: InstallmentsProjectionProps) {
   const [filter, setFilter] = useState<'ALL' | 'MAJOR' | 'ENDING_SOON'>('ALL')
   const [installments, setInstallments] = useState<InstallmentItem[]>([])
   
@@ -405,12 +501,19 @@ export function InstallmentsProjection({ isDemo = false }: { isDemo?: boolean })
       {/* Grid de Cards de Parcelamento */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {filteredInstallments.map((item) => {
-          const progress = item.isPerpetual ? 100 : (item.currentInstallment / item.totalInstallments) * 100
+          const dynamic = computeDynamicInstallment(item, selectedMonth, selectedYear)
+          const progress = dynamic.progress
           
           return (
             <div 
               key={item.id} 
-              className="border border-slate-200 dark:border-white/5 rounded-xl p-4 bg-slate-50/70 dark:bg-slate-950/50 hover:border-indigo-500/40 transition-all group flex flex-col justify-between relative"
+              className={`border rounded-xl p-4 transition-all group flex flex-col justify-between relative ${
+                dynamic.isConcluded
+                  ? 'border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-950/20'
+                  : dynamic.isLastInstallment
+                  ? 'border-amber-500/40 bg-amber-50/30 dark:bg-amber-950/20'
+                  : 'border-slate-200 dark:border-white/5 bg-slate-50/70 dark:bg-slate-950/50 hover:border-indigo-500/40'
+              }`}
             >
               <div>
                 <div className="flex justify-between items-start gap-2 mb-2">
@@ -443,11 +546,22 @@ export function InstallmentsProjection({ isDemo = false }: { isDemo?: boolean })
                   </div>
                 </div>
 
-                <div className="my-2.5">
-                  <span className="text-sm sm:text-base font-black text-indigo-600 dark:text-indigo-400 font-mono block">
-                    R$ {item.monthlyValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                  <span className="text-[10px] text-slate-400">ao mês</span>
+                <div className="my-2.5 flex items-baseline justify-between">
+                  <div>
+                    <span className="text-sm sm:text-base font-black text-indigo-600 dark:text-indigo-400 font-mono block">
+                      R$ {item.monthlyValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                    <span className="text-[10px] text-slate-400">ao mês</span>
+                  </div>
+                  {dynamic.isConcluded ? (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                      ✓ Quitado
+                    </span>
+                  ) : dynamic.isLastInstallment ? (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-500/30 animate-pulse">
+                      Última Parcela
+                    </span>
+                  ) : null}
                 </div>
 
                 {item.contractNotes && (
@@ -459,10 +573,8 @@ export function InstallmentsProjection({ isDemo = false }: { isDemo?: boolean })
 
               <div>
                 <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-1.5">
-                  <span>
-                    {item.isPerpetual 
-                      ? 'Mensalidade Contínua' 
-                      : `Parcela ${item.currentInstallment} de ${item.totalInstallments}`}
+                  <span className={`font-semibold ${dynamic.badgeClass}`}>
+                    {dynamic.statusLabel}
                   </span>
                   <span className={`font-bold ${item.isPerpetual ? 'text-amber-500 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'}`}>
                     {item.endMonthYear}
@@ -474,6 +586,10 @@ export function InstallmentsProjection({ isDemo = false }: { isDemo?: boolean })
                     className={`h-full rounded-full transition-all duration-700 ${
                       item.isPerpetual 
                         ? 'bg-amber-500 w-full' 
+                        : dynamic.isConcluded
+                        ? 'bg-emerald-500'
+                        : dynamic.isLastInstallment
+                        ? 'bg-amber-500'
                         : 'bg-gradient-to-r from-indigo-500 to-emerald-400'
                     }`}
                     style={{ width: `${Math.min(100, Math.max(5, progress))}%` }}

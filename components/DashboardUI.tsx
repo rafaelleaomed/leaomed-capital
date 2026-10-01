@@ -255,7 +255,11 @@ export default function DashboardUI({
 
       {/* Linha 4: Previsibilidade de Parcelamentos & Alívio de Caixa */}
       <div id="parcelamentos-dividas" className="scroll-mt-24">
-        <InstallmentsProjection isDemo={isDemo} />
+        <InstallmentsProjection 
+          isDemo={isDemo} 
+          selectedMonth={selectedMonth} 
+          selectedYear={selectedYear} 
+        />
       </div>
 
       {/* Linha 5: Gráficos de Fluxo e Categorias Reais */}

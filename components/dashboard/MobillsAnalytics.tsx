@@ -509,12 +509,12 @@ export function MobillsAnalytics({
               title="Clique para gerar gráficos anuais acumulados até aqui (2026)"
             >
               <BarChart2 className="w-3.5 h-3.5" />
-              <span>Consolidado</span>
+              <span>Visão Anual</span>
             </button>
           </div>
 
           <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline font-medium">
-            {currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter === 'PJ' ? 'Pessoa Jurídica' : 'PF'}
+            {currentFilter === 'CONSOLIDATED' ? 'Visão Global (PF + PJ)' : currentFilter === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}
           </span>
         </div>
       </div>

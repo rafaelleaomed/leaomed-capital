@@ -17,7 +17,8 @@ import {
   ChevronDown,
   Info,
   RefreshCw,
-  PlusCircle
+  PlusCircle,
+  Calculator
 } from 'lucide-react'
 import { InvestmentPortfolioStore, PortfolioAsset } from '@/utils/investmentPortfolioStore'
 import { InvestmentLinkModal } from './InvestmentLinkModal'
@@ -272,6 +273,62 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
     .filter(g => g.diffValue > 0)
     .sort((a, b) => b.diffValue - a.diffValue)
 
+  // Simulador de Aporte Proporcional conforme valor disponível
+  const [contributionAmountInput, setContributionAmountInput] = useState<string>('2000')
+
+  const contributionAmount = useMemo(() => {
+    const cleaned = contributionAmountInput.replace(/[^\d.,]/g, '')
+    let val = 0
+    if (cleaned.includes(',') && cleaned.includes('.')) {
+      val = parseFloat(cleaned.replace(/\./g, '').replace(',', '.'))
+    } else if (cleaned.includes(',')) {
+      val = parseFloat(cleaned.replace(',', '.'))
+    } else {
+      val = parseFloat(cleaned)
+    }
+    return isNaN(val) || val < 0 ? 0 : val
+  }, [contributionAmountInput])
+
+  const totalDeficit = useMemo(() => {
+    return neededContributions.reduce((acc, c) => acc + c.diffValue, 0)
+  }, [neededContributions])
+
+  const proportionalContributions = useMemo(() => {
+    if (contributionAmount <= 0) return []
+    if (totalDeficit <= 0) {
+      // Sem déficit atual: sugere alocação de acordo com as metas percentuais-alvo
+      return categoryGroups.map(g => ({
+        category: g.category,
+        suggestedAmount: (g.targetPct / 100) * contributionAmount,
+        proportionPct: g.targetPct,
+        currentValue: g.currentValue,
+        projectedValue: g.currentValue + ((g.targetPct / 100) * contributionAmount),
+        diffValue: g.diffValue,
+        remainingDeficit: 0,
+        targetPct: g.targetPct
+      }))
+    }
+
+    return neededContributions.map(c => {
+      const proportion = c.diffValue / totalDeficit
+      const suggestedAmount = contributionAmount * proportion
+      const proportionPct = proportion * 100
+      const projectedValue = c.currentValue + suggestedAmount
+      const remainingDeficit = Math.max(0, c.diffValue - suggestedAmount)
+
+      return {
+        category: c.category,
+        suggestedAmount,
+        proportionPct,
+        currentValue: c.currentValue,
+        projectedValue,
+        diffValue: c.diffValue,
+        remainingDeficit,
+        targetPct: c.targetPct
+      }
+    })
+  }, [neededContributions, totalDeficit, contributionAmount, categoryGroups])
+
   const handleTargetChange = (cat: string, value: number) => {
     setTargets(prev => ({
       ...prev,
@@ -389,21 +446,119 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
 
         {activeTab === 'REBALANCE' ? (
           <div className="space-y-6">
-            {/* Box Estratégico de Próximos Aportes */}
-            <div className="p-4.5 rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent flex items-start gap-3">
-              <Sparkles className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-              <div className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed">
-                <strong className="text-emerald-600 dark:text-emerald-400 block mb-0.5">
-                  Recomendação de Aportes para Equilíbrio da Carteira:
-                </strong>
-                Para convergir para suas metas sem precisar vender ativos, concentre os próximos aportes prioritariamente em:
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {neededContributions.map(c => (
-                    <span key={c.category} className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 font-bold font-mono text-slate-900 dark:text-white">
-                      {c.category}: +R$ {c.diffValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </span>
-                  ))}
+            {/* Box Estratégico de Próximos Aportes & Simulador Proporcional */}
+            <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-slate-50 dark:to-slate-900/60 p-5 space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-emerald-500/20">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
+                    <Calculator className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-sm md:text-base text-slate-900 dark:text-white flex items-center gap-2">
+                      Simulador de Aportes Proporcionais
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                        Rebalanceamento Ativo
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                      Defina quanto irá aportar este mês. O sistema calcula a divisão ideal proporcional ao déficit de cada categoria para equilibrar sua carteira.
+                    </p>
+                  </div>
                 </div>
+
+                {/* Input de Valor Disponível com Atalhos Rápidos */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 self-stretch md:self-auto">
+                  <div className="relative w-full sm:w-44">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono font-bold text-xs text-slate-400">
+                      R$
+                    </span>
+                    <input
+                      type="text"
+                      value={contributionAmountInput}
+                      onChange={(e) => setContributionAmountInput(e.target.value)}
+                      placeholder="2.000,00"
+                      className="w-full pl-8 pr-3 py-2 text-sm font-mono font-black rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      title="Valor total disponível para aporte este mês"
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1">
+                    {[1000, 2000, 5000, 10000].map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => setContributionAmountInput(amt.toString())}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                          contributionAmount === amt
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 hover:border-emerald-500'
+                        }`}
+                      >
+                        R$ {amt >= 1000 ? `${amt / 1000}k` : amt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Cards de Proporção de Aporte Sugerida por Categoria */}
+              {proportionalContributions.length > 0 && contributionAmount > 0 ? (
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center justify-between">
+                    <span>Divisão Sugerida para R$ {contributionAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}:</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                      Déficit total a cobrir: R$ {totalDeficit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {proportionalContributions.map((item) => (
+                      <div
+                        key={item.category}
+                        className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-emerald-500/20 shadow-xs flex flex-col justify-between"
+                      >
+                        <div className="flex items-center justify-between gap-1 mb-1.5">
+                          <span className="font-bold text-xs text-slate-900 dark:text-white">
+                            {item.category}
+                          </span>
+                          <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            {item.proportionPct.toFixed(1)}% do aporte
+                          </span>
+                        </div>
+
+                        <div className="my-1">
+                          <span className="text-[10px] text-slate-400 block">Aporte Sugerido</span>
+                          <span className="font-mono text-base font-black text-emerald-600 dark:text-emerald-400">
+                            + R$ {item.suggestedAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+
+                        <div className="pt-1.5 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                          <span>Atual: R$ {item.currentValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
+                          <span>➔ Novo: R$ {item.projectedValue.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-500" />
+                  <span>
+                    Digite um valor acima para ver a sugestão matemática de aporte proporcional para cada classe.
+                  </span>
+                </div>
+              )}
+
+              {/* Badges de Próximos Aportes Prioritários */}
+              <div className="pt-2 text-xs text-slate-600 dark:text-slate-300 flex flex-wrap items-center gap-2">
+                <span className="font-bold text-slate-700 dark:text-slate-200">
+                  Déficits prioritários da carteira:
+                </span>
+                {neededContributions.map(c => (
+                  <span key={c.category} className="px-2.5 py-0.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 font-bold font-mono text-[11px] text-slate-900 dark:text-white">
+                    {c.category}: +R$ {c.diffValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                ))}
               </div>
             </div>
 
