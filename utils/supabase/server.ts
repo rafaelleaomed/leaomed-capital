@@ -16,25 +16,20 @@ export async function createClient() {
       supabaseAnonKey,
       {
         cookies: {
-          get(name: string) {
+          getAll() {
             try {
-              return cookieStore.get(name)?.value
+              return cookieStore.getAll()
             } catch {
-              return undefined;
+              return []
             }
           },
-          set(name: string, value: string, options: CookieOptions) {
+          setAll(cookiesToSet) {
             try {
-              cookieStore.set({ name, value, ...options })
-            } catch (error) {
-              // Server Component
-            }
-          },
-          remove(name: string, options: CookieOptions) {
-            try {
-              cookieStore.set({ name, value: '', ...options })
-            } catch (error) {
-              // Server Component
+              cookiesToSet.forEach(({ name, value, options }) => {
+                cookieStore.set(name, value, options)
+              })
+            } catch {
+              // Server Component - Cookies não podem ser definidos em render estático/RSC
             }
           },
         },

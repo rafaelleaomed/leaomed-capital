@@ -1,7 +1,8 @@
-// Service Worker leve para PWA LeãoMed Capital
-const CACHE_NAME = 'leaomed-pwa-v1';
+// Service Worker LeãoMed Capital - Versão 2 (Resiliente)
+const CACHE_NAME = 'leaomed-pwa-v2';
+
+// Apenas assets estáticos imutáveis (NUNCA incluir rotas dinâmicas como '/')
 const STATIC_ASSETS = [
-  '/',
   '/manifest.json',
   '/icon-192x192.png',
   '/icon-512x512.png',
@@ -15,7 +16,9 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {});
+      return cache.addAll(STATIC_ASSETS).catch((err) => {
+        console.warn('[SW] Falha ao pré-cachear assets estáticos:', err);
+      });
     })
   );
   self.skipWaiting();
@@ -33,35 +36,55 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Ignora requisições não-GET ou extensões do Chrome
-  if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
+  // 1. Só intercepta GET
+  if (event.request.method !== 'GET') {
     return;
   }
 
-  // Network First para APIs e páginas dinâmicas, fallback para cache se offline
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Se a resposta for válida e for asset estático, atualiza o cache
-        if (response && response.status === 200 && response.type === 'basic') {
-          const responseToCache = response.clone();
-          const url = new URL(event.request.url);
-          if (
-            url.pathname.startsWith('/icon-') ||
-            url.pathname.endsWith('.png') ||
-            url.pathname.endsWith('.jpg') ||
-            url.pathname.endsWith('.ico') ||
-            url.pathname === '/manifest.json'
-          ) {
+  const url = new URL(event.request.url);
+
+  // 2. CRÍTICO: NUNCA interceptar domínios externos (Supabase, Google OAuth, etc.)
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // 3. CRÍTICO: NUNCA interceptar APIs, rotas de autenticação ou chunks do Next.js em runtime
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/auth/') ||
+    url.pathname.startsWith('/_next/data/')
+  ) {
+    return;
+  }
+
+  // 4. Se for asset de mídia ou ícone pré-cacheado, responde Cache-First para alta velocidade
+  const isStaticMedia =
+    url.pathname.startsWith('/icon-') ||
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.jpg') ||
+    url.pathname.endsWith('.ico') ||
+    url.pathname === '/manifest.json';
+
+  if (isStaticMedia) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copy = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
+              cache.put(event.request, copy);
             });
           }
-        }
-        return response;
+          return networkResponse;
+        });
       })
-      .catch(() => {
-        return caches.match(event.request);
-      })
-  );
+    );
+    return;
+  }
+
+  // 5. Para navegações de páginas (/dashboard, /login, /, etc.), NÃO bloquear com catch cego.
+  // Deixa o navegador gerenciar a rede diretamente para não disparar TypeError em redirects 307.
 });

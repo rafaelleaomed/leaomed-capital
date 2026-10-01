@@ -4,8 +4,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'LeãoMed Capital',
     short_name: 'LeãoMed',
-    description: 'Controle financeiro médico automatizado, conciliação e otimização de patrimônio com IA',
-    start_url: '/dashboard',
+    start_url: '/',
+    id: '/',
     scope: '/',
     display: 'standalone',
     display_override: ['standalone', 'minimal-ui'],

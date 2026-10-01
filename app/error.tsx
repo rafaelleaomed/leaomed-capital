@@ -60,13 +60,22 @@ export default function ErrorBoundary({
             <span>Tentar Novamente</span>
           </button>
 
-          <Link
-            href="/login"
+          <button
+            onClick={async () => {
+              try {
+                if (typeof window !== 'undefined') {
+                  const { createSupabaseBrowserClient } = await import('@/utils/supabase-client')
+                  const client = createSupabaseBrowserClient()
+                  await client.auth.signOut()
+                }
+              } catch (_) {}
+              window.location.href = '/login'
+            }}
             className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm flex items-center justify-center gap-2 transition-all border border-slate-700 cursor-pointer"
           >
             <LogIn className="w-4 h-4" />
             <span>Ir para a Página de Login</span>
-          </Link>
+          </button>
 
           <Link
             href="/demo"

@@ -13,35 +13,56 @@ export function PwaRegister() {
   useEffect(() => {
     // 1. Verificar se já está rodando como PWA instalado
     const checkStandalone = () => {
-      const isStandaloneMode = 
-        window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true ||
-        document.referrer.includes('android-app://')
-      setIsStandalone(Boolean(isStandaloneMode))
+      try {
+        const isStandaloneMode = 
+          (typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches) ||
+          (typeof window !== 'undefined' && (window.navigator as any).standalone === true) ||
+          (typeof document !== 'undefined' && typeof document.referrer === 'string' && document.referrer.includes('android-app://'))
+        setIsStandalone(Boolean(isStandaloneMode))
+      } catch (_) {
+        setIsStandalone(false)
+      }
     }
     checkStandalone()
 
-    // 2. Registrar Service Worker
-    if ('serviceWorker' in navigator && process.env.NODE_ENV !== 'development') {
-      window.addEventListener('load', () => {
+    // 2. Registrar Service Worker resiliente
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && process.env.NODE_ENV !== 'development') {
+      const registerSw = () => {
         navigator.serviceWorker
           .register('/sw.js')
-          .then(() => {})
-          .catch((err) => {
-            console.error('Falha ao registrar Service Worker:', err)
+          .then((reg) => {
+            // Verifica atualizações do SW periodicamente
+            if (reg && typeof reg.update === 'function') {
+              reg.update().catch(() => {})
+            }
           })
-      })
+          .catch((err) => {
+            console.warn('[PWA] Service Worker não registrado:', err)
+          })
+      }
+
+      if (document.readyState === 'complete') {
+        registerSw()
+      } else {
+        window.addEventListener('load', registerSw)
+      }
     }
 
     // 3. Capturar evento de instalação nativo do Chrome Android
     const handleBeforeInstall = (e: Event) => {
-      e.preventDefault()
-      setDeferredPrompt(e)
-      
-      const dismissed = sessionStorage.getItem('leaomed_pwa_install_dismissed')
-      if (!dismissed) {
-        setShowInstallBanner(true)
-      }
+      try {
+        e.preventDefault()
+        setDeferredPrompt(e)
+        
+        let dismissed = false
+        try {
+          dismissed = Boolean(sessionStorage.getItem('leaomed_pwa_install_dismissed'))
+        } catch (_) {}
+
+        if (!dismissed) {
+          setShowInstallBanner(true)
+        }
+      } catch (_) {}
     }
 
     // 4. Ouvir gatilho disparado por botões na interface ("Instalar App")
@@ -89,7 +110,9 @@ export function PwaRegister() {
 
   const handleDismiss = () => {
     setShowInstallBanner(false)
-    sessionStorage.setItem('leaomed_pwa_install_dismissed', 'true')
+    try {
+      sessionStorage.setItem('leaomed_pwa_install_dismissed', 'true')
+    } catch (_) {}
   }
 
   return (
