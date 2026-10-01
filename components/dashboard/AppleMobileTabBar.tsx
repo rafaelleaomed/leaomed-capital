@@ -17,7 +17,9 @@ import {
   Sun,
   Moon,
   Calendar,
-  Sparkles
+  Sparkles,
+  Download,
+  Smartphone
 } from 'lucide-react'
 import { useTheme } from '../ThemeProvider'
 
@@ -385,6 +387,33 @@ export function AppleMobileTabBar() {
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
+                </button>
+
+                {/* Instalar App no Celular PWA */}
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false)
+                    window.dispatchEvent(new CustomEvent('leaomed_trigger_pwa_install'))
+                  }}
+                  className="w-full flex items-center justify-between p-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 transition-all text-left cursor-pointer active:scale-[0.99]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl overflow-hidden border border-emerald-500/40 p-0.5 bg-slate-950 flex items-center justify-center shrink-0">
+                      <img src="/icon-192x192.png" alt="LeãoMed" className="w-full h-full object-cover rounded-lg" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
+                        <span>Instalar App na Tela Inicial</span>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black">
+                          Novo
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Ícone oficial do Leão • Tela cheia sem navegador
+                      </div>
+                    </div>
+                  </div>
+                  <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 </button>
 
                 {/* Alternador de Tema Claro/Escuro */}
