@@ -12,7 +12,9 @@ import {
   Settings, 
   Building2, 
   UserCheck, 
-  Layers
+  Layers,
+  UploadCloud,
+  Search
 } from 'lucide-react'
 
 interface SidebarNavigationProps {
@@ -20,31 +22,42 @@ interface SidebarNavigationProps {
 }
 
 export function SidebarNavigation({ isDemo = false }: SidebarNavigationProps) {
-  const [activeSection, setActiveSection] = useState('visao-geral-graficos')
+  const [activeTab, setActiveTab] = useState('visao-geral')
 
   useEffect(() => {
     const handleHash = () => {
       const hash = window.location.hash.replace('#', '')
-      if (hash) setActiveSection(hash)
+      if (hash) {
+        if (hash === 'visao-geral-graficos' || hash === 'visao-geral') setActiveTab('visao-geral')
+        else if (hash === 'categorias-planilha' || hash === 'cartoes-credito' || hash === 'orcamento') setActiveTab('orcamento')
+        else if (hash === 'balanceamento-investimentos' || hash === 'reserva-emergencia' || hash === 'investimentos') setActiveTab('investimentos')
+        else if (hash === 'parcelamentos-dividas' || hash === 'consolidado-anual' || hash === 'parcelamentos') setActiveTab('parcelamentos')
+        else if (hash === 'central-ingestao' || hash === 'upload-documentos' || hash === 'ingestao') setActiveTab('ingestao')
+        else if (hash === 'historico-mensal' || hash === 'historico') setActiveTab('historico')
+      }
+    }
+
+    const handleTabChange = (e: any) => {
+      if (e.detail?.tab) setActiveTab(e.detail.tab)
     }
 
     window.addEventListener('hashchange', handleHash)
-    if (window.location.hash) {
-      setActiveSection(window.location.hash.replace('#', ''))
-    }
+    window.addEventListener('leaomed_tab_changed', handleTabChange)
+    handleHash()
 
-    return () => window.removeEventListener('hashchange', handleHash)
+    return () => {
+      window.removeEventListener('hashchange', handleHash)
+      window.removeEventListener('leaomed_tab_changed', handleTabChange)
+    }
   }, [])
 
   const navItems = [
-    { id: 'visao-geral-graficos', label: 'Gráficos & Dashboard', icon: BarChart3, hash: '#visao-geral-graficos' },
-    { id: 'consolidado-anual', label: 'Consolidado Anual', icon: Layers, hash: '#consolidado-anual' },
-    { id: 'categorias-planilha', label: 'Categorias & Planilha', icon: LayoutDashboard, hash: '#categorias-planilha' },
-    { id: 'cartoes-credito', label: 'Cartões de Crédito', icon: CreditCard, hash: '#cartoes-credito' },
-    { id: 'parcelamentos-dividas', label: 'Parcelamentos & Dívidas', icon: Receipt, hash: '#parcelamentos-dividas' },
-    { id: 'reserva-emergencia', label: 'Reserva de Emergência', icon: ShieldCheck, hash: '#reserva-emergencia' },
-    { id: 'balanceamento-investimentos', label: 'Investimentos & Carteira', icon: PieChart, hash: '#balanceamento-investimentos' },
-    { id: 'historico-mensal', label: 'Histórico Mensal', icon: TrendingUp, hash: '#historico-mensal' },
+    { id: 'visao-geral', label: 'Visão Geral (Cockpit)', icon: BarChart3, hash: '#visao-geral' },
+    { id: 'orcamento', label: 'Orçamento & Cartões', icon: LayoutDashboard, hash: '#orcamento' },
+    { id: 'investimentos', label: 'Investimentos & Carteira', icon: PieChart, hash: '#investimentos' },
+    { id: 'parcelamentos', label: 'Parcelamentos & Dívidas', icon: Receipt, hash: '#parcelamentos' },
+    { id: 'ingestao', label: 'Central de Ingestão', icon: UploadCloud, hash: '#ingestao' },
+    { id: 'historico', label: 'Histórico Mensal', icon: TrendingUp, hash: '#historico' },
   ]
 
   const handleOpenSettings = (e: React.MouseEvent) => {
@@ -52,78 +65,56 @@ export function SidebarNavigation({ isDemo = false }: SidebarNavigationProps) {
     window.dispatchEvent(new CustomEvent('leaomed_open_account_settings'))
   }
 
-  const handleNavClick = (id: string, hash: string) => {
-    setActiveSection(id)
-    if (id === 'consolidado-anual') {
-      window.dispatchEvent(new CustomEvent('leaomed_open_annual_consolidated'))
-    } else if (id === 'historico-mensal') {
-      window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
-      setTimeout(() => {
-        const el = document.getElementById('historico-mensal')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 50)
-    } else if (id === 'cartoes-credito') {
-      window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
-      setTimeout(() => {
-        const el = document.getElementById('cartoes-credito')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }, 50)
-    } else if (id === 'reserva-emergencia') {
-      window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
-      window.dispatchEvent(new CustomEvent('leaomed_open_emergency_reserve'))
-      setTimeout(() => {
-        const el = document.getElementById('reserva-emergencia') || document.getElementById('balanceamento-investimentos')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 50)
-    } else if (id === 'parcelamentos-dividas') {
-      window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
-      setTimeout(() => {
-        const el = document.getElementById('parcelamentos-dividas')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 50)
-    } else if (id === 'balanceamento-investimentos') {
-      window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
-      setTimeout(() => {
-        const el = document.getElementById('balanceamento-investimentos')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 50)
-    } else if (id === 'categorias-planilha') {
-      window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
-      setTimeout(() => {
-        const el = document.getElementById('categorias-planilha')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 50)
-    } else if (id === 'visao-geral-graficos') {
-      window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
+  const handleOpenSearch = (e: React.MouseEvent) => {
+    e.preventDefault()
+    window.dispatchEvent(new CustomEvent('leaomed_open_quick_finder'))
+  }
+
+  const handleNavClick = (tabId: string, hash: string) => {
+    setActiveTab(tabId)
+    window.location.hash = hash
+    window.dispatchEvent(new CustomEvent('leaomed_switch_tab', { detail: { tab: tabId } }))
   }
 
   return (
     <aside className="hidden md:flex w-64 flex-col justify-between border-r border-slate-200 dark:border-white/5 bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl p-4 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto shrink-0 z-30 transition-all">
       <nav className="flex flex-col gap-1.5">
-        <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+        {/* Botão de Busca Rápida no Topo da Sidebar */}
+        <button
+          onClick={handleOpenSearch}
+          className="flex items-center justify-between w-full rounded-xl px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:border-emerald-500/40 hover:text-emerald-500 transition-all cursor-pointer mb-2 group shadow-2xs"
+          title="Buscar no App (Ctrl+K)"
+        >
+          <div className="flex items-center gap-2">
+            <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+            <span>Buscar no app...</span>
+          </div>
+          <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-white/10 text-[10px] font-mono text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-white/10">
+            Ctrl+K
+          </kbd>
+        </button>
+
+        <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           Módulos Principais
         </div>
 
         {navItems.map((item) => {
           const Icon = item.icon
-          const isActive = activeSection === item.id
+          const isActive = activeTab === item.id
 
           return (
-            <a
+            <button
               key={item.id}
-              href={item.hash}
               onClick={() => handleNavClick(item.id, item.hash)}
-              className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all cursor-pointer text-left w-full ${
                 isActive
-                  ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                  ? 'bg-emerald-500/10 border border-emerald-500/25 text-emerald-600 dark:text-emerald-400 shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white border border-transparent'
               }`}
             >
               <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`} />
               <span className="truncate">{item.label}</span>
-            </a>
+            </button>
           )
         })}
 

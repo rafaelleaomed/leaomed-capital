@@ -31,15 +31,27 @@ export function AppleMobileTabBar() {
   useEffect(() => {
     const handleHash = () => {
       const hash = window.location.hash.replace('#', '')
-      if (hash === 'visao-geral-graficos' || !hash) setActiveTab('inicio')
-      else if (hash === 'categorias-planilha') setActiveTab('planilha')
-      else if (hash === 'reserva-emergencia') setActiveTab('reserva')
+      if (hash === 'visao-geral-graficos' || hash === 'visao-geral' || !hash) setActiveTab('inicio')
+      else if (hash === 'categorias-planilha' || hash === 'cartoes-credito' || hash === 'orcamento') setActiveTab('planilha')
+      else if (hash === 'reserva-emergencia' || hash === 'balanceamento-investimentos' || hash === 'investimentos') setActiveTab('reserva')
       else if (hash === 'cartoes-credito') setActiveTab('cartoes')
     }
 
+    const handleTabChange = (e: any) => {
+      if (e.detail?.tab) {
+        if (e.detail.tab === 'visao-geral') setActiveTab('inicio')
+        else if (e.detail.tab === 'orcamento') setActiveTab('planilha')
+        else if (e.detail.tab === 'investimentos') setActiveTab('reserva')
+      }
+    }
+
     window.addEventListener('hashchange', handleHash)
+    window.addEventListener('leaomed_tab_changed', handleTabChange)
     handleHash()
-    return () => window.removeEventListener('hashchange', handleHash)
+    return () => {
+      window.removeEventListener('hashchange', handleHash)
+      window.removeEventListener('leaomed_tab_changed', handleTabChange)
+    }
   }, [])
 
   const navigateTo = (sectionId: string, customAction?: () => void) => {
@@ -51,43 +63,36 @@ export function AppleMobileTabBar() {
 
     window.dispatchEvent(new CustomEvent('leaomed_close_annual_consolidated'))
 
-    if (sectionId === 'visao-geral-graficos') {
+    if (sectionId === 'visao-geral-graficos' || sectionId === 'visao-geral') {
       setActiveTab('inicio')
+      window.dispatchEvent(new CustomEvent('leaomed_switch_tab', { detail: { tab: 'visao-geral' } }))
       window.scrollTo({ top: 0, behavior: 'smooth' })
-    } else if (sectionId === 'categorias-planilha') {
+    } else if (sectionId === 'categorias-planilha' || sectionId === 'orcamento') {
       setActiveTab('planilha')
-      setTimeout(() => {
-        const el = document.getElementById('categorias-planilha')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 50)
+      window.dispatchEvent(new CustomEvent('leaomed_switch_tab', { detail: { tab: 'orcamento' } }))
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } else if (sectionId === 'reserva-emergencia') {
       setActiveTab('reserva')
+      window.dispatchEvent(new CustomEvent('leaomed_switch_tab', { detail: { tab: 'investimentos', elementId: 'reserva-emergencia' } }))
       window.dispatchEvent(new CustomEvent('leaomed_open_emergency_reserve'))
-      setTimeout(() => {
-        const el = document.getElementById('reserva-emergencia') || document.getElementById('balanceamento-investimentos')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 50)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else if (sectionId === 'balanceamento-investimentos' || sectionId === 'investimentos') {
+      setActiveTab('reserva')
+      window.dispatchEvent(new CustomEvent('leaomed_switch_tab', { detail: { tab: 'investimentos' } }))
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } else if (sectionId === 'cartoes-credito') {
-      setActiveTab('cartoes')
-      setTimeout(() => {
-        const el = document.getElementById('cartoes-credito')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }, 50)
-    } else if (sectionId === 'parcelamentos-dividas') {
-      setTimeout(() => {
-        const el = document.getElementById('parcelamentos-dividas')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 50)
-    } else if (sectionId === 'balanceamento-investimentos') {
-      setTimeout(() => {
-        const el = document.getElementById('balanceamento-investimentos')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 50)
-    } else if (sectionId === 'historico-mensal') {
-      setTimeout(() => {
-        const el = document.getElementById('historico-mensal')
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 50)
+      setActiveTab('planilha')
+      window.dispatchEvent(new CustomEvent('leaomed_switch_tab', { detail: { tab: 'orcamento', elementId: 'cartoes-credito' } }))
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else if (sectionId === 'parcelamentos-dividas' || sectionId === 'parcelamentos') {
+      window.dispatchEvent(new CustomEvent('leaomed_switch_tab', { detail: { tab: 'parcelamentos' } }))
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else if (sectionId === 'central-ingestao' || sectionId === 'ingestao') {
+      window.dispatchEvent(new CustomEvent('leaomed_switch_tab', { detail: { tab: 'ingestao' } }))
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else if (sectionId === 'historico-mensal' || sectionId === 'historico') {
+      window.dispatchEvent(new CustomEvent('leaomed_switch_tab', { detail: { tab: 'historico' } }))
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 

@@ -19,6 +19,11 @@ export async function createSupabaseServerClient() {
       supabaseUrl,
       supabaseAnonKey,
       {
+        cookieOptions: {
+          maxAge: 60 * 60 * 24 * 365,
+          path: '/',
+          sameSite: 'lax',
+        },
         cookies: {
           getAll() {
             try {
@@ -30,7 +35,12 @@ export async function createSupabaseServerClient() {
           setAll(cookiesToSet) {
             try {
               cookiesToSet.forEach(({ name, value, options }) => {
-                cookieStore.set(name, value, options);
+                cookieStore.set(name, value, {
+                  ...options,
+                  maxAge: 60 * 60 * 24 * 365,
+                  path: '/',
+                  sameSite: 'lax',
+                });
               });
             } catch {
               // Server Component — ignorar erros de cookie set (só ocorre em RSC)

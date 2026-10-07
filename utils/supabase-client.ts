@@ -17,11 +17,29 @@ export function createSupabaseBrowserClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
+  const cookieOptions = {
+    maxAge: 60 * 60 * 24 * 365, // 1 ano (login persistente garantido)
+    path: '/',
+    sameSite: 'lax' as const,
+  };
+
+  const authOptions = {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  };
+
   try {
-    client = createBrowserClient(url, key);
+    client = createBrowserClient(url, key, {
+      cookieOptions,
+      auth: authOptions,
+    });
   } catch (e) {
     console.error('[Supabase Browser] Erro ao inicializar cliente Supabase no navegador:', e);
-    client = createBrowserClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
+    client = createBrowserClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY, {
+      cookieOptions,
+      auth: authOptions,
+    });
   }
 
   return client;

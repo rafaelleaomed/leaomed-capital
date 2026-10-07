@@ -1,5 +1,5 @@
-// Service Worker LeãoMed Capital - Versão 2 (Resiliente)
-const CACHE_NAME = 'leaomed-pwa-v2';
+// Service Worker LeãoMed Capital - Versão 3 (Atualização de Design e Login Persistente)
+const CACHE_NAME = 'leaomed-pwa-v3';
 
 // Apenas assets estáticos imutáveis (NUNCA incluir rotas dinâmicas como '/')
 const STATIC_ASSETS = [

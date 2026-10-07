@@ -1,100 +1,95 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
-  Layers, 
-  Receipt, 
+  BarChart3, 
+  LayoutDashboard, 
   PieChart, 
-  TrendingUp, 
+  Receipt, 
   UploadCloud, 
-  LayoutDashboard,
-  BarChart3,
-  PieChart as PieIcon,
-  ShieldCheck,
-  CreditCard
+  TrendingUp,
+  Search
 } from 'lucide-react'
 
-export function MobileQuickNav() {
-  const [activeNav, setActiveNav] = useState('visao-geral-graficos')
+interface MobileQuickNavProps {
+  activeTab?: string
+  onSelectTab?: (tab: string) => void
+}
+
+export function MobileQuickNav({ activeTab: propActiveTab, onSelectTab }: MobileQuickNavProps) {
+  const [activeNav, setActiveNav] = useState(propActiveTab || 'visao-geral')
+
+  useEffect(() => {
+    if (propActiveTab) setActiveNav(propActiveTab)
+  }, [propActiveTab])
+
+  useEffect(() => {
+    const handleTabChange = (e: any) => {
+      if (e.detail?.tab) setActiveNav(e.detail.tab)
+    }
+    window.addEventListener('leaomed_tab_changed', handleTabChange)
+    return () => window.removeEventListener('leaomed_tab_changed', handleTabChange)
+  }, [])
 
   const navItems = [
     {
-      id: 'visao-geral-graficos',
-      label: 'Gráficos & Mobills',
-      icon: PieIcon,
-      badge: 'Visual',
-      badgeColor: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+      id: 'visao-geral',
+      label: 'Visão Geral',
+      icon: BarChart3
     },
     {
-      id: 'categorias-planilha',
-      label: 'Categorias & Planilha',
-      icon: Layers,
-      badge: 'Principal',
-      badgeColor: 'bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-500/30'
+      id: 'orcamento',
+      label: 'Orçamento & Cartões',
+      icon: LayoutDashboard
     },
     {
-      id: 'reserva-emergencia',
-      label: 'Reserva de Emergência',
-      icon: ShieldCheck,
-      badge: 'Segurança',
-      badgeColor: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
-    },
-    {
-      id: 'cartoes-credito',
-      label: 'Cartões de Crédito',
-      icon: CreditCard,
-      badge: 'Faturas',
-      badgeColor: 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30'
-    },
-    {
-      id: 'balanceamento-investimentos',
+      id: 'investimentos',
       label: 'Investimentos',
-      icon: PieChart,
-      badge: 'Rebalancear',
-      badgeColor: 'bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30'
+      icon: PieChart
     },
     {
-      id: 'parcelamentos-dividas',
+      id: 'parcelamentos',
       label: 'Parcelamentos',
-      icon: Receipt,
-      badge: 'Contratos',
-      badgeColor: 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30'
+      icon: Receipt
     },
     {
-      id: 'historico-mensal',
-      label: 'Série Histórica',
-      icon: TrendingUp,
-      badge: '13 Meses',
-      badgeColor: 'bg-slate-200 dark:bg-slate-700/40 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-white/10'
+      id: 'ingestao',
+      label: 'Central de Ingestão',
+      icon: UploadCloud
+    },
+    {
+      id: 'historico',
+      label: 'Histórico',
+      icon: TrendingUp
     }
   ]
 
-  const scrollTo = (id: string) => {
+  const handleSelect = (id: string) => {
     setActiveNav(id)
-    if (id === 'reserva-emergencia') {
-      window.dispatchEvent(new CustomEvent('leaomed_open_emergency_reserve'))
-      setTimeout(() => {
-        const el = document.getElementById('reserva-emergencia') || document.getElementById('balanceamento-investimentos')
-        if (el) {
-          const yOffset = -90
-          const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset
-          window.scrollTo({ top: y, behavior: 'smooth' })
-        }
-      }, 50)
-      return
-    }
-
-    const el = document.getElementById(id)
-    if (el) {
-      const yOffset = -90 // Compensa o header sticky
-      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset
-      window.scrollTo({ top: y, behavior: 'smooth' })
+    if (onSelectTab) {
+      onSelectTab(id)
+    } else {
+      window.dispatchEvent(new CustomEvent('leaomed_switch_tab', { detail: { tab: id } }))
     }
   }
 
+  const handleOpenSearch = () => {
+    window.dispatchEvent(new CustomEvent('leaomed_open_quick_finder'))
+  }
+
   return (
-    <div className="sticky top-16 z-30 -mx-4 px-4 py-2.5 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200 dark:border-white/10 md:hidden transition-colors">
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth">
+    <div className="sticky top-14 sm:top-16 z-30 -mx-4 px-3 py-2 bg-white/95 dark:bg-[#070B12]/95 backdrop-blur-2xl border-b border-slate-200/80 dark:border-white/10 md:hidden transition-colors shadow-2xs">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth">
+        {/* Botão de Busca Rápida Mobile */}
+        <button
+          onClick={handleOpenSearch}
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 shrink-0 cursor-pointer active:scale-95"
+          title="Buscar no App"
+        >
+          <Search className="w-3.5 h-3.5 text-emerald-500" />
+          <span>Buscar</span>
+        </button>
+
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = activeNav === item.id
@@ -102,26 +97,15 @@ export function MobileQuickNav() {
           return (
             <button
               key={item.id}
-              onClick={() => scrollTo(item.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 cursor-pointer ${
+              onClick={() => handleSelect(item.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 cursor-pointer active:scale-95 ${
                 isActive
-                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 font-bold'
-                  : 'bg-slate-100 dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 hover:border-emerald-500/40 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/25 font-black'
+                  : 'bg-slate-100 dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/5'
               }`}
             >
               <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-slate-950' : 'text-emerald-500'}`} />
               <span>{item.label}</span>
-              {item.badge && (
-                <span
-                  className={`text-[9px] px-1.5 py-0.2 rounded-full border font-bold ${
-                    isActive
-                      ? 'bg-slate-950/20 text-slate-950 border-slate-950/30'
-                      : item.badgeColor
-                  }`}
-                >
-                  {item.badge}
-                </span>
-              )}
             </button>
           )
         })}
@@ -129,3 +113,4 @@ export function MobileQuickNav() {
     </div>
   )
 }
+

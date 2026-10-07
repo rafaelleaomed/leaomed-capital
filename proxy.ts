@@ -5,16 +5,33 @@ import { createServerClient } from '@supabase/ssr';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://matwnfjaopdiwnmimweo.supabase.co';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hdHduZmphb3BkaXdubWltd2VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NTk4OTUsImV4cCI6MjEwNjEzNTg5NX0.LfyoTG1HI2Ae8kX2QMtNpez3moodA9uRf7uTFCNrP3k';
 
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 ano de persistência
+
+function copyCookies(from: NextResponse, to: NextResponse): NextResponse {
+  from.cookies.getAll().forEach((cookie) => {
+    to.cookies.set(cookie.name, cookie.value, {
+      ...cookie,
+      maxAge: COOKIE_MAX_AGE,
+      path: '/',
+      sameSite: 'lax',
+    });
+  });
+  return to;
+}
+
 /**
  * Proxy/Middleware de autenticação Next.js
- * CRÍTICO: quando o arquivo se chama proxy.ts, Next.js exige exportar 'proxy', não 'middleware'
- * - Protege /dashboard/* e /api/* (exceto /api/auth/* e /api/webhooks/*)
- * - Redireciona não autenticados para /login
- * - Renova o token de sessão em cada request (sliding session)
+ * Garante sessão 100% persistente (365 dias) sem desconectar ao fechar navegador:
+ * - Renova token de sessão de forma transparente (sliding session)
+ * - Encaminha cookies atualizados em TODOS os redirects (evita logout involuntário)
+ * - Roteia raiz (/) imediatamente para /dashboard se logado, ou /login se deslogado
+ * - Protege /dashboard/* e /api/*
  */
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
-    request,
+    request: {
+      headers: request.headers,
+    },
   });
 
   try {
@@ -22,6 +39,11 @@ export async function proxy(request: NextRequest) {
       SUPABASE_URL,
       SUPABASE_ANON_KEY,
       {
+        cookieOptions: {
+          maxAge: COOKIE_MAX_AGE,
+          path: '/',
+          sameSite: 'lax',
+        },
         cookies: {
           getAll() {
             return request.cookies.getAll();
@@ -30,9 +52,16 @@ export async function proxy(request: NextRequest) {
             cookiesToSet.forEach(({ name, value }) =>
               request.cookies.set(name, value)
             );
-            response = NextResponse.next({ request });
+            response = NextResponse.next({
+              request,
+            });
             cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options)
+              response.cookies.set(name, value, {
+                ...options,
+                maxAge: COOKIE_MAX_AGE,
+                path: '/',
+                sameSite: 'lax',
+              })
             );
           },
         },
@@ -46,15 +75,32 @@ export async function proxy(request: NextRequest) {
 
     const { pathname } = request.nextUrl;
 
-    // Rotas públicas — nunca redirecionar
+    // Se o usuário já está logado e acessa a raiz (/), vai direto ao dashboard preservando cookies
+    if (pathname === '/' && user) {
+      const dashboardUrl = new URL('/dashboard', request.url);
+      return copyCookies(response, NextResponse.redirect(dashboardUrl));
+    }
+
+    // Se o usuário não está logado e acessa a raiz (/), vai para login preservando cookies
+    if (pathname === '/' && !user) {
+      const loginUrl = new URL('/login', request.url);
+      return copyCookies(response, NextResponse.redirect(loginUrl));
+    }
+
+    // Usuário logado tentando acessar /login ou /cadastro — redireciona para dashboard
+    if ((pathname === '/login' || pathname === '/cadastro') && user) {
+      const dashboardUrl = new URL('/dashboard', request.url);
+      return copyCookies(response, NextResponse.redirect(dashboardUrl));
+    }
+
+    // Rotas públicas
     const isPublic =
       pathname === '/login' ||
       pathname === '/cadastro' ||
       pathname === '/demo' ||
       pathname.startsWith('/demo/') ||
       pathname.startsWith('/api/auth/') ||
-      pathname.startsWith('/api/webhooks/') ||
-      pathname === '/';
+      pathname.startsWith('/api/webhooks/');
 
     // Rotas protegidas — exige sessão válida
     const isProtected =
@@ -63,24 +109,21 @@ export async function proxy(request: NextRequest) {
 
     if (isProtected && !user) {
       if (pathname.startsWith('/api/')) {
-        return NextResponse.json(
-          { success: false, error: 'Não autorizado. Autentique-se para acessar este recurso.' },
-          { status: 401 }
+        return copyCookies(
+          response,
+          NextResponse.json(
+            { success: false, error: 'Não autorizado. Autentique-se para acessar este recurso.' },
+            { status: 401 }
+          )
         );
       }
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('redirectTo', pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // Usuário logado tentando acessar /login — redireciona para dashboard
-    if (pathname === '/login' && user) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return copyCookies(response, NextResponse.redirect(loginUrl));
     }
 
   } catch (e) {
     console.error('[Proxy Middleware] Erro inesperado:', e);
-    // Em caso de falha, deixa passar — o Server Component decidirá
   }
 
   return response;
@@ -91,8 +134,8 @@ export const config = {
     /*
      * Aplica em todas as rotas exceto:
      * - Arquivos estáticos (_next/static, _next/image, favicon)
-     * - Assets públicos (imagens, fontes, etc.)
+     * - Assets públicos (imagens, fontes, manifest, etc.)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|manifest\\.webmanifest|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

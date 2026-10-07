@@ -56,6 +56,7 @@ function LoginForm() {
   const [name, setName] = useState('');
   const [specialty, setSpecialty] = useState('');
   const [crm, setCrm] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -65,12 +66,14 @@ function LoginForm() {
 
   const supabase = createSupabaseBrowserClient();
 
-  // Se já estiver logado, redireciona diretamente
+  // Se já estiver logado, redireciona diretamente com cookies propagados
   useEffect(() => {
     supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
-      if (data?.user) router.replace(redirectTo);
+      if (data?.user) {
+        window.location.href = redirectTo;
+      }
     });
-  }, [router, redirectTo, supabase]);
+  }, [redirectTo, supabase]);
 
   // Captura erros vindos de callbacks de autenticação
   useEffect(() => {
@@ -116,13 +119,13 @@ function LoginForm() {
     }
   };
 
-  // Login com E-mail e Senha
+  // Login com E-mail e Senha (com Sessão Persistente 365 dias)
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       setError(
@@ -131,6 +134,12 @@ function LoginForm() {
           : error.message
       );
       setLoading(false);
+      return;
+    }
+
+    if (data?.session) {
+      // Redirecionamento com sincronização de cookies 100% garantida
+      window.location.href = redirectTo;
       return;
     }
 
@@ -471,6 +480,23 @@ function LoginForm() {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                  </div>
+                )}
+
+                {/* Lembrar deste dispositivo (Persistência) */}
+                {mode === 'login' && (
+                  <div className="flex items-center justify-between py-1">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="w-3.5 h-3.5 rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-emerald-500/30 focus:ring-offset-0 transition-all cursor-pointer"
+                      />
+                      <span className="text-[11px] text-slate-300 font-medium">
+                        Permanecer conectado neste aparelho
+                      </span>
+                    </label>
                   </div>
                 )}
 
