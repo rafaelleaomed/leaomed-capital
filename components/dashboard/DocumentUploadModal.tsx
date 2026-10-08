@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
-import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles, X, ArrowRight } from 'lucide-react'
+import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles, X, ArrowRight, ClipboardType, FileUp, Lock, KeyRound } from 'lucide-react'
 import { GranularTransactionStore } from '@/utils/granularTransactionStore'
 
 interface DocumentUploadModalProps {
@@ -10,42 +10,137 @@ interface DocumentUploadModalProps {
   onSuccess?: () => void
 }
 
+/**
+ * Comprime imagens no navegador antes do upload para evitar estouro de 4.5MB na Vercel
+ */
+async function compressImageIfNeeded(file: File): Promise<File> {
+  if (!file.type.startsWith('image/')) return file
+  if (file.size < 600 * 1024) return file // Menor que 600KB não precisa de compressão
+
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const MAX_DIM = 1600
+        let { width, height } = img
+
+        if (width > height && width > MAX_DIM) {
+          height = Math.round((height * MAX_DIM) / width)
+          width = MAX_DIM
+        } else if (height > MAX_DIM) {
+          width = Math.round((width * MAX_DIM) / height)
+          height = MAX_DIM
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height)
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressed = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
+                  type: 'image/jpeg',
+                  lastModified: Date.now()
+                })
+                resolve(compressed)
+              } else {
+                resolve(file)
+              }
+            },
+            'image/jpeg',
+            0.82
+          )
+        } else {
+          resolve(file)
+        }
+      }
+      img.onerror = () => resolve(file)
+      img.src = e.target?.result as string
+    }
+    reader.onerror = () => resolve(file)
+    reader.readAsDataURL(file)
+  })
+}
+
 export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUploadModalProps) {
+  const [activeTab, setActiveTab] = useState<'FILE' | 'PASTE'>('FILE')
+  const [pastedText, setPastedText] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [parsedTransactions, setParsedTransactions] = useState<any[]>([])
   const [isSaved, setIsSaved] = useState(false)
+  
+  // Suporte a PDFs protegidos por senha
+  const [pdfPassword, setPdfPassword] = useState('')
+  const [requiresPassword, setRequiresPassword] = useState(false)
+  const [isWrongPassword, setIsWrongPassword] = useState(false)
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [showAdvancePassword, setShowAdvancePassword] = useState(false)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   if (!isOpen) return null
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
+  const executeUpload = async (filesToProcess: File[], passwordToUse?: string) => {
+    if (!filesToProcess || filesToProcess.length === 0) return
 
     setIsUploading(true)
-    setStatusMessage('Lendo arquivo e extraindo dados com precisão...')
+    setStatusMessage('Otimizando e analisando documento...')
     setErrorMessage(null)
     setParsedTransactions([])
     setIsSaved(false)
 
     try {
       const formData = new FormData()
-      for (let i = 0; i < files.length; i++) {
-        formData.append('files', files[i])
+      for (let i = 0; i < filesToProcess.length; i++) {
+        const rawFile = filesToProcess[i]
+        const fileToUpload = await compressImageIfNeeded(rawFile)
+        formData.append('files', fileToUpload)
       }
 
+      if (passwordToUse || pdfPassword.trim()) {
+        formData.append('password', (passwordToUse || pdfPassword).trim())
+      }
+
+      setStatusMessage('Lendo lançamentos da fatura no servidor...')
       const res = await fetch('/api/parse-document', {
         method: 'POST',
         body: formData
+      }).catch(() => {
+        throw new Error('Falha de conexão ao enviar o arquivo. Se estiver no celular, certifique-se de usar o PDF oficial ou use a aba "Colar Texto".')
       })
 
-      const data = await res.json()
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Falha ao processar o arquivo enviado.')
+      let data: any = null
+      const rawText = await res.text()
+      try {
+        data = JSON.parse(rawText)
+      } catch (_) {
+        if (!res.ok) {
+          throw new Error('O servidor excedeu o tempo limite para processar este arquivo. Tente enviar o PDF oficial com a senha ou utilize a opção "Colar Texto".')
+        }
+        throw new Error('Resposta do servidor em formato inesperado.')
       }
+
+      if (!res.ok || !data?.success) {
+        if (data?.requiresPassword) {
+          setRequiresPassword(true)
+          setIsWrongPassword(Boolean(data?.isWrongPassword))
+          setPendingFiles(filesToProcess)
+          setErrorMessage(data?.error || 'Este PDF exige senha de abertura.')
+          return
+        }
+        throw new Error(data?.error || 'Falha ao processar o arquivo enviado.')
+      }
+
+      // Sucesso na extração
+      setRequiresPassword(false)
+      setIsWrongPassword(false)
+      setPendingFiles([])
 
       const allTxs: any[] = []
       if (Array.isArray(data.batches)) {
@@ -57,7 +152,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
       }
 
       if (allTxs.length === 0) {
-        setStatusMessage('Arquivo processado, mas nenhum lançamento com valor foi identificado.')
+        setStatusMessage('Arquivo lido, porém nenhum lançamento com valor foi identificado.')
       } else {
         setParsedTransactions(allTxs)
         setStatusMessage(`✅ ${allTxs.length} lançamentos extraídos da fatura com sucesso!`)
@@ -70,23 +165,91 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
     }
   }
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const fileArray = Array.from(files)
+    setPendingFiles(fileArray)
+    await executeUpload(fileArray)
+  }
+
+  const handleUnlockWithPassword = async () => {
+    if (!pdfPassword.trim() || pendingFiles.length === 0) return
+    await executeUpload(pendingFiles, pdfPassword)
+  }
+
+  const handleProcessPastedText = async () => {
+    if (!pastedText.trim()) {
+      setErrorMessage('Por favor, cole o texto do extrato ou fatura antes de continuar.')
+      return
+    }
+
+    setIsUploading(true)
+    setStatusMessage('Processando texto e identificando lançamentos...')
+    setErrorMessage(null)
+    setParsedTransactions([])
+    setIsSaved(false)
+
+    try {
+      const res = await fetch('/api/parse-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: pastedText,
+          fileName: 'Texto_Colado_Fatura.txt'
+        })
+      }).catch(() => {
+        throw new Error('Falha de conexão com o servidor.')
+      })
+
+      const data = await res.json()
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || 'Não foi possível encontrar transações no texto colado.')
+      }
+
+      const allTxs: any[] = []
+      if (Array.isArray(data.batches)) {
+        for (const batch of data.batches) {
+          if (Array.isArray(batch.transactions)) {
+            allTxs.push(...batch.transactions)
+          }
+        }
+      }
+
+      if (allTxs.length === 0) {
+        setStatusMessage('Texto processado, mas nenhum lançamento com valor foi identificado.')
+      } else {
+        setParsedTransactions(allTxs)
+        setStatusMessage(`✅ ${allTxs.length} lançamentos identificados com sucesso!`)
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Erro ao analisar texto colado.')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   const handleSaveToDatabase = async () => {
     if (parsedTransactions.length === 0) return
 
     setIsUploading(true)
     setStatusMessage('Salvando e categorizando lançamentos no banco de dados...')
-    setErrorMessage(null)
-
     try {
-      const formatted = parsedTransactions.map(t => ({
-        date: t.date,
-        description: t.desc,
-        amount: t.val,
-        category: t.cat || 'Outros',
-        subcategory: t.subcategory || 'Geral',
-        isFixed: Boolean(t.isFixed),
-        isIgnored: Boolean(t.isCardBillPayment)
-      }))
+      const formatted = parsedTransactions.map(t => {
+        const rawAmount = typeof t.val === 'number' ? t.val : parseFloat(t.val) || 0
+        const isPayment = Boolean(t.isCardBillPayment)
+        const amount = isPayment ? Math.abs(rawAmount) : -Math.abs(rawAmount)
+
+        return {
+          date: t.date,
+          description: t.desc,
+          amount,
+          category: t.cat || 'Outros',
+          subcategory: t.subcategory || 'Geral',
+          isFixed: Boolean(t.isFixed),
+          isIgnored: isPayment
+        }
+      })
 
       const res = await fetch('/api/transactions', {
         method: 'POST',
@@ -102,6 +265,9 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
 
       setIsSaved(true)
       setStatusMessage(`✅ ${result.insertedCount || formatted.length} lançamentos gravados com sucesso!`)
+      
+      // Notifica componentes para sincronização imediata
+      window.dispatchEvent(new CustomEvent('leaomed_transactions_updated'))
       if (onSuccess) onSuccess()
 
       setTimeout(() => {
@@ -133,7 +299,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
                 Anexar Fatura
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Faturas em PDF ou imagens de comprovantes e extratos
+                Faturas em PDF, fotos ou texto direto do extrato bancário
               </p>
             </div>
           </div>
@@ -146,6 +312,34 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
           </button>
         </div>
 
+        {/* Alternador de Modo: Arquivo ou Colar Texto */}
+        {!isSaved && parsedTransactions.length === 0 && (
+          <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-950 rounded-xl text-xs font-bold border border-slate-200/80 dark:border-white/5">
+            <button
+              onClick={() => setActiveTab('FILE')}
+              className={`flex items-center justify-center gap-2 py-2 rounded-lg transition-all cursor-pointer ${
+                activeTab === 'FILE'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <FileUp className="w-3.5 h-3.5" />
+              <span>Arquivo (PDF / Foto)</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('PASTE')}
+              className={`flex items-center justify-center gap-2 py-2 rounded-lg transition-all cursor-pointer ${
+                activeTab === 'PASTE'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <ClipboardType className="w-3.5 h-3.5" />
+              <span>Colar Texto da Fatura</span>
+            </button>
+          </div>
+        )}
+
         {/* Input Oculto de Arquivo */}
         <input 
           ref={fileInputRef}
@@ -156,8 +350,8 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
           className="hidden"
         />
 
-        {/* Área de Seleção */}
-        {!isSaved && parsedTransactions.length === 0 && (
+        {/* Modo 1: Área de Seleção de Arquivo */}
+        {!isSaved && parsedTransactions.length === 0 && activeTab === 'FILE' && (
           <div 
             onClick={() => fileInputRef.current?.click()}
             className="border-2 border-dashed border-slate-200 dark:border-white/15 hover:border-emerald-500/50 rounded-2xl p-8 text-center cursor-pointer bg-slate-50/50 dark:bg-slate-950/40 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/10 transition-all flex flex-col items-center justify-center gap-3 group"
@@ -167,12 +361,107 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
             </div>
             <div>
               <p className="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                Toque para selecionar a fatura ou comprovante
+                Toque para selecionar a fatura ou extrato
               </p>
               <p className="text-xs text-slate-400 mt-1">
-                Suporta PDF, PNG, JPG de faturas bancárias ou extratos
+                Suporta PDF original (inclusive com senha do banco) ou fotos
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Opção Prévia de Senha do Banco */}
+        {!isSaved && parsedTransactions.length === 0 && activeTab === 'FILE' && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1">
+              <button
+                type="button"
+                onClick={() => setShowAdvancePassword(!showAdvancePassword)}
+                className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer font-medium"
+              >
+                <Lock className="w-3.5 h-3.5 text-amber-500" />
+                <span>{showAdvancePassword ? 'Ocultar campo de senha' : 'O PDF possui senha? Clique para informar'}</span>
+              </button>
+              <span className="text-[10px] text-slate-400">Itaú, Bradesco, Santander, XP, etc.</span>
+            </div>
+
+            {showAdvancePassword && (
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-1.5 animate-in fade-in">
+                <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                  <KeyRound className="w-3.5 h-3.5 text-emerald-500" />
+                  Senha de abertura do PDF (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={pdfPassword}
+                  onChange={(e) => setPdfPassword(e.target.value)}
+                  placeholder="Ex: Primeiros dígitos do CPF ou data de nascimento"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-200 font-mono"
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Alerta e Desbloqueio de Senha Obrigatória */}
+        {requiresPassword && (
+          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 space-y-3 animate-in fade-in slide-in-from-top-2 shadow-xs">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-bold text-xs">
+              <Lock className="w-4 h-4 text-amber-500 shrink-0" />
+              <span>{isWrongPassword ? 'Senha incorreta para a fatura' : 'Fatura protegida por senha'}</span>
+            </div>
+            <p className="text-[11px] text-amber-900 dark:text-amber-200/90 leading-relaxed">
+              {isWrongPassword
+                ? 'A senha informada não conseguiu abrir este arquivo. Geralmente são os primeiros 4 a 6 dígitos do seu CPF ou sua data de nascimento (ex: 15051980).'
+                : 'O seu banco protegeu este arquivo por senha. Digite a senha abaixo para que possamos extrair todos os lançamentos instantaneamente.'}
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                autoFocus
+                value={pdfPassword}
+                onChange={(e) => setPdfPassword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && pdfPassword.trim() && !isUploading) {
+                    handleUnlockWithPassword()
+                  }
+                }}
+                placeholder="Digite a senha da fatura"
+                className="flex-1 px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-white dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:border-amber-500 font-mono shadow-inner"
+              />
+              <button
+                onClick={handleUnlockWithPassword}
+                disabled={isUploading || !pdfPassword.trim()}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-xs active:scale-95"
+              >
+                {isUploading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <KeyRound className="w-3.5 h-3.5" />
+                )}
+                <span>Desbloquear Fatura</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Modo 2: Área de Colar Texto */}
+        {!isSaved && parsedTransactions.length === 0 && activeTab === 'PASTE' && (
+          <div className="space-y-3">
+            <textarea
+              value={pastedText}
+              onChange={(e) => setPastedText(e.target.value)}
+              placeholder="Cole aqui o texto copiado da sua fatura ou extrato do app bancário..."
+              className="w-full h-36 p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-950/50 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-hidden focus:border-emerald-500 font-mono resize-none"
+            />
+            <button
+              onClick={handleProcessPastedText}
+              disabled={isUploading || !pastedText.trim()}
+              className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-500/20 cursor-pointer disabled:opacity-50"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Processar Texto da Fatura</span>
+            </button>
           </div>
         )}
 
@@ -184,7 +473,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
           </div>
         )}
 
-        {errorMessage && (
+        {errorMessage && !requiresPassword && (
           <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 flex items-center gap-2.5 text-xs text-rose-700 dark:text-rose-300">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>

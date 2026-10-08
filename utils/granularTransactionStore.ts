@@ -72,7 +72,7 @@ export class GranularTransactionStore {
     if (isDemoMode()) return [...DEMO_SYNTHETIC_TRANSACTIONS]
 
     try {
-      const url = period ? `/api/transactions?period=${period}` : '/api/transactions'
+      const url = period ? `/api/transactions?period=${period}&limit=1000` : '/api/transactions?limit=1000'
       const res = await fetch(url)
       const data = await res.json()
       if (data?.success && Array.isArray(data.transactions)) {

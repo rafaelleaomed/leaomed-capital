@@ -31,10 +31,26 @@ export default async function DashboardPage({
   const validFilters: DashboardFilter[] = ['PF', 'PJ', 'CONSOLIDATED']
   const activeFilter = validFilters.includes(filterParam) ? filterParam : 'PF'
 
-  // Período dinâmico (padrão: mês corrente ou query param ?period=YYYY-MM)
+  // Período dinâmico: se especificado na URL (?period=YYYY-MM), usa o informado.
+  // Caso contrário, busca dinamicamente o período mais recente com transações no banco de dados para o usuário.
   const now = new Date()
-  const defaultPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  const period = params.period && /^\d{4}-\d{2}$/.test(params.period) ? params.period : defaultPeriod
+  let period = params.period && /^\d{4}-\d{2}$/.test(params.period) ? params.period : ''
+
+  if (!period) {
+    try {
+      const latestPeriodRows = await sql`
+        SELECT TO_CHAR(MAX(t.date), 'YYYY-MM') as latest_period
+        FROM public.transactions t
+        WHERE t.user_id = ${user.id}
+      `
+      if (latestPeriodRows[0]?.latest_period) {
+        period = latestPeriodRows[0].latest_period
+      }
+    } catch (_) {}
+    if (!period) {
+      period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    }
+  }
 
   const [yearStr, monthStr] = period.split('-')
   const year = parseInt(yearStr, 10)

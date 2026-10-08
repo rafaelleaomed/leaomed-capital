@@ -317,22 +317,37 @@ export function GranularExpenseAuditor({
     saveAsRule: true
   })
 
-  // Carrega transações e ouve eventos de atualização
-  const loadTransactions = () => {
+  // Carrega transações do cache local e sincroniza do banco via API
+  const loadTransactions = async (periodTarget?: string) => {
     const list = GranularTransactionStore.getAll()
-    const normalized = list.map(t => ({
-      ...t,
-      category: normalizeCategoryName(t.category)
-    }))
-    setTransactions(normalized)
+    if (list && list.length > 0) {
+      setTransactions(list.map(t => ({
+        ...t,
+        category: normalizeCategoryName(t.category)
+      })))
+    }
+
+    if (!isDemo) {
+      try {
+        const fresh = await GranularTransactionStore.fetchFromApi(periodTarget || selectedPeriod)
+        if (fresh && fresh.length > 0) {
+          setTransactions(fresh.map(t => ({
+            ...t,
+            category: normalizeCategoryName(t.category)
+          })))
+        }
+      } catch (err) {
+        console.warn('Erro ao sincronizar transações da API:', err)
+      }
+    }
   }
 
   useEffect(() => {
-    loadTransactions()
-    const handleUpdate = () => loadTransactions()
+    loadTransactions(selectedPeriod)
+    const handleUpdate = () => loadTransactions(selectedPeriod)
     window.addEventListener('leaomed_transactions_updated', handleUpdate)
     return () => window.removeEventListener('leaomed_transactions_updated', handleUpdate)
-  }, [])
+  }, [selectedPeriod, isDemo])
 
   // Varredura de Duplicidades (Cartão vs Pagamento de Fatura em Conta Corrente)
   const duplicateReport = useMemo(() => {

@@ -119,6 +119,39 @@ interface BudgetBreakdownProps {
 
 export type BudgetScopeTab = 'EXPENSE_PF' | 'EXPENSE_PJ' | 'INCOME_PJ' | 'INCOME_PF' | 'GRANULAR_AUDIT'
 
+export function getCategoryIcon(name: string) {
+  const n = (name || '').toLowerCase()
+  if (n.includes('transporte')) return Car
+  if (n.includes('casa') || n.includes('moradia')) return Home
+  if (n.includes('financiamento')) return Receipt
+  if (n.includes('saúde') || n.includes('saude')) return HeartPulse
+  if (n.includes('aliment') || n.includes('restaurante')) return UtensilsCrossed
+  if (n.includes('pet')) return Dog
+  if (n.includes('compra') || n.includes('vestuário')) return ShoppingBag
+  if (n.includes('lazer')) return Film
+  if (n.includes('assinatura') || n.includes('software')) return Sparkles
+  if (n.includes('imposto') || n.includes('tributo')) return Receipt
+  if (n.includes('empresa') || n.includes('contabil')) return Building2
+  if (n.includes('faturamento') || n.includes('plant')) return Stethoscope
+  if (n.includes('pró-labore') || n.includes('pro-labore') || n.includes('receita')) return Briefcase
+  return Layers
+}
+
+export function getCategoryColor(name: string) {
+  const n = (name || '').toLowerCase()
+  if (n.includes('transporte')) return 'from-blue-500 to-indigo-600'
+  if (n.includes('casa') || n.includes('moradia')) return 'from-emerald-500 to-teal-600'
+  if (n.includes('financiamento')) return 'from-rose-500 to-red-600'
+  if (n.includes('saúde') || n.includes('saude')) return 'from-rose-500 to-pink-600'
+  if (n.includes('aliment') || n.includes('restaurante')) return 'from-orange-500 to-amber-600'
+  if (n.includes('pet')) return 'from-amber-500 to-orange-600'
+  if (n.includes('compra')) return 'from-purple-500 to-indigo-600'
+  if (n.includes('lazer')) return 'from-cyan-500 to-blue-600'
+  if (n.includes('assinatura')) return 'from-indigo-500 to-blue-600'
+  if (n.includes('imposto') || n.includes('tributo')) return 'from-blue-600 to-indigo-700'
+  return 'from-slate-600 to-slate-800'
+}
+
 export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialTab, selectedMonth, selectedYear }: BudgetBreakdownProps) {
   // Determina a aba inicial de acordo com o filtro global
   const defaultTab: BudgetScopeTab = useMemo(() => {
@@ -709,6 +742,46 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
     setIncomePJCats(baseIncomePJCategories)
     setIncomePFCats(baseIncomePFCategories)
   }, [baseExpensePFCategories, baseExpensePJCategories, baseIncomePJCategories, baseIncomePFCategories])
+
+  // Sincronização Dinâmica com a API de Orçamento por Período
+  useEffect(() => {
+    if (isDemo) return
+    const yr = selectedYear !== undefined ? selectedYear : new Date().getFullYear()
+    const mo = selectedMonth !== undefined ? selectedMonth : new Date().getMonth()
+    const period = `${yr}-${String(mo + 1).padStart(2, '0')}`
+
+    const fetchBudgetData = async () => {
+      try {
+        const res = await fetch(`/api/budget?period=${period}&filter=${currentFilter}`)
+        const json = await res.json()
+        if (json?.success && json?.data?.categories && json.data.categories.length > 0) {
+          const apiCats: CategoryGroup[] = json.data.categories.map((c: any) => ({
+            name: c.name,
+            icon: getCategoryIcon(c.name),
+            total: c.total,
+            color: getCategoryColor(c.name),
+            is_obligatory: Boolean(c.is_obligatory),
+            subcategories: (c.subcategories || []).map((s: any) => ({
+              name: s.name,
+              value: s.value,
+              is_fixed: Boolean(s.is_fixed)
+            }))
+          }))
+          if (currentFilter === 'PJ') {
+            setExpensePJCats(apiCats)
+          } else {
+            setExpensePFCats(apiCats)
+          }
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar dados dinâmicos do orçamento:', err)
+      }
+    }
+
+    fetchBudgetData()
+    window.addEventListener('leaomed_transactions_updated', fetchBudgetData)
+    return () => window.removeEventListener('leaomed_transactions_updated', fetchBudgetData)
+  }, [selectedMonth, selectedYear, currentFilter, isDemo])
 
   // Carregar edições e exclusões locais salvas no localStorage isolado por usuário
   useEffect(() => {

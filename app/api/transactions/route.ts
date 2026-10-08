@@ -37,8 +37,12 @@ export async function GET(req: NextRequest) {
     let rows: any[]
 
     if (period) {
+      const [yearStr, monthStr] = period.split('-')
+      const year = parseInt(yearStr, 10)
+      const month = parseInt(monthStr, 10) // 1-12
+      const daysInMonth = new Date(year, month, 0).getDate()
       const startDate = `${period}-01`
-      const endDate = `${period}-31`
+      const endDate = `${period}-${String(daysInMonth).padStart(2, '0')}`
 
       if (entity === 'PF' || entity === 'PJ') {
         rows = await sql`

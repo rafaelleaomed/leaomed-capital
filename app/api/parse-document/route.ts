@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseInvoiceFromTextOrOCR, DocumentParseResult } from '@/services/aiDocumentParser'
-import { extractTextFromPdf } from '@/services/pdfExtractor'
+import { extractTextFromPdf, PdfPasswordException } from '@/services/pdfExtractor'
 import Tesseract from 'tesseract.js'
 import { getAuthenticatedUserId } from '@/utils/auth-helpers'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60 // até 60s para processamento OCR de múltiplos prints
+export const maxDuration = 15 // limite compatível com Vercel Hobby
 
 const MAX_FILES_PER_REQUEST = 10
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024 // 15MB por arquivo
@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData()
       const files = formData.getAll('files') as File[]
+      const password = (formData.get('password') as string)?.trim() || undefined
 
       if (!files || files.length === 0) {
         return NextResponse.json({ success: false, error: 'Nenhum arquivo enviado.' }, { status: 400 })
@@ -76,29 +77,54 @@ export async function POST(req: NextRequest) {
 
         // 1. Caso o arquivo seja PDF
         if (file.type === 'application/pdf' || /\.pdf$/i.test(safeFileName)) {
-          extractedText = await extractTextFromPdf(buffer)
+          try {
+            extractedText = await extractTextFromPdf(buffer, password)
+          } catch (pdfErr: any) {
+            if (pdfErr instanceof PdfPasswordException || pdfErr?.name === 'PdfPasswordException') {
+              return NextResponse.json({
+                success: false,
+                requiresPassword: true,
+                isWrongPassword: pdfErr.code === 2,
+                fileName: safeFileName,
+                error: pdfErr.code === 2
+                  ? `A senha informada para "${safeFileName}" está incorreta. Verifique e tente novamente.`
+                  : `O arquivo "${safeFileName}" está protegido por senha do banco. Digite a senha da fatura (geralmente os primeiros dígitos do seu CPF ou data de nascimento) para desbloquear a leitura.`
+              }, { status: 422 })
+            }
+            throw pdfErr
+          }
           
-          // Se o PDF foi escaneado como imagem e não tem camada de texto nativa, tenta OCR com Tesseract
           if (!extractedText || extractedText.trim().length < 20) {
-            try {
-              const { data } = await Tesseract.recognize(buffer, 'por+eng', { logger: () => {} })
-              if (data?.text && data.text.trim().length > 20) {
-                extractedText = data.text
-              }
-            } catch (_) {}
+            return NextResponse.json({
+              success: false,
+              error: `O arquivo "${safeFileName}" parece ser uma digitalização ou imagem sem camada de texto pesquisável. Se o PDF estiver protegido por senha, certifique-se de informá-la. Caso contrário, utilize a opção "Colar Texto".`
+            }, { status: 422 })
           }
         } 
-        // 2. Caso seja Imagem (Print do Celular ou Mobills)
+        // 2. Caso seja Imagem (Print do Celular ou Foto de Fatura)
         else if (file.type.startsWith('image/') || /\.(png|jpe?g|webp|bmp)$/i.test(safeFileName)) {
           try {
-            const { data } = await Tesseract.recognize(buffer, 'por+eng', {
-              logger: () => {}
-            })
-            extractedText = data.text || ''
-          } catch (ocrErr) {
-            console.warn(`Tentando fallback de OCR para ${safeFileName}:`, ocrErr)
-            const { data } = await Tesseract.recognize(buffer, 'eng', { logger: () => {} })
-            extractedText = data.text || ''
+            // Limite de segurança de 8 segundos para evitar estourar os 15s da Vercel
+            const ocrTimeout = new Promise<string>((_, reject) =>
+              setTimeout(() => reject(new Error('TIMEOUT_OCR')), 8000)
+            )
+
+            const ocrProcess = (async () => {
+              const { data } = await Tesseract.recognize(buffer, 'por', {
+                logger: () => {}
+              })
+              return data?.text || ''
+            })()
+
+            extractedText = await Promise.race([ocrProcess, ocrTimeout])
+          } catch (ocrErr: any) {
+            console.warn(`OCR não concluído para imagem ${safeFileName}:`, ocrErr?.message || ocrErr)
+            return NextResponse.json({
+              success: false,
+              isOcrTimeout: true,
+              fileName: safeFileName,
+              error: `A leitura da imagem demorou mais do que o limite do servidor. Se você possui o arquivo PDF com senha, anexe o PDF original e digite a senha no campo desbloqueio. Ou copie o texto da fatura e use a aba "Colar Texto".`
+            }, { status: 422 })
           }
         } 
         // 3. Caso seja texto, CSV, OFX

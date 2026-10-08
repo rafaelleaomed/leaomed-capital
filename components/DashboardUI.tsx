@@ -70,10 +70,11 @@ export default function DashboardUI({
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ]
 
-  // Navegação dinâmica entre meses via URL
+  // Navegação dinâmica entre meses via URL preservando a aba ativa
   const handlePeriodChange = (newYear: number, newMonth: number) => {
     const formattedPeriod = `${newYear}-${String(newMonth + 1).padStart(2, '0')}`
-    router.push(`${basePath}?filter=${currentFilter}&period=${formattedPeriod}`)
+    const currentHash = typeof window !== 'undefined' ? window.location.hash : ''
+    router.push(`${basePath}?filter=${currentFilter}&period=${formattedPeriod}${currentHash}`)
   }
 
   const handlePrevMonth = () => {
@@ -280,7 +281,7 @@ export default function DashboardUI({
 
       {/* ABA 1: COCKPIT EM CAMADAS (PROPOSTA 2) */}
       {activeTab === 'visao-geral' && (
-        <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+        <div key={`visao-geral-${activePeriod}-${currentFilter}`} className="flex flex-col gap-6 animate-in fade-in duration-200">
           {/* Alertas Consultivos Reais */}
           {payload.alerts && payload.alerts.length > 0 && (
             <InsightsPanel alerts={payload.alerts} />
@@ -315,8 +316,9 @@ export default function DashboardUI({
 
       {/* ABA 2: AUDITORIA DE LANÇAMENTOS (CONFERÊNCIA INDIVIDUAL DESKTOP) */}
       {activeTab === 'auditoria' && (
-        <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+        <div key={`auditoria-${activePeriod}-${currentFilter}`} className="flex flex-col gap-6 animate-in fade-in duration-200">
           <GranularExpenseAuditor 
+            key={`auditor-${activePeriod}-${currentFilter}`}
             currentFilter={currentFilter}
             isDemo={isDemo}
             selectedMonth={selectedMonth}
@@ -327,9 +329,10 @@ export default function DashboardUI({
 
       {/* ABA 3: ORÇAMENTO & CATEGORIAS (PLANILHA DE DESPESAS FIXAS/VARIÁVEIS) */}
       {activeTab === 'orcamento' && (
-        <div className="flex flex-col gap-6 animate-in fade-in duration-200">
+        <div key={`orcamento-${activePeriod}-${currentFilter}`} className="flex flex-col gap-6 animate-in fade-in duration-200">
           <div id="categorias-planilha" className="scroll-mt-24">
             <BudgetBreakdown 
+              key={`budget-${activePeriod}-${currentFilter}`}
               currentFilter={currentFilter} 
               isDemo={isDemo} 
               selectedMonth={selectedMonth} 

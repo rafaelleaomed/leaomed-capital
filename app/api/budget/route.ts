@@ -11,9 +11,20 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const filter = (searchParams.get('filter')?.toUpperCase() || 'PF') as 'PF' | 'PJ' | 'CONSOLIDATED';
+    const period = searchParams.get('period'); // Formato YYYY-MM
 
+    let startDate = '';
+    let endDate = '';
+    if (period && /^\d{4}-\d{2}$/.test(period)) {
+      const [yearStr, monthStr] = period.split('-');
+      const year = parseInt(yearStr, 10);
+      const month = parseInt(monthStr, 10);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      startDate = `${period}-01`;
+      endDate = `${period}-${String(daysInMonth).padStart(2, '0')}`;
+    }
 
-    // 1. Obter categorias e subcategorias oficiais com soma real de transações
+    // 1. Obter categorias e subcategorias oficiais com soma real de transações do período
     const categoriesWithTransactions = await sql`
       SELECT 
         c.name as category_name,
@@ -29,6 +40,8 @@ export async function GET(request: Request) {
         AND t.subcategory = s.name 
         AND t.user_id = ${userId}
         AND t.amount < 0
+        AND t.is_ignored = FALSE
+        ${startDate && endDate ? sql`AND t.date >= ${startDate} AND t.date <= ${endDate}` : sql``}
       GROUP BY c.name, c.scope, s.name, s.is_fixed
       ORDER BY c.name ASC, total_spent DESC;
     `;

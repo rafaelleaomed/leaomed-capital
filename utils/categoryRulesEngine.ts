@@ -32,6 +32,8 @@ export function normalizeText(str: string): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\*•|\-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim()
 }
 
@@ -54,16 +56,87 @@ const buildTaxonomyHeuristics = (): Array<{
     isBillPayment?: boolean
   }> = [
     // Detecção de Pagamento de Fatura (Candidatos a Deduplicação / Duplicidade)
-    { pattern: 'pagamento fatura', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
-    { pattern: 'pgto fatura', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
-    { pattern: 'pagto fatura', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
-    { pattern: 'pagamento cartao', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
-    { pattern: 'debito fatura', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
-    { pattern: 'deb autom fatura', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
-    { pattern: 'pagto titulo c6', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
-    { pattern: 'pagamento c6 bank', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
-    { pattern: 'pagamento itaucard', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true },
-    { pattern: 'pagamento nubank', category: 'Casa', subcategory: 'Supermercado', isBillPayment: true }
+    { pattern: 'pagamento fatura', category: 'Pagamento de Fatura', subcategory: 'Fatura de Cartão', isBillPayment: true },
+    { pattern: 'pgto fatura', category: 'Pagamento de Fatura', subcategory: 'Fatura de Cartão', isBillPayment: true },
+    { pattern: 'pagto fatura', category: 'Pagamento de Fatura', subcategory: 'Fatura de Cartão', isBillPayment: true },
+    { pattern: 'pagamento cartao', category: 'Pagamento de Fatura', subcategory: 'Fatura de Cartão', isBillPayment: true },
+    { pattern: 'debito fatura', category: 'Pagamento de Fatura', subcategory: 'Fatura de Cartão', isBillPayment: true },
+    { pattern: 'deb autom fatura', category: 'Pagamento de Fatura', subcategory: 'Fatura de Cartão', isBillPayment: true },
+    { pattern: 'pagto titulo c6', category: 'Pagamento de Fatura', subcategory: 'Fatura de Cartão', isBillPayment: true },
+    { pattern: 'pagamento c6 bank', category: 'Pagamento de Fatura', subcategory: 'Fatura de Cartão', isBillPayment: true },
+    { pattern: 'pagamento itaucard', category: 'Pagamento de Fatura', subcategory: 'Fatura de Cartão', isBillPayment: true },
+    { pattern: 'pagamento itau', category: 'Pagamento de Fatura', subcategory: 'Fatura de Cartão', isBillPayment: true },
+    { pattern: 'pagamento nubank', category: 'Pagamento de Fatura', subcategory: 'Fatura de Cartão', isBillPayment: true },
+    { pattern: 'pagamento efetuado', category: 'Pagamento de Fatura', subcategory: 'Fatura de Cartão', isBillPayment: true },
+
+    // Estabelecimentos Frequentes e Lançamentos Reais
+    { pattern: 'localiza', category: 'Transporte', subcategory: 'Parcela T-Cross Cartão' },
+    { pattern: 'uber', category: 'Transporte', subcategory: 'Táxi/Uber' },
+    { pattern: '99app', category: 'Transporte', subcategory: 'Táxi/Uber' },
+    { pattern: 'lapaza', category: 'Transporte', subcategory: 'Estacionamentos' },
+    { pattern: 'estapar', category: 'Transporte', subcategory: 'Estacionamentos' },
+    { pattern: 'posto ponteio', category: 'Transporte', subcategory: 'Combustível' },
+    { pattern: 'postode', category: 'Transporte', subcategory: 'Combustível' },
+    { pattern: 'madreteresa', category: 'Transporte', subcategory: 'Estacionamentos' },
+    { pattern: 'hospital mat', category: 'Transporte', subcategory: 'Estacionamentos' },
+    { pattern: 'hospitalbeti', category: 'Transporte', subcategory: 'Estacionamentos' },
+
+    // Alimentação & Restaurantes
+    { pattern: 'burger king', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
+    { pattern: 'donna anna', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
+    { pattern: 'mep*quintal', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
+    { pattern: 'vo maria', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
+    { pattern: 'ed mais bar', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
+    { pattern: 'slopesgastrobar', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
+    { pattern: 'arigato culinaria', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
+    { pattern: 'bebedouroartof', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
+    { pattern: 'speedpa*botequim', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
+    { pattern: 'subway', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
+    { pattern: 'soaresrestaurante', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
+    { pattern: 'januario comercio', category: 'Alimentação', subcategory: 'Restaurantes & Fast Food' },
+    { pattern: 'ifood', category: 'Alimentação', subcategory: 'Delivery & Lanches' },
+
+    // Supermercado & Padaria
+    { pattern: 'supermercados bh', category: 'Casa', subcategory: 'Supermercado' },
+    { pattern: 'sup epa', category: 'Casa', subcategory: 'Supermercado' },
+    { pattern: 'padaria arte do trigo', category: 'Casa', subcategory: 'Supermercado' },
+    { pattern: 'baff s comercio', category: 'Casa', subcategory: 'Supermercado' },
+    { pattern: 'mundo verde', category: 'Casa', subcategory: 'Supermercado' },
+    { pattern: 'sn xua', category: 'Casa', subcategory: 'Supermercado' },
+    { pattern: 'gelada cia', category: 'Casa', subcategory: 'Supermercado' },
+    { pattern: 'panificadora', category: 'Casa', subcategory: 'Supermercado' },
+    { pattern: 'sempre de sams', category: 'Casa', subcategory: 'Supermercado' },
+    { pattern: 'carrefour', category: 'Casa', subcategory: 'Supermercado' },
+    { pattern: 'verdemar', category: 'Casa', subcategory: 'Supermercado' },
+    { pattern: 'super nosso', category: 'Casa', subcategory: 'Supermercado' },
+
+    // Saúde & Farmácia
+    { pattern: 'araujo loja', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
+    { pattern: 'drogaria araujo', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
+    { pattern: 'raia', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
+    { pattern: 'drogasil', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
+    { pattern: 'pacheco', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
+
+    // Softwares & Assinaturas
+    { pattern: 'google one', category: 'Serviços de Assinaturas', subcategory: 'Streaming & Assinaturas' },
+    { pattern: 'chatgpt', category: 'Serviços de Assinaturas', subcategory: 'Inteligência Artificial' },
+    { pattern: 'openai', category: 'Serviços de Assinaturas', subcategory: 'Inteligência Artificial' },
+    { pattern: 'typesafe ai', category: 'Serviços de Assinaturas', subcategory: 'Inteligência Artificial' },
+    { pattern: 'spotify', category: 'Serviços de Assinaturas', subcategory: 'Streaming & Assinaturas' },
+    { pattern: 'netflix', category: 'Serviços de Assinaturas', subcategory: 'Streaming & Assinaturas' },
+
+    // Educação, Compras & Lazer
+    { pattern: 'htm*d2ia consultoria', category: 'Educação', subcategory: 'Cursos & Congressos' },
+    { pattern: 'mercadinho baby', category: 'Compras', subcategory: 'Vestuário & Acessórios' },
+    { pattern: 'mercadolivre', category: 'Compras', subcategory: 'Compras Online' },
+    { pattern: 'magalu', category: 'Compras', subcategory: 'Compras & Presentes' },
+    { pattern: 'lojas redes', category: 'Compras', subcategory: 'Compras & Presentes' },
+    { pattern: 'natura', category: 'Compras', subcategory: 'Compras & Presentes' },
+    { pattern: 'loterias', category: 'Lazer & Estilo de Vida', subcategory: 'Lazer & Viagens' },
+    { pattern: 'clube serra', category: 'Lazer & Estilo de Vida', subcategory: 'Lazer & Viagens' },
+    { pattern: 'barbearia', category: 'Lazer & Estilo de Vida', subcategory: 'Cuidados Pessoais' },
+    { pattern: 'repasse de iof', category: 'Impostos e Taxas PF', subcategory: 'IOF' },
+    { pattern: 'iof', category: 'Impostos e Taxas PF', subcategory: 'IOF' }
   ]
 
   // Adiciona keywords cadastradas na taxonomia oficial do usuário normalizadas
@@ -83,7 +156,10 @@ const buildTaxonomyHeuristics = (): Array<{
     })
   })
 
-  return rules
+  return rules.map(r => ({
+    ...r,
+    pattern: normalizeText(r.pattern)
+  }))
 }
 
 const DEFAULT_HEURISTIC_RULES = buildTaxonomyHeuristics()
@@ -309,8 +385,8 @@ export class CategoryRulesEngine {
     }
 
     return {
-      category: 'Casa',
-      subcategory: 'Supermercado',
+      category: 'Outros',
+      subcategory: 'Geral',
       source: 'DEFAULT',
       decisionType: 'deterministic',
       certaintyLabel: 'fallback pf',
