@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { 
   UploadCloud, 
   Camera, 
@@ -48,6 +49,7 @@ export interface ProcessedBatch {
 }
 
 export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<'INVOICE' | 'PRINT' | 'MANUAL' | 'OPEN_FINANCE'>('INVOICE')
   const [isProcessing, setIsProcessing] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -150,16 +152,29 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
         body: formData
       })
 
-      if (!response.ok) {
-        throw new Error(`Erro na API (${response.status})`)
+      let data: any = null
+      try {
+        data = await response.json()
+      } catch (_) {
+        data = null
       }
 
-      const data = await response.json()
-      if (data.success && Array.isArray(data.batches) && data.batches.length > 0) {
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || `Erro no processamento do documento (${response.status})`)
+      }
+
+      if (Array.isArray(data.batches) && data.batches.length > 0) {
         const newBatches: ProcessedBatch[] = data.batches
+        const totalTxs = newBatches.reduce((acc, b) => acc + b.transactionCount, 0)
+
+        if (totalTxs === 0) {
+          setIsProcessing(false)
+          setFeedback('⚠️ Nenhum lançamento foi detectado no documento. Certifique-se de que a fatura contém linhas legíveis com data e valor.')
+          return
+        }
+
         setProcessedBatches(prev => [...newBatches, ...prev])
         setIsProcessing(false)
-        const totalTxs = newBatches.reduce((acc, b) => acc + b.transactionCount, 0)
         setFeedback(`✅ ${newBatches.length} arquivo(s) importado(s) com sucesso! Total de ${totalTxs} lançamentos reais identificados.`)
 
         // Transações reais para o modal de categorização inteligente
@@ -183,28 +198,8 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
       throw new Error('Nenhuma transação identificada no documento.')
     } catch (err: any) {
       console.warn('Falha no processamento via API:', err)
-      // Fallback local caso haja erro de rede
-      const fallbackBatches: ProcessedBatch[] = fileArray.map((file, idx) => {
-        const { institution, period } = detectInstitutionAndPeriod(file.name)
-        const sizeFormatted = file.size > 1024 * 1024 
-          ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
-          : `${Math.max(1, Math.round(file.size / 1024))} KB`
-
-        return {
-          id: `batch-${Date.now()}-${idx}`,
-          fileName: file.name,
-          fileSize: sizeFormatted,
-          institution,
-          period,
-          totalAmount: 0,
-          transactionCount: 0,
-          transactions: []
-        }
-      })
-
-      setProcessedBatches(prev => [...fallbackBatches, ...prev])
       setIsProcessing(false)
-      setFeedback(`Aviso: Arquivo(s) recebido(s). Processamento concluído com dados preliminares.`)
+      setFeedback(`❌ ${err.message || 'Falha ao processar arquivo. Verifique o formato do documento e tente novamente.'}`)
     }
   }
 
@@ -719,7 +714,8 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
         onClose={() => setIsSmartCatModalOpen(false)}
         transactions={pendingReviewTransactions}
         onCompleted={(count) => {
-          setFeedback(`🎉 ${count} lançamentos categorizados e integrados à planilha orçamentária e extrato!`)
+          setFeedback(`🎉 ${count} lançamentos categorizados e salvos com sucesso no banco de dados!`)
+          router.refresh()
         }}
       />
       </div>

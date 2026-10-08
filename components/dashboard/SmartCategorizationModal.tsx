@@ -141,7 +141,8 @@ export function SmartCategorizationModal({
     setItems(updated)
   }
 
-  const handleConfirmAndSave = () => {
+  const handleConfirmAndSave = async () => {
+    if (items.length === 0) return
     setIsSaving(true)
     let rulesCreatedCount = 0
 
@@ -160,7 +161,33 @@ export function SmartCategorizationModal({
       }
     })
 
-    // 2. Salvar transações na base granular
+    // 2. Salvar transações no PostgreSQL via API /api/transactions
+    try {
+      const payloadTransactions = items.map(i => ({
+        date: i.date,
+        description: i.description,
+        amount: i.isCardBillPayment ? -Math.abs(i.amount) : -Math.abs(i.amount),
+        category: i.category,
+        subcategory: i.subcategory,
+        subdivision: i.subdivision,
+        isFixed: i.isCardBillPayment,
+        isIgnored: i.isCardBillPayment
+      }))
+
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactions: payloadTransactions })
+      })
+
+      if (!res.ok) {
+        console.warn('Aviso ao sincronizar com /api/transactions:', await res.text())
+      }
+    } catch (apiErr) {
+      console.warn('Erro ao persistir no PostgreSQL via /api/transactions:', apiErr)
+    }
+
+    // 3. Salvar transações na base granular / cache local
     GranularTransactionStore.addBatch(items.map(i => ({
       date: i.date,
       description: i.description,
@@ -175,12 +202,12 @@ export function SmartCategorizationModal({
     })))
 
     setIsSaving(false)
-    setSuccessBanner(`🎉 ${items.length} lançamentos categorizados e ${rulesCreatedCount} novas regras memorizadas! Nos próximos meses, despesas semelhantes serão categorizadas automaticamente sem esforço.`)
+    setSuccessBanner(`🎉 ${items.length} lançamentos persistidos no banco e ${rulesCreatedCount} regras memorizadas!`)
 
     setTimeout(() => {
       onCompleted?.(items.length)
       onClose()
-    }, 1800)
+    }, 1500)
   }
 
   return (
@@ -240,7 +267,26 @@ export function SmartCategorizationModal({
             </span>
           </div>
 
-          <div className="space-y-3">
+          {items.length === 0 ? (
+            <div className="py-12 px-4 text-center space-y-3 rounded-2xl border border-white/5 bg-slate-950/40">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <h4 className="text-base font-bold text-white">Nenhum lançamento legível identificado</h4>
+              <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                Não foi possível extrair despesas com data e valor deste arquivo. Isso pode ocorrer com PDFs escaneados como imagem de baixa qualidade ou formatos não reconhecidos. Tente importar a fatura em PDF oficial do banco, extrato CSV ou um print nítido.
+              </p>
+              <div className="pt-2">
+                <button
+                  onClick={onClose}
+                  className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white transition-all cursor-pointer"
+                >
+                  Fechar e Tentar Outro Arquivo
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
             {items.map((item, idx) => {
               const isPositive = item.amount > 0
               const scopeTaxonomy = getCategoriesByScope(item.entityType || 'PF')
@@ -357,6 +403,7 @@ export function SmartCategorizationModal({
               )
             })}
           </div>
+          )}
         </div>
 
         {/* Rodapé com Ações */}

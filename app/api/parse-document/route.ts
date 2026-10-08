@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { parseInvoiceFromTextOrOCR, ExtractedTransaction, DocumentParseResult } from '@/services/aiDocumentParser'
+import { parseInvoiceFromTextOrOCR, DocumentParseResult } from '@/services/aiDocumentParser'
+import { extractTextFromPdf } from '@/services/pdfExtractor'
 import Tesseract from 'tesseract.js'
 import { getAuthenticatedUserId } from '@/utils/auth-helpers'
 
@@ -16,7 +17,6 @@ export async function POST(req: NextRequest) {
   try {
     const contentType = req.headers.get('content-type') || ''
 
-    
     const allBatches: Array<{
       id: string
       fileName: string
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
         }
 
         const buffer = Buffer.from(await file.arrayBuffer())
-        const rawFileName = file.name || `Arquivo_${i + 1}.png`
+        const rawFileName = file.name || `Arquivo_${i + 1}.pdf`
         const safeFileName = rawFileName.replace(/[^a-zA-Z0-9_\-\.\s]/g, '')
         const sizeFormatted = file.size > 1024 * 1024
           ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
@@ -74,8 +74,22 @@ export async function POST(req: NextRequest) {
 
         let extractedText = ''
 
-        // Se for imagem, executa OCR
-        if (file.type.startsWith('image/') || /\.(png|jpe?g|webp|bmp)$/i.test(safeFileName)) {
+        // 1. Caso o arquivo seja PDF
+        if (file.type === 'application/pdf' || /\.pdf$/i.test(safeFileName)) {
+          extractedText = await extractTextFromPdf(buffer)
+          
+          // Se o PDF foi escaneado como imagem e não tem camada de texto nativa, tenta OCR com Tesseract
+          if (!extractedText || extractedText.trim().length < 20) {
+            try {
+              const { data } = await Tesseract.recognize(buffer, 'por+eng', { logger: () => {} })
+              if (data?.text && data.text.trim().length > 20) {
+                extractedText = data.text
+              }
+            } catch (_) {}
+          }
+        } 
+        // 2. Caso seja Imagem (Print do Celular ou Mobills)
+        else if (file.type.startsWith('image/') || /\.(png|jpe?g|webp|bmp)$/i.test(safeFileName)) {
           try {
             const { data } = await Tesseract.recognize(buffer, 'por+eng', {
               logger: () => {}
@@ -86,12 +100,24 @@ export async function POST(req: NextRequest) {
             const { data } = await Tesseract.recognize(buffer, 'eng', { logger: () => {} })
             extractedText = data.text || ''
           }
-        } else {
-          // Para texto ou PDF
-          extractedText = buffer.toString('utf-8')
+        } 
+        // 3. Caso seja texto, CSV, OFX
+        else {
+          try {
+            extractedText = buffer.toString('utf-8')
+            if (!extractedText.includes(';') && !extractedText.includes(',') && !extractedText.includes('<OFX>')) {
+              // Tenta codificação latin1
+              const latin1 = buffer.toString('latin1')
+              if (latin1.includes(';') || latin1.includes(',')) {
+                extractedText = latin1
+              }
+            }
+          } catch (_) {
+            extractedText = buffer.toString('utf-8')
+          }
         }
 
-        // Parsing das transações reais
+        // Parsing das transações
         const parseResult: DocumentParseResult = parseInvoiceFromTextOrOCR(extractedText)
 
         const batchTxs = parseResult.transactions.map(t => ({
@@ -152,17 +178,30 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    const totalTransactions = allBatches.reduce((acc, b) => acc + b.transactionCount, 0)
+
+    // Se nenhum lançamento foi detectado em nenhum arquivo
+    if (totalTransactions === 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'Não foi possível extrair lançamentos legíveis do documento. Certifique-se de que a fatura contém linhas com data (ex: 15 mai ou 15/05), descrição e valor monetário.',
+        batches: allBatches,
+        totalBatches: allBatches.length,
+        totalTransactions: 0
+      }, { status: 422 })
+    }
+
     return NextResponse.json({
       success: true,
       batches: allBatches,
       totalBatches: allBatches.length,
-      totalTransactions: allBatches.reduce((acc, b) => acc + b.transactionCount, 0)
+      totalTransactions
     })
   } catch (error: unknown) {
     const errorMsg = error instanceof Error ? error.message : 'Falha ao processar arquivo'
     console.error('Erro seguro na rota /api/parse-document:', errorMsg)
     return NextResponse.json(
-      { success: false, error: 'Erro no processamento seguro do documento via OCR/IA.' },
+      { success: false, error: 'Erro no processamento do documento. Verifique o formato do arquivo e tente novamente.' },
       { status: 500 }
     )
   }

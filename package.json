@@ -17,6 +17,7 @@
     "lucide-react": "^1.11.0",
     "next": "latest",
     "openai": "^6.34.0",
+    "pdf-parse": "^2.4.5",
     "pluggy-sdk": "^0.33.0",
     "react": "latest",
     "react-dom": "latest",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@types/node": "latest",
+    "@types/pdf-parse": "^1.1.5",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "autoprefixer": "^10.6.1",

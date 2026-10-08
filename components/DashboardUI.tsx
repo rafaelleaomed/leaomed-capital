@@ -157,18 +157,23 @@ export default function DashboardUI({
 
       {/* ── Top Header Executivo ────────────────────────────────────────── */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1 border-b border-slate-200/80 dark:border-white/5 pb-5">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              LeãoMed Capital
-            </h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-              {currentFilter === 'PF' ? 'Pessoa Física' : currentFilter === 'PJ' ? 'Pessoa Jurídica' : 'Consolidado'}
-            </span>
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl overflow-hidden shadow-md border border-emerald-500/25 bg-slate-900 shrink-0">
+            <img src="/logo.jpg" alt="LeãoMed Capital Logo" className="h-full w-full object-cover" />
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Gestão Financeira Médica • Visão Inicial PF • Origem PJ em Segundo Plano
-          </p>
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                LeãoMed Capital
+              </h1>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                {currentFilter === 'PF' ? 'Pessoa Física' : currentFilter === 'PJ' ? 'Pessoa Jurídica' : 'Consolidado'}
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              Gestão Financeira Médica • Visão Inicial PF • Origem PJ em Segundo Plano
+            </p>
+          </div>
         </div>
 
         {/* Controles de Topo: Busca Global + Filtro PF/PJ + Navegação Temporal */}
