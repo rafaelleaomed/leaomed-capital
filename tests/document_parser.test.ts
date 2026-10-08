@@ -72,6 +72,30 @@ assert.strictEqual(csvResult.transactions[1].amount, 150.00)
 assert.strictEqual(csvResult.transactions[2].amount, 8500.00)
 console.log('   ✓ Extrato CSV delimitado por ponto-e-vírgula validado.\n')
 
+// 6. Teste de Rejeição de Cabeçalhos Bancários e Ruídos de Boleto (Caso Real Itaú/Boleto)
+console.log('6. Testando Rejeição de Metadados Bancários e Extração de Compras...')
+const mixedInvoiceText = `
+ITAU UNIBANCO HOLDING S.A. - CNPJ: 60.872.504/0001-23
+P  , =K 7\`> 420 ITA U UNI BANC O HO LD I NG S.A. - 60.872 .504 /0001- 23   R$ 13,00
+Autenticação Mecânica - Recibo do Pagador
+ =b K Ln M N Og P Q  Q Rv S S T ... R$ 0,00
+15/09 DROGARIA ARAUJO 45,90
+18/09/2026 POSTO IPIRANGA R$ 150,00
+25/09 PORTO SEGURO Parcela 03/10 336,76
+`
+
+const mixedResult = parseInvoiceFromTextOrOCR(mixedInvoiceText)
+assert.strictEqual(mixedResult.transactions.length, 3, 'Deve extrair exatamente as 3 compras reais e ignorar os metadados de holding e valores zerados')
+assert.strictEqual(mixedResult.transactions[0].description, 'DROGARIA ARAUJO')
+assert.strictEqual(mixedResult.transactions[0].amount, 45.90)
+assert.strictEqual(mixedResult.transactions[1].description, 'POSTO IPIRANGA')
+assert.strictEqual(mixedResult.transactions[1].amount, 150.00)
+assert.strictEqual(mixedResult.transactions[2].description, 'PORTO SEGURO Parcela 03/10')
+assert.strictEqual(mixedResult.transactions[2].amount, 336.76)
+assert.strictEqual(mixedResult.transactions[2].installment_current, 3)
+assert.strictEqual(mixedResult.transactions[2].installment_total, 10)
+console.log('   ✓ Metadados bancários ignorados com sucesso e compras legítimas extraídas com precisão.\n')
+
 console.log('===============================================================')
 console.log('🎉 TODOS OS TESTES DO MOTOR DE EXTRAÇÃO FORAM APROVADOS!')
 console.log('===============================================================\n')

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { parseInvoiceFromTextOrOCR, DocumentParseResult } from '@/services/aiDocumentParser'
 import { extractTextFromPdf, PdfPasswordException } from '@/services/pdfExtractor'
 import Tesseract from 'tesseract.js'
+import * as XLSX from 'xlsx'
 import { getAuthenticatedUserId } from '@/utils/auth-helpers'
 
 export const dynamic = 'force-dynamic'
@@ -101,7 +102,31 @@ export async function POST(req: NextRequest) {
             }, { status: 422 })
           }
         } 
-        // 2. Caso seja Imagem (Print do Celular ou Foto de Fatura)
+        // 2. Caso seja Planilha Excel (.xlsx, .xls)
+        else if (/\.(xlsx|xls)$/i.test(safeFileName) || file.type.includes('spreadsheet') || file.type.includes('excel')) {
+          try {
+            const workbook = XLSX.read(buffer, { type: 'buffer' })
+            const sheetTexts: string[] = []
+            for (const sheetName of workbook.SheetNames) {
+              const sheet = workbook.Sheets[sheetName]
+              if (sheet) {
+                const csvData = XLSX.utils.sheet_to_csv(sheet, { FS: ';' })
+                if (csvData && csvData.trim().length > 10) {
+                  sheetTexts.push(csvData)
+                }
+              }
+            }
+            extractedText = sheetTexts.join('\n\n')
+          } catch (excelErr: any) {
+            console.warn(`Falha na extração de Excel para ${safeFileName}:`, excelErr?.message || excelErr)
+            return NextResponse.json({
+              success: false,
+              fileName: safeFileName,
+              error: `Não foi possível ler os dados da planilha Excel "${safeFileName}". Certifique-se de que o arquivo não está corrompido ou protegido por senha do Excel.`
+            }, { status: 422 })
+          }
+        }
+        // 3. Caso seja Imagem (Print do Celular ou Foto de Fatura)
         else if (file.type.startsWith('image/') || /\.(png|jpe?g|webp|bmp)$/i.test(safeFileName)) {
           try {
             // Limite de segurança de 8 segundos para evitar estourar os 15s da Vercel
@@ -127,7 +152,7 @@ export async function POST(req: NextRequest) {
             }, { status: 422 })
           }
         } 
-        // 3. Caso seja texto, CSV, OFX
+        // 4. Caso seja texto, CSV, OFX
         else {
           try {
             extractedText = buffer.toString('utf-8')
@@ -225,10 +250,10 @@ export async function POST(req: NextRequest) {
     })
   } catch (error: unknown) {
     const errorMsg = error instanceof Error ? error.message : 'Falha ao processar arquivo'
-    console.error('Erro seguro na rota /api/parse-document:', errorMsg)
+    console.error('Erro na rota /api/parse-document:', errorMsg)
     return NextResponse.json(
-      { success: false, error: 'Erro no processamento do documento. Verifique o formato do arquivo e tente novamente.' },
-      { status: 500 }
+      { success: false, error: `Erro no processamento do documento: ${errorMsg}` },
+      { status: 422 }
     )
   }
 }

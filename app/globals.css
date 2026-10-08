@@ -1,3 +1,6 @@
+@import '../styles/capital.css';
+@import '../styles/brand.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,66 +11,66 @@
     --font-display: 'Outfit', sans-serif;
 
     /* Light Mode Tokens (Padrão Claro) */
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    --background: 45 20% 95%;
+    --foreground: 204 13% 16%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 204 13% 16%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 204 13% 16%;
 
-    --primary: 158 64% 45%;
+    --primary: 41 51% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 45 15% 92%;
+    --secondary-foreground: 204 13% 16%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 45 15% 90%;
+    --muted-foreground: 204 6% 41%;
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 44 68% 69%;
+    --accent-foreground: 204 13% 16%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 158 64% 45%;
+    --border: 43 23% 86%;
+    --input: 43 23% 86%;
+    --ring: 44 68% 69%;
 
     --radius: 0.75rem;
   }
 
   .dark {
-    /* Dark Mode Tokens (Linear/Vercel Dark) */
-    --background: 222 47% 4%;
-    --foreground: 210 40% 98%;
+    /* LeãoMed Capital Dark Mode (Grafite #191D21, Superfície #232A2E, Dourado #E4C77B) */
+    --background: 210 14% 11%;
+    --foreground: 45 35% 94%;
 
-    --card: 222 47% 7%;
-    --card-foreground: 210 40% 98%;
+    --card: 203 14% 16%;
+    --card-foreground: 45 35% 94%;
 
-    --popover: 222 47% 6%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 203 14% 16%;
+    --popover-foreground: 45 35% 94%;
 
-    --primary: 158 64% 52%;
-    --primary-foreground: 222 47% 4%;
+    --primary: 44 68% 69%;
+    --primary-foreground: 40 14% 12%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 205 9% 22%;
+    --secondary-foreground: 45 35% 94%;
 
-    --muted: 217 33% 15%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 205 9% 20%;
+    --muted-foreground: 204 8% 71%;
 
-    --accent: 217 33% 20%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 44 68% 69%;
+    --accent-foreground: 40 14% 12%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217 33% 18%;
-    --input: 217 33% 18%;
-    --ring: 158 64% 52%;
+    --border: 205 9% 25%;
+    --input: 205 9% 25%;
+    --ring: 44 68% 69%;
   }
 }
 
@@ -77,21 +80,21 @@
   }
   body {
     font-family: var(--font-sans);
-    background-color: #F8FAFC;
-    color: #0F172A;
+    background-color: #F5F3EE;
+    color: #242A2E;
     background-image: 
-      radial-gradient(at 15% 15%, rgba(16, 185, 129, 0.04) 0px, transparent 40%),
-      radial-gradient(at 85% 85%, rgba(59, 130, 246, 0.03) 0px, transparent 40%);
+      radial-gradient(at 15% 15%, rgba(228, 199, 123, 0.04) 0px, transparent 40%),
+      radial-gradient(at 85% 85%, rgba(21, 116, 73, 0.03) 0px, transparent 40%);
     background-attachment: fixed;
     transition: background-color 0.25s ease, color 0.25s ease;
   }
 
   .dark body, html.dark body {
-    background-color: #080C14;
-    color: #F8FAFC;
+    background-color: #191D21;
+    color: #F6F3E9;
     background-image: 
-      radial-gradient(at 15% 15%, rgba(16, 185, 129, 0.08) 0px, transparent 40%),
-      radial-gradient(at 85% 85%, rgba(59, 130, 246, 0.06) 0px, transparent 40%);
+      radial-gradient(at 15% 15%, rgba(228, 199, 123, 0.06) 0px, transparent 40%),
+      radial-gradient(at 85% 85%, rgba(119, 212, 159, 0.04) 0px, transparent 40%);
   }
 
   h1, h2, h3, .font-display {

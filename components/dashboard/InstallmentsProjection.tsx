@@ -1,20 +1,18 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { 
-  CalendarClock, 
-  AlertTriangle, 
-  FileText, 
-  TrendingUp, 
-  Sparkles,
-  ShieldCheck,
+  CalendarCheck2, 
+  ArrowLeft, 
+  ChevronDown, 
+  PlusCircle, 
+  Edit3, 
+  Trash2, 
+  X, 
+  Check, 
+  CreditCard,
   CheckCircle2,
-  Edit3,
-  PlusCircle,
-  Trash2,
-  X,
-  Check,
-  CreditCard
+  AlertCircle
 } from 'lucide-react'
 import { 
   InstallmentStore, 
@@ -22,11 +20,23 @@ import {
   formatEndMonthYear 
 } from '@/utils/installmentStore'
 import { CreditCardStore } from '@/utils/creditCardStore'
+import { 
+  convertInstallmentItemsToContracts, 
+  addMonths, 
+  monthLabel, 
+  monthNumber, 
+  lastBillingMonth, 
+  remainingAfterMonth, 
+  currentMonthInSaoPaulo,
+  InstallmentContract 
+} from '@/utils/installmentsEngine'
+import { ReliefCard } from './ReliefCard'
 
 interface InstallmentsProjectionProps {
   isDemo?: boolean
   selectedMonth?: number // 0-11
   selectedYear?: number  // ex: 2026
+  onBack?: () => void
 }
 
 const PT_MONTHS_MAP: Record<string, number> = {
@@ -63,8 +73,6 @@ export function computeDynamicInstallment(
     const endM = PT_MONTHS_MAP[endMStr]
 
     if (endM !== undefined && !isNaN(endY)) {
-      // Diferença em meses entre o mês de término e o mês sendo visualizado no painel
-      // Se estamos em Set/2026 (mês 8) e termina em Out/2026 (mês 9): diffMonths = 1 (falta 1 mês -> parcela 9 de 10)
       const diffMonths = (endY - vYear) * 12 + (endM - vMonth)
 
       if (diffMonths < 0) {
@@ -115,18 +123,50 @@ export function computeDynamicInstallment(
   }
 }
 
+function formatBRL(value: number): string {
+  return value.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2
+  })
+}
+
 export function InstallmentsProjection({ 
   isDemo = false, 
   selectedMonth, 
-  selectedYear 
+  selectedYear,
+  onBack 
 }: InstallmentsProjectionProps) {
-  const [filter, setFilter] = useState<'ALL' | 'MAJOR' | 'ENDING_SOON'>('ALL')
+  // Mês de referência no formato YYYY-MM
+  const initialMonth = useMemo(() => {
+    if (selectedYear !== undefined && selectedMonth !== undefined) {
+      return `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`
+    }
+    return currentMonthInSaoPaulo()
+  }, [selectedYear, selectedMonth])
+
+  const [refMonth, setRefMonth] = useState<string>(initialMonth)
+
+  useEffect(() => {
+    if (selectedYear !== undefined && selectedMonth !== undefined) {
+      setRefMonth(`${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}`)
+    }
+  }, [selectedYear, selectedMonth])
+
+  // Filtros de visualização
+  const [filter, setFilter] = useState<'active' | 'current' | 'next' | 'all'>('active')
+  const [cardOnly, setCardOnly] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  // Lista bruta de parcelamentos do store local + API
   const [installments, setInstallments] = useState<InstallmentItem[]>([])
   
+  // Status de conferência local (item.id -> boolean)
+  const [reviewedMap, setReviewedMap] = useState<Record<string, boolean>>({})
+
   // Modais de Edição e Adição
   const [editingItem, setEditingItem] = useState<InstallmentItem | null>(null)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // Formulário de Edição
   const [editForm, setEditForm] = useState({
@@ -156,8 +196,8 @@ export function InstallmentsProjection({
     isPerpetual: false
   })
 
-  // Lista de cartões de crédito configurados no sistema
-  const availableCards = React.useMemo(() => {
+  // Lista de cartões configurados no sistema
+  const availableCards = useMemo(() => {
     const cards = CreditCardStore.getCards()
     const list = cards.map(c => c.name)
     const defaults = [
@@ -175,7 +215,7 @@ export function InstallmentsProjection({
     return list
   }, [])
 
-  // Carrega parcelamentos do store local + API
+  // Carrega parcelamentos do store local
   const loadInstallments = useCallback(() => {
     const localItems = InstallmentStore.getInstallments()
     setInstallments(localItems)
@@ -204,12 +244,13 @@ export function InstallmentsProjection({
               monthlyValue: parseFloat(row.installment_amount) || 0,
               currentInstallment: row.current_installment,
               totalInstallments: row.total_installments,
-              endMonthYear: row.end_date ? new Date(row.end_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : formatEndMonthYear(row.current_installment, row.total_installments),
+              endMonthYear: row.end_date 
+                ? new Date(row.end_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) 
+                : formatEndMonthYear(row.current_installment, row.total_installments),
               contractNotes: `Forma de pagamento: ${row.payment_method || 'Cartão'}`,
               paymentMethod: row.payment_method || 'Cartão de Crédito'
             }))
             
-            // Mescla dados do banco com atualizações locais do usuário
             const localList = InstallmentStore.getInstallments()
             const merged = [...localList]
             dbMapped.forEach(dbItem => {
@@ -236,6 +277,35 @@ export function InstallmentsProjection({
       }
     }
   }, [isDemo, loadInstallments])
+
+  // Converte itens da base em contratos tipados do motor de alívio
+  const contracts: InstallmentContract[] = useMemo(() => {
+    const rawContracts = convertInstallmentItemsToContracts(installments)
+    return rawContracts.map(c => ({
+      ...c,
+      reviewed: reviewedMap[c.id] !== undefined ? reviewedMap[c.id] : c.reviewed
+    }))
+  }, [installments, reviewedMap])
+
+  // Contratos filtrados por escopo (padrão PF) e regras da tela
+  const visibleContracts = useMemo(() => {
+    return contracts.filter(item => {
+      if (cardOnly && item.kind !== 'credit-card') return false
+      const end = lastBillingMonth(item)
+      if (filter === 'current') return item.status === 'active' && end === refMonth
+      if (filter === 'next') return item.status === 'active' && end === addMonths(refMonth, 1)
+      if (filter === 'all') return true
+      return item.status === 'active' && (!end || end >= refMonth)
+    })
+  }, [contracts, cardOnly, filter, refMonth])
+
+  // Alterna o status de conferido
+  const handleToggleReview = (id: string) => {
+    setReviewedMap(prev => ({
+      ...prev,
+      [id]: prev[id] === undefined ? false : !prev[id]
+    }))
+  }
 
   // Handlers de Edição
   const handleOpenEdit = (item: InstallmentItem) => {
@@ -277,7 +347,6 @@ export function InstallmentsProjection({
 
     InstallmentStore.updateInstallment(editingItem.id, updatedData)
 
-    // Sincroniza via API no backend Neon se conectado
     if (!isDemo) {
       fetch('/api/installments', {
         method: 'PUT',
@@ -322,7 +391,6 @@ export function InstallmentsProjection({
 
     const created = InstallmentStore.addInstallment(newItemData)
 
-    // Sincroniza via API no backend Neon se conectado
     if (!isDemo) {
       fetch('/api/installments', {
         method: 'POST',
@@ -366,253 +434,255 @@ export function InstallmentsProjection({
     loadInstallments()
   }
 
-  const totalMonthlyCommitment = installments.reduce((acc, curr) => acc + curr.monthlyValue, 0)
-  
-  // Marcos de Alívio calculados dinamicamente
-  const reliefOct26 = installments
-    .filter(i => i.endMonthYear.toLowerCase().includes('2026'))
-    .reduce((acc, curr) => acc + curr.monthlyValue, 0)
-  const reliefApr27 = reliefOct26 + installments
-    .filter(i => i.endMonthYear.toLowerCase().includes('2027'))
-    .reduce((acc, curr) => acc + curr.monthlyValue, 0)
-  const reliefOct27 = totalMonthlyCommitment
-
-  const filteredInstallments = installments.filter(item => {
-    if (filter === 'MAJOR') return item.monthlyValue >= 1000
-    if (filter === 'ENDING_SOON') return item.endMonthYear.includes('2026')
-    return true
-  })
-
   return (
-    <section id="parcelamentos" className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 p-5 md:p-6 shadow-sm">
-      {/* Header com Totais e Ações */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-              <CalendarClock className="h-4 w-4" />
-            </span>
-            <h2 className="font-display text-lg md:text-xl font-bold text-slate-900 dark:text-white">
-              Previsibilidade de Parcelamentos & Dívidas
-            </h2>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Gestão auditada de contratos, financiamentos e compras parceladas no cartão de crédito.
-          </p>
-        </div>
+    <div className="flex flex-col gap-5 max-w-7xl mx-auto w-full">
+      {/* ── Toolbar Superior ────────────────────────────────────────────── */}
+      <div className="installment-toolbar">
+        {onBack ? (
+          <button 
+            type="button" 
+            className="secondary-button cursor-pointer" 
+            onClick={onBack}
+          >
+            <ArrowLeft size={16} />
+            <span>Voltar ao resumo</span>
+          </button>
+        ) : (
+          <div />
+        )}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-slate-950 p-1 text-xs font-semibold">
-            <button
-              onClick={() => setFilter('ALL')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                filter === 'ALL' 
-                  ? 'bg-indigo-600 text-white font-bold shadow-xs' 
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              Todos ({installments.length})
-            </button>
-            <button
-              onClick={() => setFilter('MAJOR')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                filter === 'MAJOR' 
-                  ? 'bg-indigo-600 text-white font-bold shadow-xs' 
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              Grandes &gt; R$ 1k
-            </button>
-            <button
-              onClick={() => setFilter('ENDING_SOON')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                filter === 'ENDING_SOON' 
-                  ? 'bg-indigo-600 text-white font-bold shadow-xs' 
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              Quitam em 2026
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs px-3.5 py-1.5 rounded-xl font-bold">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>R$ {totalMonthlyCommitment.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / mês</span>
-          </div>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-xs text-[#B0B8BD]">
+            <span>Mês de referência das parcelas:</span>
+            <input 
+              type="month" 
+              value={refMonth} 
+              onChange={(e) => e.target.value && setRefMonth(e.target.value)}
+              className="bg-[#232A2E] text-[#F6F3E9] px-3 py-1.5 border border-[#3B4246] rounded-lg text-xs font-semibold focus:outline-none focus:border-[#E4C77B]"
+            />
+          </label>
 
           <button
+            type="button"
             onClick={() => setIsAddModalOpen(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+            className="primary-button cursor-pointer"
           >
-            <PlusCircle className="w-4 h-4" />
-            <span>+ Novo Parcelamento</span>
+            <PlusCircle size={15} />
+            <span>Novo Parcelamento</span>
           </button>
         </div>
       </div>
 
-      {/* Destaques de Alívio Contratual Auditado */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mb-5">
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/5 flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">1º Alívio (Out/26)</div>
-            <div className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
-              + R$ {reliefOct26.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / mês
-            </div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-              Quitação de Vivara, Lava e Seca (Itaú) e TV TCL (Nubank)
-            </div>
-          </div>
+      {/* ── Card de Previsibilidade de Alívio ────────────────────────────── */}
+      <ReliefCard 
+        contracts={contracts} 
+        scope="PF" 
+        month={refMonth} 
+        onOpen={() => setFilter('current')}
+      />
+
+      {/* ── Barra de Controles e Filtros Segmentados ──────────────────────── */}
+      <div className="planning-controls installment-filters flex-wrap gap-3">
+        <div className="segmented">
+          {[
+            ['active', 'Em andamento'],
+            ['current', 'Encerram neste mês'],
+            ['next', 'Encerram no próximo'],
+            ['all', 'Todos']
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className={filter === id ? 'active' : ''}
+              aria-pressed={filter === id}
+              onClick={() => setFilter(id as any)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/5 flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shrink-0">
-            <TrendingUp className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Mega Alívio (Abril/2027)</div>
-            <div className="text-sm font-black text-indigo-600 dark:text-indigo-400 font-mono">
-              + R$ {reliefApr27.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / mês
-            </div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-              Fim das 16x da Entrada T-Cross Cartão C6
-            </div>
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/80 dark:border-white/5 flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
-            <ShieldCheck className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400">T-Cross 100% Quitado (Out/2027)</div>
-            <div className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
-              + R$ {reliefOct27.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / mês
-            </div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-              Fim do Financiamento Banco Safra (CCB 493464)
-            </div>
-          </div>
-        </div>
+        <label className="check-label flex items-center gap-2 cursor-pointer text-xs text-[#B0B8BD]">
+          <input 
+            type="checkbox" 
+            checked={cardOnly} 
+            onChange={(e) => setCardOnly(e.target.checked)}
+            className="w-4 h-4 rounded border-[#3B4246] bg-[#232A2E] text-[#E4C77B] focus:ring-[#E4C77B]"
+          />
+          <span>Somente cartões</span>
+        </label>
       </div>
 
-      {/* Grid de Cards de Parcelamento */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-        {filteredInstallments.map((item) => {
-          const dynamic = computeDynamicInstallment(item, selectedMonth, selectedYear)
-          const progress = dynamic.progress
-          
-          return (
-            <div 
-              key={item.id} 
-              className={`border rounded-xl p-4 transition-all group flex flex-col justify-between relative ${
-                dynamic.isConcluded
-                  ? 'border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-950/20'
-                  : dynamic.isLastInstallment
-                  ? 'border-amber-500/40 bg-amber-50/30 dark:bg-amber-950/20'
-                  : 'border-slate-200 dark:border-white/5 bg-slate-50/70 dark:bg-slate-950/50 hover:border-indigo-500/40'
-              }`}
-            >
-              <div>
-                <div className="flex justify-between items-start gap-2 mb-2">
-                  <div className="pr-12">
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors block">
-                      {item.name}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1 mt-0.5">
-                      <CreditCard className="w-3 h-3 text-indigo-400 shrink-0" />
-                      <strong className="text-indigo-600 dark:text-indigo-300 font-bold">{item.paymentMethod}</strong> • {item.category}
-                    </span>
-                  </div>
+      {/* ── Nota Informativa ──────────────────────────────────────────────── */}
+      <p className="small-note installment-note text-xs text-[#B0B8BD]">
+        {visibleContracts.length} contratos cadastrados. O alívio do resumo considera apenas parcelas de cartão; financiamentos e cobranças contínuas ficam separados.
+      </p>
 
-                  {/* Botões de Ação (Editar e Excluir) */}
-                  <div className="absolute top-3.5 right-3.5 flex items-center gap-1 bg-white/80 dark:bg-slate-900/80 p-1 rounded-lg border border-slate-200/80 dark:border-white/10 shadow-xs">
+      {/* ── Grid de Cards de Parcelamento (Estilo Capital) ─────────────────── */}
+      <div className="installment-grid">
+        {visibleContracts.map((item) => {
+          const end = lastBillingMonth(item)
+          const current = Math.max(0, Math.min(item.totalInstallments ?? Infinity, monthNumber(refMonth) - monthNumber(item.firstBillingMonth) + 1))
+          const last = end === refMonth && item.status === 'active'
+          const remaining = remainingAfterMonth(item, refMonth)
+          const isExpanded = expandedId === item.id
+
+          // Encontra o item original no store para edição
+          const rawItem = installments.find(i => i.id === item.id)
+
+          return (
+            <section 
+              className={`capital-panel installment-card ${last ? 'ending' : ''} relative group`} 
+              key={item.id}
+            >
+              <div className="panel-heading">
+                <div className="min-w-0 pr-8">
+                  <h2 className="text-base font-semibold text-[#F6F3E9] truncate">{item.title}</h2>
+                  <span className="small-note text-xs text-[#B0B8BD] block truncate">
+                    {item.account} · {item.category}
+                  </span>
+                </div>
+                <CalendarCheck2 size={19} className="text-[#E4C77B] shrink-0" />
+
+                {/* Ações de Edição e Exclusão no Card */}
+                {rawItem && (
+                  <div className="absolute top-4 right-4 flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={() => handleOpenEdit(item)}
-                      className="p-1 text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-white/10 rounded transition-colors cursor-pointer"
-                      title="Editar cartão ou dados do parcelamento"
+                      type="button"
+                      onClick={() => handleOpenEdit(rawItem)}
+                      className="p-1 text-[#B0B8BD] hover:text-[#E4C77B] hover:bg-[#323126] rounded transition-colors"
+                      title="Editar dados do parcelamento"
                     >
-                      <Edit3 className="w-3.5 h-3.5" />
+                      <Edit3 size={14} />
                     </button>
                     <button
-                      onClick={() => handleDelete(item.id)}
-                      className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded transition-colors cursor-pointer"
+                      type="button"
+                      onClick={() => handleDelete(rawItem.id)}
+                      className="p-1 text-[#B0B8BD] hover:text-rose-400 hover:bg-rose-950/30 rounded transition-colors"
                       title="Remover parcelamento"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 size={14} />
                     </button>
                   </div>
-                </div>
-
-                <div className="my-2.5 flex items-baseline justify-between">
-                  <div>
-                    <span className="text-sm sm:text-base font-black text-indigo-600 dark:text-indigo-400 font-mono block">
-                      R$ {item.monthlyValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                    <span className="text-[10px] text-slate-400">ao mês</span>
-                  </div>
-                  {dynamic.isConcluded ? (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                      ✓ Quitado
-                    </span>
-                  ) : dynamic.isLastInstallment ? (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-500/30 animate-pulse">
-                      Última Parcela
-                    </span>
-                  ) : null}
-                </div>
-
-                {item.contractNotes && (
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 bg-white/60 dark:bg-white/5 p-2 rounded-lg border border-slate-200/60 dark:border-white/5 mb-3 leading-relaxed">
-                    {item.contractNotes}
-                  </p>
                 )}
               </div>
 
-              <div>
-                <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-1.5">
-                  <span className={`font-semibold ${dynamic.badgeClass}`}>
-                    {dynamic.statusLabel}
+              <div className="installment-amount flex items-baseline gap-2 my-3">
+                <strong className="text-2xl font-bold text-[#E4C77B]">
+                  {formatBRL(item.amountCents / 100)}
+                </strong>
+                <span className="text-xs text-[#B0B8BD]">/mês</span>
+                {last && (
+                  <span className="status pending text-[11px] px-2 py-0.5 rounded font-semibold ml-auto">
+                    Última parcela
                   </span>
-                  <span className={`font-bold ${item.isPerpetual ? 'text-amber-500 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                    {item.endMonthYear}
-                  </span>
-                </div>
-
-                <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-700 ${
-                      item.isPerpetual 
-                        ? 'bg-amber-500 w-full' 
-                        : dynamic.isConcluded
-                        ? 'bg-emerald-500'
-                        : dynamic.isLastInstallment
-                        ? 'bg-amber-500'
-                        : 'bg-gradient-to-r from-indigo-500 to-emerald-400'
-                    }`}
-                    style={{ width: `${Math.min(100, Math.max(5, progress))}%` }}
-                  />
-                </div>
+                )}
               </div>
-            </div>
+
+              <span className="small-note text-xs text-[#B0B8BD] block">
+                {item.kind === 'recurring' 
+                  ? 'Cobrança contínua' 
+                  : `${item.kind === 'loan' ? 'Financiamento' : 'Cartão'} · ${current} de ${item.totalInstallments} parcelas`}
+              </span>
+
+              <div className="bar-track my-2.5">
+                <span 
+                  style={{ width: `${item.totalInstallments ? Math.min(100, Math.max(5, (current / item.totalInstallments) * 100)) : 100}%` }} 
+                />
+              </div>
+
+              <div className="installment-meta flex items-center justify-between text-xs text-[#B0B8BD]">
+                <span>{end ? `Última cobrança: ${monthLabel(end)}` : 'Sem término definido'}</span>
+                <span className={`status ${item.reviewed ? 'reviewed' : 'pending'}`}>
+                  {item.status === 'active' 
+                    ? (item.reviewed ? 'Conferido' : 'Revisão pendente') 
+                    : (item.status === 'cancelled' ? 'Cancelado' : 'Quitado')}
+                </span>
+              </div>
+
+              <button 
+                type="button" 
+                className="text-action mt-2 cursor-pointer flex items-center gap-1.5 text-xs font-semibold text-[#E4C77B]" 
+                aria-expanded={isExpanded} 
+                onClick={() => setExpandedId(isExpanded ? null : item.id)}
+              >
+                <span>Conferir detalhes</span>
+                <ChevronDown size={15} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isExpanded && (
+                <div className="installment-details pt-3 border-t border-[#3B4246] mt-3 space-y-2 text-xs text-[#B0B8BD]">
+                  <p>Primeira fatura: <strong className="text-[#F6F3E9]">{monthLabel(item.firstBillingMonth)}</strong>.</p>
+                  <p>
+                    {remaining === null 
+                      ? 'Sem saldo de parcelas calculável.' 
+                      : `Parcelas posteriores ao mês de referência: ${formatBRL(remaining / 100)}.`}
+                  </p>
+                  <p>
+                    {last 
+                      ? `Redução da cobrança a partir de ${monthLabel(addMonths(refMonth, 1))}.` 
+                      : 'A previsão depende dos valores e datas cadastrados.'}
+                  </p>
+                  
+                  <div className="pt-2 flex items-center gap-2">
+                    <button 
+                      type="button" 
+                      className="secondary-button text-xs py-1.5 px-3 cursor-pointer" 
+                      onClick={() => handleToggleReview(item.id)}
+                    >
+                      <Check size={14} />
+                      <span>{item.reviewed ? 'Marcar para revisar' : 'Marcar como conferido'}</span>
+                    </button>
+                    {rawItem && (
+                      <button
+                        type="button"
+                        className="secondary-button text-xs py-1.5 px-3 cursor-pointer"
+                        onClick={() => handleOpenEdit(rawItem)}
+                      >
+                        <Edit3 size={14} />
+                        <span>Editar</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </section>
           )
         })}
       </div>
 
-      {/* MODAL DE EDIÇÃO DE PARCELAMENTO */}
+      {/* ── Empty State ──────────────────────────────────────────────────── */}
+      {visibleContracts.length === 0 && (
+        <section className="capital-panel empty-state py-12 flex flex-col items-center justify-center text-center">
+          <CalendarCheck2 size={32} className="text-[#B0B8BD] mb-3" />
+          <h2 className="text-lg font-bold text-[#F6F3E9]">Nenhuma parcela neste filtro</h2>
+          <p className="text-xs text-[#B0B8BD] max-w-md mt-1">
+            Nenhum contrato ativo corresponde aos filtros selecionados para {monthLabel(refMonth)}. Adicione um novo parcelamento ou altere os filtros acima.
+          </p>
+          <button
+            type="button"
+            onClick={() => setIsAddModalOpen(true)}
+            className="primary-button mt-4 cursor-pointer"
+          >
+            <PlusCircle size={15} />
+            <span>Cadastrar Parcelamento</span>
+          </button>
+        </section>
+      )}
+
+      {/* ── MODAL DE EDIÇÃO DE PARCELAMENTO ──────────────────────────────── */}
       {editingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-150">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 text-slate-100 shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="font-bold text-base text-white flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-indigo-400" />
-                Editar Parcelamento / Dívida
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-[#11161B]/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="capital-modal w-full max-w-md border border-[#3B4246] bg-[#232A2E] text-[#F6F3E9] p-6 rounded-2xl shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="modal-header flex items-center justify-between border-b border-[#3B4246] pb-3">
+              <h3 className="font-bold text-base text-[#F6F3E9] flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-[#E4C77B]" />
+                <span>Editar Parcelamento / Contrato</span>
               </h3>
               <button 
+                type="button"
                 onClick={() => setEditingItem(null)}
-                className="text-slate-400 hover:text-white cursor-pointer"
+                className="text-[#B0B8BD] hover:text-[#F6F3E9] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -620,20 +690,19 @@ export function InstallmentsProjection({
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
                   Nome do Parcelamento / Contrato
                 </label>
                 <input 
                   type="text"
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-semibold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
                 />
               </div>
 
-              {/* SELEÇÃO DO CARTÃO OU FORMA DE PAGAMENTO */}
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 block mb-1 flex items-center gap-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#E4C77B] block mb-1 flex items-center gap-1">
                   <CreditCard className="w-3.5 h-3.5" />
                   Cartão / Forma de Pagamento
                 </label>
@@ -648,7 +717,7 @@ export function InstallmentsProjection({
                         setEditForm(prev => ({ ...prev, paymentMethod: val, isCustomMethod: false }))
                       }
                     }}
-                    className="w-full rounded-xl bg-slate-950 border border-indigo-500/40 px-3 py-2 text-xs font-bold text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer"
+                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B] cursor-pointer"
                   >
                     {availableCards.map(card => (
                       <option key={card} value={card}>{card}</option>
@@ -662,12 +731,12 @@ export function InstallmentsProjection({
                       placeholder="Ex: Cartão Itaú Personalité, Cartão Inter..."
                       value={editForm.customPaymentMethod}
                       onChange={(e) => setEditForm({ ...editForm, customPaymentMethod: e.target.value })}
-                      className="w-full rounded-xl bg-slate-950 border border-indigo-500 px-3 py-2 text-xs font-bold text-indigo-300 focus:outline-none"
+                      className="w-full rounded-xl bg-[#191D21] border border-[#E4C77B] px-3 py-2 text-xs font-bold text-[#F6F3E9] focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => setEditForm({ ...editForm, isCustomMethod: false, paymentMethod: availableCards[0] || '' })}
-                      className="text-[10px] text-slate-400 hover:text-white p-1"
+                      className="text-[10px] text-[#B0B8BD] hover:text-[#F6F3E9] p-1 cursor-pointer"
                     >
                       ✕
                     </button>
@@ -677,7 +746,7 @@ export function InstallmentsProjection({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
                     Valor da Parcela (R$)
                   </label>
                   <input 
@@ -685,86 +754,86 @@ export function InstallmentsProjection({
                     step="0.01"
                     value={editForm.monthlyValue}
                     onChange={(e) => setEditForm({ ...editForm, monthlyValue: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-mono font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
                     Categoria
                   </label>
                   <input 
                     type="text"
                     value={editForm.category}
                     onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
                     Parcela Atual
                   </label>
                   <input 
                     type="number"
                     value={editForm.currentInstallment}
                     onChange={(e) => setEditForm({ ...editForm, currentInstallment: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-mono font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
                     Total de Parcelas
                   </label>
                   <input 
                     type="number"
                     value={editForm.totalInstallments}
                     onChange={(e) => setEditForm({ ...editForm, totalInstallments: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-mono font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
                   Observações / Detalhes do Contrato
                 </label>
                 <textarea 
                   rows={2}
                   value={editForm.contractNotes}
                   onChange={(e) => setEditForm({ ...editForm, contractNotes: e.target.value })}
-                  className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
                 />
               </div>
 
-              <div className="pt-2 border-t border-white/5">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+              <div className="pt-2 border-t border-[#3B4246]">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-[#B0B8BD]">
                   <input 
                     type="checkbox"
                     checked={editForm.isPerpetual}
                     onChange={(e) => setEditForm({ ...editForm, isPerpetual: e.target.checked })}
-                    className="rounded border-white/20 bg-slate-950 text-indigo-500 focus:ring-indigo-400 w-4 h-4 cursor-pointer"
+                    className="rounded border-[#3B4246] bg-[#191D21] text-[#E4C77B] focus:ring-[#E4C77B] w-4 h-4 cursor-pointer"
                   />
                   <span>Mensalidade contínua (Sem término definido)</span>
                 </label>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#3B4246]">
               <button
                 type="button"
                 onClick={() => setEditingItem(null)}
-                className="px-4 py-2 rounded-xl border border-white/10 text-xs font-bold text-slate-300 hover:text-white cursor-pointer"
+                className="secondary-button cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleSaveEdit}
-                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                className="primary-button cursor-pointer"
               >
                 <Check className="w-4 h-4" />
                 <span>Salvar Alterações</span>
@@ -774,19 +843,19 @@ export function InstallmentsProjection({
         </div>
       )}
 
-      {/* MODAL DE NOVO PARCELAMENTO */}
+      {/* ── MODAL DE NOVO PARCELAMENTO ──────────────────────────────────── */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-150">
-          <form onSubmit={handleSaveNew} className="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 text-slate-100 shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="font-bold text-base text-white flex items-center gap-2">
-                <PlusCircle className="w-4 h-4 text-indigo-400" />
-                Novo Parcelamento ou Dívida
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-[#11161B]/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <form onSubmit={handleSaveNew} className="capital-modal w-full max-w-md border border-[#3B4246] bg-[#232A2E] text-[#F6F3E9] p-6 rounded-2xl shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="modal-header flex items-center justify-between border-b border-[#3B4246] pb-3">
+              <h3 className="font-bold text-base text-[#F6F3E9] flex items-center gap-2">
+                <PlusCircle className="w-4 h-4 text-[#E4C77B]" />
+                <span>Novo Parcelamento ou Dívida</span>
               </h3>
               <button 
-                type="button"
+                type="button" 
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-slate-400 hover:text-white cursor-pointer"
+                className="text-[#B0B8BD] hover:text-[#F6F3E9] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -794,7 +863,7 @@ export function InstallmentsProjection({
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
                   Nome do Parcelamento / Contrato
                 </label>
                 <input 
@@ -803,13 +872,12 @@ export function InstallmentsProjection({
                   placeholder="Ex: Compra Notebook 10x, Lava e Seca..."
                   value={newForm.name}
                   onChange={(e) => setNewForm({ ...newForm, name: e.target.value })}
-                  className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-semibold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
                 />
               </div>
 
-              {/* SELEÇÃO DO CARTÃO OU FORMA DE PAGAMENTO */}
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 block mb-1 flex items-center gap-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#E4C77B] block mb-1 flex items-center gap-1">
                   <CreditCard className="w-3.5 h-3.5" />
                   Cartão / Forma de Pagamento
                 </label>
@@ -824,7 +892,7 @@ export function InstallmentsProjection({
                         setNewForm(prev => ({ ...prev, paymentMethod: val, isCustomMethod: false }))
                       }
                     }}
-                    className="w-full rounded-xl bg-slate-950 border border-indigo-500/40 px-3 py-2 text-xs font-bold text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer"
+                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B] cursor-pointer"
                   >
                     {availableCards.map(card => (
                       <option key={card} value={card}>{card}</option>
@@ -838,12 +906,12 @@ export function InstallmentsProjection({
                       placeholder="Ex: Cartão Itaú Personalité, Cartão Inter..."
                       value={newForm.customPaymentMethod}
                       onChange={(e) => setNewForm({ ...newForm, customPaymentMethod: e.target.value })}
-                      className="w-full rounded-xl bg-slate-950 border border-indigo-500 px-3 py-2 text-xs font-bold text-indigo-300 focus:outline-none"
+                      className="w-full rounded-xl bg-[#191D21] border border-[#E4C77B] px-3 py-2 text-xs font-bold text-[#F6F3E9] focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => setNewForm({ ...newForm, isCustomMethod: false, paymentMethod: availableCards[0] || '' })}
-                      className="text-[10px] text-slate-400 hover:text-white p-1"
+                      className="text-[10px] text-[#B0B8BD] hover:text-[#F6F3E9] p-1 cursor-pointer"
                     >
                       ✕
                     </button>
@@ -853,7 +921,7 @@ export function InstallmentsProjection({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
                     Valor da Parcela (R$)
                   </label>
                   <input 
@@ -863,51 +931,51 @@ export function InstallmentsProjection({
                     placeholder="0,00"
                     value={newForm.monthlyValue}
                     onChange={(e) => setNewForm({ ...newForm, monthlyValue: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-mono font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
                     Categoria
                   </label>
                   <input 
                     type="text"
                     value={newForm.category}
                     onChange={(e) => setNewForm({ ...newForm, category: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
                     Parcela Atual
                   </label>
                   <input 
                     type="number"
                     value={newForm.currentInstallment}
                     onChange={(e) => setNewForm({ ...newForm, currentInstallment: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-mono font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
                     Total de Parcelas
                   </label>
                   <input 
                     type="number"
                     value={newForm.totalInstallments}
                     onChange={(e) => setNewForm({ ...newForm, totalInstallments: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-mono font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
                   Observações / Detalhes do Contrato
                 </label>
                 <textarea 
@@ -915,34 +983,34 @@ export function InstallmentsProjection({
                   placeholder="Ex: Compra de eletrodoméstico parcelada no cartão"
                   value={newForm.contractNotes}
                   onChange={(e) => setNewForm({ ...newForm, contractNotes: e.target.value })}
-                  className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
                 />
               </div>
 
-              <div className="pt-2 border-t border-white/5">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+              <div className="pt-2 border-t border-[#3B4246]">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-[#B0B8BD]">
                   <input 
                     type="checkbox"
                     checked={newForm.isPerpetual}
                     onChange={(e) => setNewForm({ ...newForm, isPerpetual: e.target.checked })}
-                    className="rounded border-white/20 bg-slate-950 text-indigo-500 focus:ring-indigo-400 w-4 h-4 cursor-pointer"
+                    className="rounded border-[#3B4246] bg-[#191D21] text-[#E4C77B] focus:ring-[#E4C77B] w-4 h-4 cursor-pointer"
                   />
                   <span>Mensalidade contínua (Sem término definido)</span>
                 </label>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#3B4246]">
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="px-4 py-2 rounded-xl border border-white/10 text-xs font-bold text-slate-300 hover:text-white cursor-pointer"
+                className="secondary-button cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+                className="primary-button cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>Salvar Parcelamento</span>
@@ -951,6 +1019,8 @@ export function InstallmentsProjection({
           </form>
         </div>
       )}
-    </section>
+    </div>
   )
 }
+
+export default InstallmentsProjection

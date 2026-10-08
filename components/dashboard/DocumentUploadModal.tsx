@@ -96,6 +96,14 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
     setIsSaved(false)
 
     try {
+      // Validação prévia de tamanho para evitar erro 413 da Vercel
+      for (let i = 0; i < filesToProcess.length; i++) {
+        const f = filesToProcess[i]
+        if (f.size > 4.2 * 1024 * 1024 && !f.type.startsWith('image/')) {
+          throw new Error(`O arquivo "${f.name}" possui ${(f.size / (1024 * 1024)).toFixed(1)} MB e ultrapassa o limite de 4.2 MB do servidor. Por favor, divida o arquivo ou use a aba "Colar Texto".`)
+        }
+      }
+
       const formData = new FormData()
       for (let i = 0; i < filesToProcess.length; i++) {
         const rawFile = filesToProcess[i]
@@ -107,12 +115,12 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
         formData.append('password', (passwordToUse || pdfPassword).trim())
       }
 
-      setStatusMessage('Lendo lançamentos da fatura no servidor...')
+      setStatusMessage('Lendo lançamentos da fatura ou planilha...')
       const res = await fetch('/api/parse-document', {
         method: 'POST',
         body: formData
       }).catch(() => {
-        throw new Error('Falha de conexão ao enviar o arquivo. Se estiver no celular, certifique-se de usar o PDF oficial ou use a aba "Colar Texto".')
+        throw new Error('Falha de conexão ao enviar o arquivo. Verifique sua rede ou use a aba "Colar Texto".')
       })
 
       let data: any = null
@@ -120,10 +128,13 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
       try {
         data = JSON.parse(rawText)
       } catch (_) {
-        if (!res.ok) {
-          throw new Error('O servidor excedeu o tempo limite para processar este arquivo. Tente enviar o PDF oficial com a senha ou utilize a opção "Colar Texto".')
+        if (res.status === 413) {
+          throw new Error('O arquivo enviado ultrapassa o limite de 4.2 MB permitido pelo servidor. Por favor, envie um arquivo menor ou copie o texto para a aba "Colar Texto".')
         }
-        throw new Error('Resposta do servidor em formato inesperado.')
+        if (res.status === 504) {
+          throw new Error('O servidor excedeu o tempo limite para processar este arquivo. Tente enviar a fatura oficial ou use a aba "Colar Texto".')
+        }
+        throw new Error(`Falha no servidor (${res.status}). Verifique o arquivo e tente novamente.`)
       }
 
       if (!res.ok || !data?.success) {
@@ -344,7 +355,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
         <input 
           ref={fileInputRef}
           type="file"
-          accept=".pdf,image/png,image/jpeg,image/webp,.csv,.txt"
+          accept=".pdf,.xlsx,.xls,image/png,image/jpeg,image/webp,.csv,.txt"
           multiple
           onChange={handleFileChange}
           className="hidden"
@@ -361,10 +372,10 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
             </div>
             <div>
               <p className="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                Toque para selecionar a fatura ou extrato
+                Toque para selecionar a fatura ou planilha
               </p>
               <p className="text-xs text-slate-400 mt-1">
-                Suporta PDF original (inclusive com senha do banco) ou fotos
+                Suporta PDF original (com ou sem senha), Excel (.xlsx/.xls) ou fotos
               </p>
             </div>
           </div>

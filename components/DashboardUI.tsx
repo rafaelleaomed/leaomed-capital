@@ -359,6 +359,7 @@ export default function DashboardUI({
               isDemo={isDemo} 
               selectedMonth={selectedMonth} 
               selectedYear={selectedYear} 
+              onBack={() => handleTabClick('visao-geral')}
             />
           </div>
         </div>

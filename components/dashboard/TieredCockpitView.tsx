@@ -21,6 +21,9 @@ import {
 } from 'lucide-react'
 import { DeliveryPayload, DashboardFilter } from '@/utils/dashboardData'
 import { usePrivacy } from '@/context/PrivacyContext'
+import { ReliefCard } from './ReliefCard'
+import { InstallmentStore } from '@/utils/installmentStore'
+import { convertInstallmentItemsToContracts } from '@/utils/installmentsEngine'
 
 interface TieredCockpitViewProps {
   payload: DeliveryPayload
@@ -48,6 +51,21 @@ export function TieredCockpitView({
   // Estado de expansão das camadas
   const [isPjLayerOpen, setIsPjLayerOpen] = useState(currentFilter === 'PJ')
   const [isInvestLayerOpen, setIsInvestLayerOpen] = useState(false)
+
+  // Contratos de parcelamento para cálculo de alívio futuro
+  const [contracts, setContracts] = useState(() => {
+    const rawItems = InstallmentStore.getInstallments()
+    return convertInstallmentItemsToContracts(rawItems)
+  })
+
+  React.useEffect(() => {
+    const handleUpdate = () => {
+      const raw = InstallmentStore.getInstallments()
+      setContracts(convertInstallmentItemsToContracts(raw))
+    }
+    window.addEventListener('leaomed_installments_updated', handleUpdate)
+    return () => window.removeEventListener('leaomed_installments_updated', handleUpdate)
+  }, [])
 
   const isPf = currentFilter === 'PF'
   const isPj = currentFilter === 'PJ'
@@ -298,6 +316,14 @@ export function TieredCockpitView({
           </div>
 
         </div>
+
+        {/* ── Previsibilidade de Alívio — Cartões ──────────────────────────── */}
+        <ReliefCard 
+          contracts={contracts} 
+          scope={currentFilter === 'PJ' ? 'PJ' : 'PF'} 
+          month={selectedPeriod} 
+          onOpen={() => onNavigateTab('parcelamentos')} 
+        />
 
         {/* Resumo Rápido das Principais Categorias do Mês */}
         {payload.categories && payload.categories.length > 0 && (
