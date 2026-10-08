@@ -1,146 +1,253 @@
 'use client'
 
-import React, { useState } from 'react'
-import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles } from 'lucide-react'
+import React, { useState, useRef } from 'react'
+import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles, X, ArrowRight } from 'lucide-react'
+import { GranularTransactionStore } from '@/utils/granularTransactionStore'
 
-export function DocumentUploadModal() {
+interface DocumentUploadModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onSuccess?: () => void
+}
+
+export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUploadModalProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
-  const [extractedData, setExtractedData] = useState<any | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [parsedTransactions, setParsedTransactions] = useState<any[]>([])
+  const [isSaved, setIsSaved] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleSimulatedUpload = (docType: string) => {
+  if (!isOpen) return null
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
     setIsUploading(true)
-    setStatusMessage(`Processando ${docType} com IA... Extraindo lançamentos e aplicando sua taxonomia...`)
+    setStatusMessage('Lendo arquivo e extraindo dados com precisão...')
+    setErrorMessage(null)
+    setParsedTransactions([])
+    setIsSaved(false)
 
-    setTimeout(() => {
-      setIsUploading(false)
-      if (docType === 'Fatura C6 Carbon Black') {
-        setExtractedData({
-          type: 'C6_FATURA_PDF',
-          period: '2026-06',
-          total: 8749.96,
-          items: [
-            { desc: 'Parcela T-Cross Cartão (06/16)', val: 6837.22, cat: 'Transporte', subcat: 'Parcela T-Cross Cartão' },
-            { desc: 'Posto Ipiranga Savassi', val: 320.50, cat: 'Transporte', subcat: 'Combustível' },
-            { desc: 'Almoço/Jantar GRI', val: 204.30, cat: 'Restaurantes', subcat: 'Almoço/Jantar GRI' },
-            { desc: 'Supermercado Verdemar', val: 890.15, cat: 'Casa', subcat: 'Supermercado' },
-            { desc: 'Drogaria Araújo', val: 115.27, cat: 'Saúde', subcat: 'Remédios' },
-            { desc: 'Netflix / Spotify', val: 74.70, cat: 'Serviços de assinaturas', subcat: 'Netflix' },
-            { desc: 'Uber Viagens', val: 81.15, cat: 'Transporte', subcat: 'Táxi/Uber' },
-            { desc: 'Outros pequenos lançamentos', val: 226.67, cat: 'Compras', subcat: 'Aliexpress/Shopee' }
-          ]
-        })
-        setStatusMessage('✅ Fatura do C6 Carbon Black lida com 100% de precisão! 8 lançamentos categorizados.')
-      } else {
-        setExtractedData({
-          type: 'MOBILLS_PRINT',
-          period: '2026-06',
-          total: 28729.64,
-          items: [
-            { desc: 'Transporte Total', val: 13163.55, cat: 'Transporte', subcat: 'Consolidado' },
-            { desc: 'Casa Total', val: 5662.62, cat: 'Casa', subcat: 'Consolidado' },
-            { desc: 'Compras Total', val: 2773.75, cat: 'Compras', subcat: 'Consolidado' },
-            { desc: 'Financiamento Total', val: 2302.90, cat: 'Financiamento', subcat: 'Consolidado' },
-            { desc: 'Saúde Total', val: 1278.01, cat: 'Saúde', subcat: 'Consolidado' }
-          ]
-        })
-        setStatusMessage('✅ Print do Mobills processado! Totais consolidados sincronizados.')
+    try {
+      const formData = new FormData()
+      for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i])
       }
-    }, 1800)
+
+      const res = await fetch('/api/parse-document', {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Falha ao processar o arquivo enviado.')
+      }
+
+      const allTxs: any[] = []
+      if (Array.isArray(data.batches)) {
+        for (const batch of data.batches) {
+          if (Array.isArray(batch.transactions)) {
+            allTxs.push(...batch.transactions)
+          }
+        }
+      }
+
+      if (allTxs.length === 0) {
+        setStatusMessage('Arquivo processado, mas nenhum lançamento com valor foi identificado.')
+      } else {
+        setParsedTransactions(allTxs)
+        setStatusMessage(`✅ ${allTxs.length} lançamentos extraídos da fatura com sucesso!`)
+      }
+    } catch (err: any) {
+      console.error('Erro no upload de fatura:', err)
+      setErrorMessage(err.message || 'Erro ao processar arquivo. Tente novamente.')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleSaveToDatabase = async () => {
+    if (parsedTransactions.length === 0) return
+
+    setIsUploading(true)
+    setStatusMessage('Salvando e categorizando lançamentos no banco de dados...')
+    setErrorMessage(null)
+
+    try {
+      const formatted = parsedTransactions.map(t => ({
+        date: t.date,
+        description: t.desc,
+        amount: t.val,
+        category: t.cat || 'Outros',
+        subcategory: t.subcategory || 'Geral',
+        isFixed: Boolean(t.isFixed),
+        isIgnored: Boolean(t.isCardBillPayment)
+      }))
+
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactions: formatted })
+      })
+
+      const result = await res.json()
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || 'Erro ao persistir transações.')
+      }
+
+      setIsSaved(true)
+      setStatusMessage(`✅ ${result.insertedCount || formatted.length} lançamentos gravados com sucesso!`)
+      if (onSuccess) onSuccess()
+
+      setTimeout(() => {
+        onClose()
+        window.location.reload()
+      }, 1200)
+    } catch (err: any) {
+      console.error('Erro ao salvar no banco:', err)
+      setErrorMessage(err.message || 'Falha ao salvar no banco.')
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   return (
-    <div className="rounded-2xl border border-dashed border-emerald-500/30 bg-emerald-500/5 dark:bg-slate-900/40 p-6 shadow-sm">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
-        <div>
-          <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <UploadCloud className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-            Importador Inteligente com IA (Fatura C6 Carbon & Prints)
-          </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Arraste o <strong>PDF da fatura do C6 Carbon</strong> ou <strong>prints do Mobills / Investidor10</strong>. A IA mapeia para suas categorias automaticamente sem digitação manual.
-          </p>
-        </div>
-        <span className="text-[11px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 font-bold px-3 py-1 rounded-full flex items-center gap-1.5 self-start md:self-auto">
-          <Sparkles className="h-3.5 w-3.5" /> Zero Digitação Manual
-        </span>
-      </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
+      <div 
+        className="w-full max-w-xl rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 transition-all p-6 space-y-4 max-h-[90vh] flex flex-col"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <UploadCloud className="w-5 h-5 stroke-[2.5]" />
+            </div>
+            <div>
+              <h3 className="font-display text-base font-bold text-slate-900 dark:text-white">
+                Anexar Fatura
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Faturas em PDF ou imagens de comprovantes e extratos
+              </p>
+            </div>
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div 
-          onClick={() => handleSimulatedUpload('Fatura C6 Carbon Black')}
-          className="border border-slate-200 dark:border-white/10 hover:border-emerald-500/40 p-4 rounded-xl cursor-pointer bg-white dark:bg-slate-950/40 hover:bg-emerald-500/5 dark:hover:bg-emerald-950/20 transition-all flex items-center gap-3.5 group shadow-2xs"
-        >
-          <div className="p-3 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-white/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform">
-            <FileText className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
-              Subir Fatura PDF do C6 Carbon
-            </p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              Extrai parcelas de T-Cross, combustível, mercado e almoços
-            </p>
-          </div>
+          <button 
+            onClick={onClose}
+            className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <div 
-          onClick={() => handleSimulatedUpload('Print Mobills / Investidor10')}
-          className="border border-slate-200 dark:border-white/10 hover:border-blue-500/40 p-4 rounded-xl cursor-pointer bg-white dark:bg-slate-950/40 hover:bg-blue-500/5 dark:hover:bg-blue-950/20 transition-all flex items-center gap-3.5 group shadow-2xs"
-        >
-          <div className="p-3 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-white/10 text-blue-600 dark:text-blue-400 group-hover:scale-105 transition-transform">
-            <UploadCloud className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
-              Subir Print Mobills / Investidor10
-            </p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              Sincroniza Itaú, Nubank e fotos de carteira de ativos
-            </p>
-          </div>
-        </div>
-      </div>
+        {/* Input Oculto de Arquivo */}
+        <input 
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,image/png,image/jpeg,image/webp,.csv,.txt"
+          multiple
+          onChange={handleFileChange}
+          className="hidden"
+        />
 
-      {isUploading && (
-        <div className="mt-4 p-3 rounded-xl bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-white/10 flex items-center gap-3 text-xs text-slate-600 dark:text-slate-300">
-          <Loader2 className="h-4 w-4 animate-spin text-emerald-600 dark:text-emerald-400" />
-          <span>{statusMessage}</span>
-        </div>
-      )}
+        {/* Área de Seleção */}
+        {!isSaved && parsedTransactions.length === 0 && (
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className="border-2 border-dashed border-slate-200 dark:border-white/15 hover:border-emerald-500/50 rounded-2xl p-8 text-center cursor-pointer bg-slate-50/50 dark:bg-slate-950/40 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/10 transition-all flex flex-col items-center justify-center gap-3 group"
+          >
+            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform shadow-xs">
+              <UploadCloud className="w-8 h-8" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                Toque para selecionar a fatura ou comprovante
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                Suporta PDF, PNG, JPG de faturas bancárias ou extratos
+              </p>
+            </div>
+          </div>
+        )}
 
-      {extractedData && (
-        <div className="mt-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs">
-          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-bold mb-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+        {/* Mensagens de Carregamento e Erro */}
+        {isUploading && (
+          <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center gap-3 text-xs text-slate-700 dark:text-slate-300">
+            <Loader2 className="w-4 h-4 animate-spin text-emerald-600 dark:text-emerald-400 shrink-0" />
             <span>{statusMessage}</span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-[11px]">
-              <thead className="text-slate-500 dark:text-slate-400 border-b border-emerald-500/20">
-                <tr>
-                  <th className="py-1">Descrição</th>
-                  <th className="py-1">Categoria</th>
-                  <th className="py-1">Subcategoria</th>
-                  <th className="py-1 text-right">Valor</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-emerald-500/10">
-                {extractedData.items.map((item: any, i: number) => (
-                  <tr key={i}>
-                    <td className="py-1.5 font-medium text-slate-800 dark:text-slate-200">{item.desc}</td>
-                    <td className="py-1.5 text-slate-600 dark:text-slate-400">{item.cat}</td>
-                    <td className="py-1.5 text-slate-500 dark:text-slate-400">{item.subcat}</td>
-                    <td className="py-1.5 text-right font-mono font-bold text-slate-900 dark:text-white">
-                      R$ {item.val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        )}
+
+        {errorMessage && (
+          <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 flex items-center gap-2.5 text-xs text-rose-700 dark:text-rose-300">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errorMessage}</span>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Listagem Prévia dos Lançamentos Extraídos */}
+        {parsedTransactions.length > 0 && !isSaved && (
+          <div className="space-y-3 flex-1 overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+              <span>Prévia dos Lançamentos ({parsedTransactions.length})</span>
+              <span className="text-emerald-600 dark:text-emerald-400">Pronto para importar</span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto border border-slate-200 dark:border-white/10 rounded-xl divide-y divide-slate-100 dark:divide-white/5 max-h-56">
+              {parsedTransactions.map((tx, idx) => (
+                <div key={idx} className="p-2.5 flex items-center justify-between text-xs">
+                  <div className="min-w-0 pr-3">
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block">
+                      {tx.desc}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      {tx.date} • {tx.cat || 'Geral'}
+                    </span>
+                  </div>
+                  <span className={`font-mono font-bold shrink-0 ${tx.val < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    R$ {Math.abs(tx.val).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setParsedTransactions([])}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-all cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveToDatabase}
+                disabled={isUploading}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition-all shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer disabled:opacity-50"
+              >
+                <span>Confirmar & Salvar no Banco</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isSaved && (
+          <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-2">
+            <CheckCircle2 className="w-10 h-10 text-emerald-600 dark:text-emerald-400 mx-auto" />
+            <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+              Fatura Importada com Sucesso!
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Os lançamentos foram consolidados e integrados ao seu banco de dados.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

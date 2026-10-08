@@ -13,11 +13,12 @@ export default async function DemoPage({
   searchParams: Promise<{ filter?: string }>
 }) {
   const params = await searchParams
-  const filterParam = (params.filter?.toUpperCase() || 'CONSOLIDATED') as DashboardFilter
-  const validFilters: DashboardFilter[] = ['CONSOLIDATED', 'PF', 'PJ']
-  const activeFilter = validFilters.includes(filterParam) ? filterParam : 'CONSOLIDATED'
+  const filterParam = (params.filter?.toUpperCase() || 'PF') as DashboardFilter
+  const validFilters: DashboardFilter[] = ['PF', 'PJ', 'CONSOLIDATED']
+  const activeFilter = validFilters.includes(filterParam) ? filterParam : 'PF'
 
   const demoPayload = getDemoPayload(activeFilter)
+
 
   return (
     <div className="min-h-screen relative bg-slate-50 dark:bg-[#070B12] text-slate-900 dark:text-slate-100 transition-colors duration-200">
@@ -94,7 +95,10 @@ export default async function DemoPage({
             currentFilter={activeFilter} 
             basePath="/demo" 
             isDemo={true} 
+            selectedPeriod="2026-04"
+            hasRealData={true}
           />
+
         </main>
       </div>
     </div>

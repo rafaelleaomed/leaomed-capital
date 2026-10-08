@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import zlib from 'zlib'
+import { getAuthenticatedUserId } from '@/utils/auth-helpers'
 
 interface ParsedDasBreakdown {
   simples: number
@@ -10,6 +11,7 @@ interface ParsedDasBreakdown {
   inss: number
   iss: number
 }
+
 
 function parsePdfStreams(buffer: Buffer): string {
   const binary = buffer.toString('binary')
@@ -116,6 +118,9 @@ function detectCompetence(text: string, filename: string): { monthKey: string; l
 }
 
 export async function POST(req: NextRequest) {
+  const { userId, errorResponse } = await getAuthenticatedUserId()
+  if (errorResponse) return errorResponse
+
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
@@ -142,14 +147,14 @@ export async function POST(req: NextRequest) {
 
     if (totalMatch && totalMatch[1]) {
       const parsed = parseCurrency(totalMatch[1])
-      if (parsed && parsed > 50) totalAmount = parsed
+      if (parsed && parsed > 0) totalAmount = parsed
     }
 
-    // Se for DAS de 07/2026 da MED LEAO e não achou valor no texto (ex: rasterizado)
-    if (isDas && totalAmount === 0) {
-      if (competence.monthKey === 'jul_26') totalAmount = 2257.83
-      else if (competence.monthKey === 'jun_26') totalAmount = 2764.77
-      else totalAmount = 2187.93
+    if (totalAmount === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Não foi possível extrair o valor total deste documento. Certifique-se de que o PDF é legível.' },
+        { status: 422 }
+      )
     }
 
     if (isDas) {
@@ -171,25 +176,13 @@ export async function POST(req: NextRequest) {
       // Se leu todos ou quase todos do PDF
       const sumExtracted = irpj + csll + cofins + pis + inss + iss
       if (sumExtracted === 0 && totalAmount > 0) {
-        // Fallback matemático proporcional determinístico de clínica médica no Simples Nacional
-        if (competence.monthKey === 'jul_26') {
-          // Valores exatos do documento oficial do Dr. Rafael Leão (DAS 07/2026)
-          irpj = 90.31
-          csll = 79.02
-          cofins = 317.23
-          pis = 68.86
-          inss = 979.90
-          iss = 722.51
-          totalAmount = 2257.83
-        } else {
-          // Decomposição padrão Anexo III Simples Nacional com Fator R
-          irpj = Math.round(totalAmount * 0.040003 * 100) / 100
-          csll = Math.round(totalAmount * 0.035002 * 100) / 100
-          cofins = Math.round(totalAmount * 0.140502 * 100) / 100
-          pis = Math.round(totalAmount * 0.030501 * 100) / 100
-          inss = Math.round(totalAmount * 0.433999 * 100) / 100
-          iss = Math.round((totalAmount - (irpj + csll + cofins + pis + inss)) * 100) / 100
-        }
+        // Decomposição matemática padrão Anexo III Simples Nacional com Fator R
+        irpj = Math.round(totalAmount * 0.040003 * 100) / 100
+        csll = Math.round(totalAmount * 0.035002 * 100) / 100
+        cofins = Math.round(totalAmount * 0.140502 * 100) / 100
+        pis = Math.round(totalAmount * 0.030501 * 100) / 100
+        inss = Math.round(totalAmount * 0.433999 * 100) / 100
+        iss = Math.round((totalAmount - (irpj + csll + cofins + pis + inss)) * 100) / 100
       }
 
       const breakdown: ParsedDasBreakdown = {

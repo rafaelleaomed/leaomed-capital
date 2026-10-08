@@ -1,6 +1,5 @@
 import { CategoryRulesEngine } from './categoryRulesEngine'
-import { PJ_REAL_TRANSACTIONS } from './pjTransactionsHistory'
-import { PF_MOBILLS_REAL_TRANSACTIONS } from './pfMobillsTransactionsHistory'
+import { DEMO_SYNTHETIC_TRANSACTIONS } from './demoSyntheticData'
 import { InstallmentStore } from './installmentStore'
 
 export interface GranularTransaction {
@@ -26,9 +25,9 @@ export interface GranularTransaction {
   decisionType?: 'deterministic' | 'probabilistic' | 'manual' | 'unclassified'
   certaintyLabel?: string
   categorySource?: 'manual' | 'local_rule' | 'jev' | 'llm' | 'imported' | 'unknown'
-  categoryConfidence?: number | null // Calibrado via Choice (0 a 1)
-  isFixedProbability?: number | null // Calibrado via Noul (0 a 1)
-  needsReviewProbability?: number | null // Calibrado via Noul (0 a 1)
+  categoryConfidence?: number | null
+  isFixedProbability?: number | null
+  needsReviewProbability?: number | null
   aiSuggestedCategory?: string
   aiSuggestedSubcategory?: string
   aiSuggestedIsFixed?: boolean
@@ -37,61 +36,69 @@ export interface GranularTransaction {
   categorizationError?: string
 }
 
-function getStorageKey(): string {
-  if (typeof window === 'undefined') return 'leaomed_granular_transactions_v5'
-  try {
-    const pathname = window.location.pathname
-    if (pathname.startsWith('/demo')) return 'leaomed_granular_transactions_demo'
-    
-    // Recupera usuário atual do cache de sessão
-    const userEmail = localStorage.getItem('leaomed_current_user_email') || ''
-    if (userEmail && (userEmail.toLowerCase().includes('rafael') || userEmail.toLowerCase() === 'rafaelleaobh@gmail.com')) {
-      return 'leaomed_granular_transactions_v5'
-    }
-    if (userEmail) {
-      return `leaomed_granular_txs_${userEmail.replace(/[^a-zA-Z0-9]/g, '_')}`
-    }
-  } catch (_) {}
-  return 'leaomed_granular_transactions_user'
-}
-
-function shouldLoadSeedData(): boolean {
+function isDemoMode(): boolean {
   if (typeof window === 'undefined') return false
-  const pathname = window.location.pathname
-  if (pathname.startsWith('/demo')) return true
-  const userEmail = localStorage.getItem('leaomed_current_user_email') || ''
-  return Boolean(userEmail && (userEmail.toLowerCase().includes('rafael') || userEmail.toLowerCase() === 'rafaelleaobh@gmail.com'))
+  return window.location.pathname.startsWith('/demo')
 }
 
-// Base histórica real auditada consolidada (PF Mobills + PJ Banco Inter)
-const INITIAL_TRANSACTIONS: GranularTransaction[] = [
-  ...(PF_MOBILLS_REAL_TRANSACTIONS as unknown as GranularTransaction[]),
-  ...(PJ_REAL_TRANSACTIONS as unknown as GranularTransaction[])
-]
+function getStorageKey(): string {
+  if (typeof window === 'undefined') return 'leaomed_granular_txs'
+  if (isDemoMode()) return 'leaomed_granular_txs_demo'
+  return 'leaomed_granular_txs_user'
+}
 
 export class GranularTransactionStore {
-  // Busca todas as transações persistidas isoladas por usuário
+  // Busca todas as transações persistidas
   static getAll(): GranularTransaction[] {
     if (typeof window === 'undefined') return []
     const key = getStorageKey()
-    const canLoadSeed = shouldLoadSeedData()
-    const seed = canLoadSeed ? INITIAL_TRANSACTIONS : []
+
+    if (isDemoMode()) {
+      return [...DEMO_SYNTHETIC_TRANSACTIONS]
+    }
 
     try {
       const raw = localStorage.getItem(key)
-      if (!raw) {
-        if (canLoadSeed) {
-          localStorage.setItem(key, JSON.stringify(seed))
-        } else {
-          localStorage.setItem(key, JSON.stringify([]))
-        }
-        return seed
-      }
+      if (!raw) return []
       return JSON.parse(raw) as GranularTransaction[]
     } catch (_) {
-      return seed
+      return []
     }
   }
+
+  // Sincroniza do banco via API
+  static async fetchFromApi(period?: string): Promise<GranularTransaction[]> {
+    if (typeof window === 'undefined') return []
+    if (isDemoMode()) return [...DEMO_SYNTHETIC_TRANSACTIONS]
+
+    try {
+      const url = period ? `/api/transactions?period=${period}` : '/api/transactions'
+      const res = await fetch(url)
+      const data = await res.json()
+      if (data?.success && Array.isArray(data.transactions)) {
+        const mapped: GranularTransaction[] = data.transactions.map((t: any) => ({
+          id: t.id,
+          entityType: t.entity_type || 'PF',
+          date: t.date?.split('T')[0] || t.date,
+          description: t.description,
+          amount: parseFloat(t.amount) || 0,
+          accountOrCard: t.account_name || 'Conta',
+          category: t.category || 'Outros',
+          subcategory: t.subcategory || 'Geral',
+          isFixed: Boolean(t.is_fixed),
+          isIgnored: Boolean(t.is_ignored),
+          source: 'MANUAL'
+        }))
+        const key = getStorageKey()
+        localStorage.setItem(key, JSON.stringify(mapped))
+        return mapped
+      }
+    } catch (e) {
+      console.warn('Fallback para cache local de transações:', e)
+    }
+    return this.getAll()
+  }
+
 
   // Verifica se uma transação está sem categoria ou sem subcategoria definida
   static isUncategorized(t: GranularTransaction): boolean {
@@ -265,16 +272,16 @@ export class GranularTransactionStore {
     return count
   }
 
-  // Restaura para a base padrão oficial
+  // Restaura para a base padrão
   static resetToDefault(): void {
     if (typeof window !== 'undefined') {
       try {
         const key = getStorageKey()
-        const canLoadSeed = shouldLoadSeedData()
-        const initialList = canLoadSeed ? INITIAL_TRANSACTIONS : []
+        const initialList = isDemoMode() ? [...DEMO_SYNTHETIC_TRANSACTIONS] : []
         localStorage.setItem(key, JSON.stringify(initialList))
         window.dispatchEvent(new CustomEvent('leaomed_transactions_updated'))
       } catch (_) {}
     }
   }
 }
+

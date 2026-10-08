@@ -205,8 +205,30 @@ export class CategoryRulesEngine {
 
   // Verifica se uma descrição é pagamento de fatura (candidato à duplicidade)
   static isBillPayment(description: string): boolean {
-    const lower = (description || '').toLowerCase()
-    return DEFAULT_HEURISTIC_RULES.some(r => r.isBillPayment && lower.includes(r.pattern))
+    const clean = normalizeText(description)
+    if (!clean) return false
+
+    const billPatterns = [
+      'pagamento fatura',
+      'pagamento de fatura',
+      'pgto fatura',
+      'pgto de fatura',
+      'pagto fatura',
+      'pagto de fatura',
+      'pagamento cartao',
+      'pagamento de cartao',
+      'debito fatura',
+      'deb autom fatura',
+      'pagto titulo c6',
+      'pagamento c6 bank',
+      'pagamento itaucard',
+      'pagamento nubank',
+      'fatura cartao',
+      'fatura c6'
+    ]
+
+    return billPatterns.some(p => clean.includes(p)) || 
+      DEFAULT_HEURISTIC_RULES.some(r => r.isBillPayment && clean.includes(r.pattern))
   }
 
   // Predição em Cascata Determinística Local

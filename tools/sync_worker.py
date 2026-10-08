@@ -64,19 +64,13 @@ def process_pending_webhooks():
                     print(f"⚠️ Item {item_id} ainda não está UPDATED (status: {item_data.get('status')}). Ignorando por enquanto.")
                     continue
                     
-                # User vinculado (simplificando: usando o clientUserId guardado no item, se enviarmos na hora de criar o token)
-                # O ConnectToken no frontend injeta clientUserId
+                # User vinculado estritamente pelo clientUserId
                 user_id = item_data.get('clientUserId') 
                 if not user_id:
-                    print(f"⚠️ Item {item_id} não possui clientUserId. Necessário para vincular no banco.")
-                    # Fallback temporário apenas para teste se nulo
-                    cursor.execute("SELECT id FROM auth.users LIMIT 1")
-                    fallback_user = cursor.fetchone()
-                    if fallback_user:
-                        user_id = fallback_user['id']
-                        print(f"Usando fallback user_id: {user_id}")
-                    else:
-                        raise Exception("Nenhum usuário no banco para vincular a conta.")
+                    print(f"❌ Item {item_id} não possui clientUserId comprovado. Rejeitando por segurança.")
+                    cursor.execute("UPDATE webhook_events SET status = 'rejected_no_owner', processed_at = NOW() WHERE id = %s", (event_id,))
+                    continue
+
 
                 # 2. Obter Accounts
                 accounts_res = pluggy_request(f"/accounts?itemId={item_id}", token)

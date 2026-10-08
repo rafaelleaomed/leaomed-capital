@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseInvoiceFromTextOrOCR, ExtractedTransaction, DocumentParseResult } from '@/services/aiDocumentParser'
 import Tesseract from 'tesseract.js'
+import { getAuthenticatedUserId } from '@/utils/auth-helpers'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // até 60s para processamento OCR de múltiplos prints
@@ -9,8 +10,12 @@ const MAX_FILES_PER_REQUEST = 10
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024 // 15MB por arquivo
 
 export async function POST(req: NextRequest) {
+  const { userId, errorResponse } = await getAuthenticatedUserId()
+  if (errorResponse) return errorResponse
+
   try {
     const contentType = req.headers.get('content-type') || ''
+
     
     const allBatches: Array<{
       id: string
