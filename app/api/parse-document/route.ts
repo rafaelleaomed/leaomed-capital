@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { parseInvoiceFromTextOrOCR, DocumentParseResult } from '@/services/aiDocumentParser'
 import { extractTextFromPdf, PdfPasswordException } from '@/services/pdfExtractor'
 import Tesseract from 'tesseract.js'
@@ -6,7 +6,7 @@ import * as XLSX from 'xlsx'
 import { getAuthenticatedUserId } from '@/utils/auth-helpers'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 15 // limite compatível com Vercel Hobby
+export const maxDuration = 60 // limite compatível com Vercel Hobby
 
 const MAX_FILES_PER_REQUEST = 10
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024 // 15MB por arquivo
@@ -257,3 +257,4 @@ export async function POST(req: NextRequest) {
     )
   }
 }
+

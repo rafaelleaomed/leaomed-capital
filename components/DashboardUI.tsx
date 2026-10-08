@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect } from 'react'
 import { DeliveryPayload, DashboardFilter } from '@/utils/dashboardData'
@@ -75,6 +75,7 @@ export default function DashboardUI({
     const formattedPeriod = `${newYear}-${String(newMonth + 1).padStart(2, '0')}`
     const currentHash = typeof window !== 'undefined' ? window.location.hash : ''
     router.push(`${basePath}?filter=${currentFilter}&period=${formattedPeriod}${currentHash}`)
+    router.refresh()
   }
 
   const handlePrevMonth = () => {
@@ -95,6 +96,7 @@ export default function DashboardUI({
 
   const handleFilterChange = (filter: DashboardFilter) => {
     router.push(`${basePath}?filter=${filter}&period=${activePeriod}`)
+    router.refresh()
   }
 
   // Sincronização de abas por hash da URL
@@ -412,3 +414,4 @@ export default function DashboardUI({
     </div>
   )
 }
+
