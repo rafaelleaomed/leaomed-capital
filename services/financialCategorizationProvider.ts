@@ -33,6 +33,27 @@ export interface IFinancialCategorizationProvider {
   classify(input: SanitizedTransactionInput): Promise<CategorizationDecision>
 }
 
+/** Safe fallback when the authenticated account has not enabled Jev. */
+export class DisabledCategorizationProvider implements IFinancialCategorizationProvider {
+  async classify(): Promise<CategorizationDecision> {
+    return {
+      category: 'NÃO_IDENTIFICADO',
+      subcategory: 'NÃO_IDENTIFICADO',
+      decision_type: 'probabilistic',
+      certainty_label: 'jev_desabilitado_para_a_conta',
+      choice_confidence: null,
+      is_fixed_probability: null,
+      needs_review_probability: 1,
+      is_fixed: false,
+      review_required: true,
+      provider: 'disabled',
+      model: 'none',
+      question_version: CATEGORIZATION_CONFIG.PRIVACY.questionVersion,
+      latency_ms: 0
+    }
+  }
+}
+
 /**
  * Provedor Oficial TypeSafe AI (Jev) via HTTP Nativo Fetch
  * Executa apenas Server-Side.
@@ -42,8 +63,8 @@ export class JevCategorizationProvider implements IFinancialCategorizationProvid
   private endpoint: string
   private model: string
 
-  constructor(apiKey?: string, endpoint?: string, model?: string) {
-    this.apiKey = apiKey || process.env.TYPESAFE_API_KEY || ''
+  constructor(apiKey: string, endpoint?: string, model?: string) {
+    this.apiKey = apiKey
     this.endpoint = endpoint || process.env.TYPESAFE_API_ENDPOINT || 'https://api.typesafe.ai/v1/systemone'
     this.model = model || process.env.TYPESAFE_MODEL || 'jev-latest'
   }
@@ -75,23 +96,31 @@ export class JevCategorizationProvider implements IFinancialCategorizationProvid
       c => c.scope === input.account_scope || c.scope === 'AMBOS'
     )
     const categoryOptions = [...availableCategories.map(c => c.name), 'NÃO_IDENTIFICADO']
+    const categoryCriteria = Object.fromEntries([
+      ...availableCategories.map(category => [
+        category.name,
+        `Classifique somente quando o lançamento corresponder à categoria ${category.name}. ` +
+          `Subcategorias conhecidas: ${category.subcategories.map(subcategory => subcategory.name).join(', ') || 'nenhuma'}.`
+      ]),
+      ['NÃO_IDENTIFICADO', 'Use quando a evidência sanitizada não sustentar nenhuma categoria disponível.']
+    ])
 
     // Constrói estado JSON para avaliação
-    const stateContext = JSON.stringify({
+    const stateContext = {
       description: input.description,
       amount: input.amount,
       date: input.date,
       scope: input.account_scope,
       payment_method: input.payment_method || 'Não especificado',
       context: 'Classificação contábil para plataforma financeira médica LeãoMed Capital'
-    })
+    }
 
     // Monta perguntas para o Jev
     const questionsPayload = {
       category: {
         type: 'choice',
         instructions: `Selecione a categoria financeira exata para este lançamento de ${input.account_scope}: "${input.description}". Se não corresponder claramente a nenhuma das categorias permitidas, escolha "NÃO_IDENTIFICADO".`,
-        options: categoryOptions
+        criteria: categoryCriteria
       },
       is_fixed: {
         type: 'noul',
@@ -126,8 +155,7 @@ export class JevCategorizationProvider implements IFinancialCategorizationProvid
       clearTimeout(timeoutId)
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => '')
-        throw new Error(`Jev HTTP ${response.status}: ${errorText || response.statusText}`)
+        throw new Error(`Jev indisponível (HTTP ${response.status}).`)
       }
 
       const result = await response.json()
@@ -154,6 +182,13 @@ export class JevCategorizationProvider implements IFinancialCategorizationProvid
         const matchedCategoryDef = availableCategories.find(c => c.name === chosenCategory)
         if (matchedCategoryDef && matchedCategoryDef.subcategories.length > 0) {
           const subcatOptions = [...matchedCategoryDef.subcategories.map(s => s.name), 'NÃO_IDENTIFICADO']
+          const subcategoryCriteria = Object.fromEntries([
+            ...matchedCategoryDef.subcategories.map(subcategory => [
+              subcategory.name,
+              `Use para lançamentos da categoria ${chosenCategory} que correspondam a ${subcategory.name}.`
+            ]),
+            ['NÃO_IDENTIFICADO', 'Use quando não houver evidência suficiente para uma subcategoria.']
+          ])
 
           // Chamada rápida para subcategoria
           const subcatPayload = {
@@ -163,7 +198,7 @@ export class JevCategorizationProvider implements IFinancialCategorizationProvid
               subcategory: {
                 type: 'choice',
                 instructions: `Dentro da categoria "${chosenCategory}", selecione a subcategoria exata para "${input.description}". Se incerto, escolha "NÃO_IDENTIFICADO".`,
-                options: subcatOptions
+                criteria: subcategoryCriteria
               }
             }
           }
@@ -208,7 +243,6 @@ export class JevCategorizationProvider implements IFinancialCategorizationProvid
         provider: 'jev',
         model: this.model,
         question_version: CATEGORIZATION_CONFIG.PRIVACY.questionVersion,
-        raw_response: result,
         latency_ms: latency
       }
 

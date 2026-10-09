@@ -1,236 +1,82 @@
 'use client'
 
 import React, { useState } from 'react'
-import { PieChart as PieIcon, ArrowRight, Layers } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+import { usePrivacy } from '@/context/PrivacyContext'
 
-interface CategoryData {
-  name: string
-  total: number
-  percentage: number
-}
-
-interface CategoryChartProps {
-  categories: CategoryData[]
-  onCategoryClick?: (categoryName: string) => void
-}
-
-const PALETTE = [
-  '#E4C77B', // Dourado LeãoMed
-  '#77D49F', // Esmeralda
-  '#38BDF8', // Sky Blue
-  '#F59E0B', // Âmbar
-  '#A855F7', // Púrpura
-  '#EC4899', // Rosa
-  '#64748B', // Slate
-  '#10B981'  // Verde
-]
+interface CategoryData { name: string; total: number; percentage: number }
+interface CategoryChartProps { categories: CategoryData[]; onCategoryClick?: (categoryName: string) => void }
+const PALETTE = ['#C7A354', '#157449', '#698F89', '#A67C52', '#8E879A', '#BE8882', '#737B81']
 
 export function CategoryChart({ categories, onCategoryClick }: CategoryChartProps) {
+  const { maskValue } = usePrivacy()
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-
   const topCategories = (categories || []).slice(0, 7)
-  const totalAmount = topCategories.reduce((acc, c) => acc + c.total, 0)
-
-  // Cálculo dos arcos do Donut SVG
-  let cumulativePercent = 0
-  const slices = topCategories.map((c, i) => {
-    const percent = totalAmount > 0 ? (c.total / totalAmount) : 0
-    const startAngle = cumulativePercent * 2 * Math.PI - Math.PI / 2
-    cumulativePercent += percent
-    const endAngle = cumulativePercent * 2 * Math.PI - Math.PI / 2
-
-    const cx = 100
-    const cy = 100
-    const r = 80
-    const innerR = 52
-
-    const x1 = cx + r * Math.cos(startAngle)
-    const y1 = cy + r * Math.sin(startAngle)
-    const x2 = cx + r * Math.cos(endAngle)
-    const y2 = cy + r * Math.sin(endAngle)
-
-    const x1Inner = cx + innerR * Math.cos(startAngle)
-    const y1Inner = cy + innerR * Math.sin(startAngle)
-    const x2Inner = cx + innerR * Math.cos(endAngle)
-    const y2Inner = cy + innerR * Math.sin(endAngle)
-
-    const largeArcFlag = percent > 0.5 ? 1 : 0
-
-    // Path fechado do arco donut
-    const pathData = [
-      `M ${x1} ${y1}`,
-      `A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-      `L ${x2Inner} ${y2Inner}`,
-      `A ${innerR} ${innerR} 0 ${largeArcFlag} 0 ${x1Inner} ${y1Inner}`,
-      'Z'
-    ].join(' ')
-
-    return {
-      name: c.name,
-      total: c.total,
-      percentage: c.percentage,
-      pathData,
-      color: PALETTE[i % PALETTE.length]
-    }
+  const totalAmount = topCategories.reduce((total, category) => total + category.total, 0)
+  const circumference = 2 * Math.PI * 66
+  let offset = 0
+  const slices = topCategories.map((category, index) => {
+    const share = totalAmount > 0 ? category.total / totalAmount : 0
+    const slice = { ...category, length: share * circumference, offset, color: PALETTE[index % PALETTE.length] }
+    offset += slice.length
+    return slice
   })
-
-  const activeItem = (hoveredIndex !== null ? slices[hoveredIndex] : null) || 
-                     (selectedIndex !== null ? slices[selectedIndex] : null)
-
-  const handleSelect = (idx: number, name: string) => {
-    setSelectedIndex(selectedIndex === idx ? null : idx)
-    if (onCategoryClick) {
-      onCategoryClick(name)
-    } else {
-      // Dispara evento global para que a auditoria filtre por categoria
-      window.dispatchEvent(new CustomEvent('leaomed_switch_tab', { detail: { tab: 'auditoria' } }))
-    }
+  const activeItem = (hoveredIndex !== null ? slices[hoveredIndex] : null) || (selectedIndex !== null ? slices[selectedIndex] : null)
+  const handleSelect = (index: number, name: string) => {
+    setSelectedIndex(selectedIndex === index ? null : index)
+    if (onCategoryClick) onCategoryClick(name)
+    else window.dispatchEvent(new CustomEvent('leaomed_switch_tab', { detail: { tab: 'auditoria', category: name } }))
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-[#3B4246] bg-white dark:bg-[#232A2E] p-6 shadow-sm flex flex-col justify-between transition-colors">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="font-display text-base font-bold text-slate-900 dark:text-[#F6F3E9] flex items-center gap-2">
-            <PieIcon className="h-4 w-4 text-[#E4C77B]" />
-            <span>Gráfico de Gastos do Mês</span>
-          </h3>
-          <p className="text-xs text-slate-500 dark:text-[#B0B8BD] mt-0.5">
-            Distribuição percentual interativa • Clique nas fatias para filtrar
-          </p>
-        </div>
-        {selectedIndex !== null && (
-          <button
-            onClick={() => setSelectedIndex(null)}
-            className="text-[11px] font-bold text-[#E4C77B] hover:underline cursor-pointer"
-          >
-            Limpar seleção
-          </button>
-        )}
+    <section className="capital-panel min-w-0 flex flex-col">
+      <div className="panel-heading">
+        <div><span className="eyebrow">SEU MÊS EM DETALHES</span><h2>Para onde foi o dinheiro?</h2></div>
+        <span className="count-badge">{topCategories.length} categorias</span>
       </div>
-
-      <div className="flex-1 flex flex-col md:flex-row items-center gap-6 my-2">
-        {topCategories.length === 0 ? (
-          <div className="flex h-48 w-full items-center justify-center text-xs text-slate-500 dark:text-[#B0B8BD]">
-            Nenhuma despesa processada para este período.
+      <p className="small-note">Selecione uma fatia ou categoria para conferir os lançamentos.</p>
+      {topCategories.length === 0 ? <div className="flex h-48 items-center justify-center text-sm text-[var(--capital-muted)]">Nenhuma despesa processada para este período.</div> : (
+        <div className="flex flex-col items-center gap-5 py-5">
+          <div className="relative w-52 h-52 shrink-0">
+            <svg viewBox="0 0 200 200" className="w-full h-full" aria-label="Distribuição dos gastos por categoria">
+              <circle cx="100" cy="100" r="66" fill="none" stroke="var(--capital-line)" strokeWidth="26" />
+              {slices.map((slice, index) => <circle
+                key={`${slice.name}-${index}`} cx="100" cy="100" r="66" fill="none" stroke={slice.color} strokeWidth="26"
+                strokeDasharray={`${slice.length} ${circumference - slice.length}`} strokeDashoffset={-slice.offset} transform="rotate(-90 100 100)"
+                tabIndex={0} role="button" aria-label={`Conferir ${slice.name}: ${maskValue(slice.total)}, ${slice.percentage.toFixed(1)}%`} aria-pressed={selectedIndex === index}
+                className="cursor-pointer transition-opacity motion-reduce:transition-none focus:outline focus:outline-2 focus:outline-[var(--capital-accent)]"
+                style={{ opacity: (hoveredIndex !== null && hoveredIndex !== index) || (selectedIndex !== null && selectedIndex !== index) ? 0.35 : 1 }}
+                onMouseEnter={() => setHoveredIndex(index)} onMouseLeave={() => setHoveredIndex(null)}
+                onFocus={() => setHoveredIndex(index)} onBlur={() => setHoveredIndex(null)} onClick={() => handleSelect(index, slice.name)}
+                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); handleSelect(index, slice.name) } }}
+              />)}
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+              <span className="text-[10px] text-[var(--capital-muted)] max-w-[110px] truncate">{activeItem ? activeItem.name : 'Total exibido'}</span>
+              <strong className="text-sm tabular-nums mt-1">{maskValue(activeItem ? activeItem.total : totalAmount)}</strong>
+              <span className="text-xs text-[var(--capital-accent)] mt-1">{activeItem ? `${activeItem.percentage.toFixed(1)}%` : `${topCategories.length} categorias`}</span>
+            </div>
           </div>
-        ) : (
-          <>
-            {/* Donut Chart SVG */}
-            <div className="relative w-48 h-48 shrink-0 flex items-center justify-center">
-              <svg 
-                viewBox="0 0 200 200" 
-                className="w-full h-full transform -rotate-90 select-none overflow-visible"
-              >
-                {slices.map((slice, i) => {
-                  const isHovered = hoveredIndex === i
-                  const isSelected = selectedIndex === i
-                  const isDimmed = (hoveredIndex !== null && !isHovered) || (selectedIndex !== null && !isSelected)
-
-                  return (
-                    <path
-                      key={i}
-                      d={slice.pathData}
-                      fill={slice.color}
-                      stroke={isSelected ? '#F6F3E9' : '#232A2E'}
-                      strokeWidth={isSelected ? 3 : 1.5}
-                      className="cursor-pointer transition-all duration-200"
-                      style={{
-                        opacity: isDimmed ? 0.35 : 1,
-                        transform: isHovered || isSelected ? 'scale(1.04)' : 'scale(1)',
-                        transformOrigin: '100px 100px'
-                      }}
-                      onMouseEnter={() => setHoveredIndex(i)}
-                      onMouseLeave={() => setHoveredIndex(null)}
-                      onClick={() => handleSelect(i, slice.name)}
-                    />
-                  )
-                })}
-              </svg>
-
-              {/* Centro do Donut com informações dinâmicas */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-2">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-[#B0B8BD] truncate max-w-[100px]">
-                  {activeItem ? activeItem.name : 'Total do Mês'}
-                </span>
-                <span className="text-sm font-black text-slate-900 dark:text-[#F6F3E9] font-mono tabular-nums leading-tight mt-0.5">
-                  R$ {(activeItem ? activeItem.total : totalAmount).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                </span>
-                <span className="text-[10px] font-bold text-[#E4C77B]">
-                  {activeItem ? `${activeItem.percentage.toFixed(1)}%` : `${topCategories.length} categorias`}
-                </span>
-              </div>
-            </div>
-
-            {/* Lista clicável de categorias com barras de progresso */}
-            <div className="flex-1 w-full space-y-2.5">
-              {slices.map((slice, i) => {
-                const isSelected = selectedIndex === i
-                const isHovered = hoveredIndex === i
-
-                return (
-                  <div
-                    key={slice.name}
-                    onClick={() => handleSelect(i, slice.name)}
-                    onMouseEnter={() => setHoveredIndex(i)}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                    className={`group p-2 rounded-xl border transition-all cursor-pointer ${
-                      isSelected 
-                        ? 'border-[#E4C77B] bg-[#E4C77B]/10 shadow-xs' 
-                        : isHovered
-                          ? 'border-slate-300 dark:border-white/20 bg-slate-50 dark:bg-white/5'
-                          : 'border-transparent hover:bg-slate-50 dark:hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span 
-                          className="w-2.5 h-2.5 rounded-full shrink-0" 
-                          style={{ backgroundColor: slice.color }} 
-                        />
-                        <span className="font-semibold text-slate-700 dark:text-[#F6F3E9] truncate">
-                          {slice.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="font-bold text-slate-900 dark:text-[#F6F3E9] font-mono tabular-nums">
-                          R$ {slice.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </span>
-                        <span className="text-[10px] font-bold text-[#B0B8BD] bg-slate-100 dark:bg-[#191D21] px-1.5 py-0.5 rounded-md">
-                          {slice.percentage.toFixed(1)}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="h-1.5 w-full bg-slate-200 dark:bg-[#191D21] rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${Math.max(5, Math.min(100, slice.percentage))}%`,
-                          backgroundColor: slice.color
-                        }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </>
-        )}
+          <div className="w-full space-y-1">
+            {slices.map((slice, index) => <button key={`${slice.name}-${index}`} type="button" aria-pressed={selectedIndex === index}
+              onClick={() => handleSelect(index, slice.name)} onMouseEnter={() => setHoveredIndex(index)} onMouseLeave={() => setHoveredIndex(null)}
+              onFocus={() => setHoveredIndex(index)} onBlur={() => setHoveredIndex(null)}
+              className="w-full rounded-lg p-2 text-left hover:bg-[var(--capital-soft)] transition-colors motion-reduce:transition-none"
+              style={{ background: selectedIndex === index ? 'var(--capital-soft)' : undefined }}>
+              <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
+                <span className="flex items-center gap-2 min-w-0"><span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: slice.color }} /><span className="break-words">{slice.name}</span></span>
+                <span className="flex items-center gap-2 ml-auto"><strong className="tabular-nums">{maskValue(slice.total)}</strong><span className="small-note">{slice.percentage.toFixed(1)}%</span></span>
+              </span>
+              <span className="block h-1 rounded-full bg-[var(--capital-line)] mt-2 overflow-hidden"><span className="block h-full rounded-full" style={{ width: `${Math.max(5, Math.min(100, slice.percentage))}%`, background: slice.color }} /></span>
+            </button>)}
+          </div>
+        </div>
+      )}
+      <div className="flex flex-wrap gap-3 items-center justify-between border-t border-[var(--capital-line)] pt-3 mt-auto">
+        {selectedIndex !== null ? <button type="button" className="text-action" onClick={() => { setSelectedIndex(null); setHoveredIndex(null) }}>Limpar seleção</button> : <span className="small-note">Gastos do mês selecionado</span>}
+        <button type="button" className="text-action" onClick={() => window.dispatchEvent(new CustomEvent('leaomed_switch_tab', { detail: { tab: 'auditoria' } }))}>Auditar tudo<ArrowRight size={14} /></button>
       </div>
-
-      <div className="pt-3 border-t border-slate-100 dark:border-[#3B4246] text-[11px] text-[#B0B8BD] flex items-center justify-between">
-        <span>Toque em uma categoria para auditar os lançamentos</span>
-        <button
-          onClick={() => {
-            window.dispatchEvent(new CustomEvent('leaomed_switch_tab', { detail: { tab: 'auditoria' } }))
-          }}
-          className="text-[#E4C77B] hover:text-[#F6F3E9] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
-        >
-          <span>Auditar tudo</span>
-          <ArrowRight className="w-3 h-3" />
-        </button>
-      </div>
-    </div>
+    </section>
   )
 }

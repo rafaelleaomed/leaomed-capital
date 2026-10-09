@@ -57,7 +57,7 @@ export function computeDynamicInstallment(
       isConcluded: false,
       isLastInstallment: false,
       statusLabel: 'Mensalidade Contínua',
-      badgeClass: 'text-amber-500 dark:text-amber-400',
+      badgeClass: 'text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)]',
       progress: 100
     }
   }
@@ -82,7 +82,7 @@ export function computeDynamicInstallment(
           isConcluded: true,
           isLastInstallment: false,
           statusLabel: `Quitado em ${item.endMonthYear}`,
-          badgeClass: 'text-emerald-600 dark:text-emerald-400 font-bold',
+          badgeClass: 'text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] font-bold',
           progress: 100
         }
       }
@@ -101,8 +101,8 @@ export function computeDynamicInstallment(
           ? `Última Parcela (${current}/${item.totalInstallments})` 
           : `Parcela ${current} de ${item.totalInstallments}`,
         badgeClass: isLast 
-          ? 'text-amber-600 dark:text-amber-400 font-bold' 
-          : 'text-slate-700 dark:text-slate-300 font-medium',
+          ? 'text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] font-bold'
+          : 'text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] font-medium',
         progress
       }
     }
@@ -118,7 +118,7 @@ export function computeDynamicInstallment(
     statusLabel: isLast 
       ? `Última Parcela (${current}/${item.totalInstallments})` 
       : `Parcela ${current} de ${item.totalInstallments}`,
-    badgeClass: 'text-slate-700 dark:text-slate-300 font-medium',
+    badgeClass: 'text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] font-medium',
     progress: (current / item.totalInstallments) * 100
   }
 }
@@ -451,14 +451,14 @@ export function InstallmentsProjection({
           <div />
         )}
 
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-xs text-[#B0B8BD]">
+        <div className="flex w-full min-w-0 flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
+          <label className="flex items-center gap-2 text-xs text-[var(--capital-muted,#b0b8bd)]">
             <span>Mês de referência das parcelas:</span>
             <input 
               type="month" 
               value={refMonth} 
               onChange={(e) => e.target.value && setRefMonth(e.target.value)}
-              className="bg-[#232A2E] text-[#F6F3E9] px-3 py-1.5 border border-[#3B4246] rounded-lg text-xs font-semibold focus:outline-none focus:border-[#E4C77B]"
+              className="bg-[var(--capital-card,#232a2e)] text-[var(--capital-text,#f6f3e9)] px-3 py-1.5 border border-[var(--capital-line,#e4dfd3)] rounded-lg text-xs font-semibold focus:outline-none focus:border-[var(--capital-accent,#927025)]"
             />
           </label>
 
@@ -502,19 +502,19 @@ export function InstallmentsProjection({
           ))}
         </div>
 
-        <label className="check-label flex items-center gap-2 cursor-pointer text-xs text-[#B0B8BD]">
+        <label className="check-label flex items-center gap-2 cursor-pointer text-xs text-[var(--capital-muted,#b0b8bd)]">
           <input 
             type="checkbox" 
             checked={cardOnly} 
             onChange={(e) => setCardOnly(e.target.checked)}
-            className="w-4 h-4 rounded border-[#3B4246] bg-[#232A2E] text-[#E4C77B] focus:ring-[#E4C77B]"
+            className="w-4 h-4 rounded border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#232a2e)] text-[var(--capital-accent,#927025)] focus:ring-[#E4C77B]"
           />
           <span>Somente cartões</span>
         </label>
       </div>
 
       {/* ── Nota Informativa ──────────────────────────────────────────────── */}
-      <p className="small-note installment-note text-xs text-[#B0B8BD]">
+      <p className="small-note installment-note text-xs text-[var(--capital-muted,#b0b8bd)]">
         {visibleContracts.length} contratos cadastrados. O alívio do resumo considera apenas parcelas de cartão; financiamentos e cobranças contínuas ficam separados.
       </p>
 
@@ -537,12 +537,12 @@ export function InstallmentsProjection({
             >
               <div className="panel-heading">
                 <div className="min-w-0 pr-8">
-                  <h2 className="text-base font-semibold text-[#F6F3E9] truncate">{item.title}</h2>
-                  <span className="small-note text-xs text-[#B0B8BD] block truncate">
+                  <h2 className="text-base font-semibold text-[var(--capital-text,#f6f3e9)] truncate">{item.title}</h2>
+                  <span className="small-note text-xs text-[var(--capital-muted,#b0b8bd)] block truncate">
                     {item.account} · {item.category}
                   </span>
                 </div>
-                <CalendarCheck2 size={19} className="text-[#E4C77B] shrink-0" />
+                <CalendarCheck2 size={19} className="text-[var(--capital-accent,#927025)] shrink-0" />
 
                 {/* Ações de Edição e Exclusão no Card */}
                 {rawItem && (
@@ -550,7 +550,7 @@ export function InstallmentsProjection({
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(rawItem)}
-                      className="p-1 text-[#B0B8BD] hover:text-[#E4C77B] hover:bg-[#323126] rounded transition-colors"
+                      className="p-1 text-[var(--capital-muted,#b0b8bd)] hover:text-[var(--capital-accent,#927025)] hover:bg-[#323126] rounded transition-colors"
                       title="Editar dados do parcelamento"
                     >
                       <Edit3 size={14} />
@@ -558,7 +558,7 @@ export function InstallmentsProjection({
                     <button
                       type="button"
                       onClick={() => handleDelete(rawItem.id)}
-                      className="p-1 text-[#B0B8BD] hover:text-rose-400 hover:bg-rose-950/30 rounded transition-colors"
+                      className="p-1 text-[var(--capital-muted,#b0b8bd)] hover:text-[var(--capital-danger,#ad3333)] hover:bg-[var(--capital-danger-soft,#fcecec)] rounded transition-colors"
                       title="Remover parcelamento"
                     >
                       <Trash2 size={14} />
@@ -568,10 +568,10 @@ export function InstallmentsProjection({
               </div>
 
               <div className="installment-amount flex items-baseline gap-2 my-3">
-                <strong className="text-2xl font-bold text-[#E4C77B]">
+                <strong className="text-2xl font-bold text-[var(--capital-accent,#927025)]">
                   {formatBRL(item.amountCents / 100)}
                 </strong>
-                <span className="text-xs text-[#B0B8BD]">/mês</span>
+                <span className="text-xs text-[var(--capital-muted,#b0b8bd)]">/mês</span>
                 {last && (
                   <span className="status pending text-[11px] px-2 py-0.5 rounded font-semibold ml-auto">
                     Última parcela
@@ -579,7 +579,7 @@ export function InstallmentsProjection({
                 )}
               </div>
 
-              <span className="small-note text-xs text-[#B0B8BD] block">
+              <span className="small-note text-xs text-[var(--capital-muted,#b0b8bd)] block">
                 {item.kind === 'recurring' 
                   ? 'Cobrança contínua' 
                   : `${item.kind === 'loan' ? 'Financiamento' : 'Cartão'} · ${current} de ${item.totalInstallments} parcelas`}
@@ -591,7 +591,7 @@ export function InstallmentsProjection({
                 />
               </div>
 
-              <div className="installment-meta flex items-center justify-between text-xs text-[#B0B8BD]">
+              <div className="installment-meta flex items-center justify-between text-xs text-[var(--capital-muted,#b0b8bd)]">
                 <span>{end ? `Última cobrança: ${monthLabel(end)}` : 'Sem término definido'}</span>
                 <span className={`status ${item.reviewed ? 'reviewed' : 'pending'}`}>
                   {item.status === 'active' 
@@ -602,7 +602,7 @@ export function InstallmentsProjection({
 
               <button 
                 type="button" 
-                className="text-action mt-2 cursor-pointer flex items-center gap-1.5 text-xs font-semibold text-[#E4C77B]" 
+                className="text-action mt-2 cursor-pointer flex items-center gap-1.5 text-xs font-semibold text-[var(--capital-accent,#927025)]"
                 aria-expanded={isExpanded} 
                 onClick={() => setExpandedId(isExpanded ? null : item.id)}
               >
@@ -611,8 +611,8 @@ export function InstallmentsProjection({
               </button>
 
               {isExpanded && (
-                <div className="installment-details pt-3 border-t border-[#3B4246] mt-3 space-y-2 text-xs text-[#B0B8BD]">
-                  <p>Primeira fatura: <strong className="text-[#F6F3E9]">{monthLabel(item.firstBillingMonth)}</strong>.</p>
+                <div className="installment-details pt-3 border-t border-[var(--capital-line,#e4dfd3)] mt-3 space-y-2 text-xs text-[var(--capital-muted,#b0b8bd)]">
+                  <p>Primeira fatura: <strong className="text-[var(--capital-text,#f6f3e9)]">{monthLabel(item.firstBillingMonth)}</strong>.</p>
                   <p>
                     {remaining === null 
                       ? 'Sem saldo de parcelas calculável.' 
@@ -654,9 +654,9 @@ export function InstallmentsProjection({
       {/* ── Empty State ──────────────────────────────────────────────────── */}
       {visibleContracts.length === 0 && (
         <section className="capital-panel empty-state py-12 flex flex-col items-center justify-center text-center">
-          <CalendarCheck2 size={32} className="text-[#B0B8BD] mb-3" />
-          <h2 className="text-lg font-bold text-[#F6F3E9]">Nenhuma parcela neste filtro</h2>
-          <p className="text-xs text-[#B0B8BD] max-w-md mt-1">
+          <CalendarCheck2 size={32} className="text-[var(--capital-muted,#b0b8bd)] mb-3" />
+          <h2 className="text-lg font-bold text-[var(--capital-text,#f6f3e9)]">Nenhuma parcela neste filtro</h2>
+          <p className="text-xs text-[var(--capital-muted,#b0b8bd)] max-w-md mt-1">
             Nenhum contrato ativo corresponde aos filtros selecionados para {monthLabel(refMonth)}. Adicione um novo parcelamento ou altere os filtros acima.
           </p>
           <button
@@ -673,16 +673,16 @@ export function InstallmentsProjection({
       {/* ── MODAL DE EDIÇÃO DE PARCELAMENTO ──────────────────────────────── */}
       {editingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-[#11161B]/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="capital-modal w-full max-w-md border border-[#3B4246] bg-[#232A2E] text-[#F6F3E9] p-6 rounded-2xl shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="modal-header flex items-center justify-between border-b border-[#3B4246] pb-3">
-              <h3 className="font-bold text-base text-[#F6F3E9] flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-[#E4C77B]" />
+          <div className="capital-modal w-full max-w-md border border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#232a2e)] text-[var(--capital-text,#f6f3e9)] p-6 rounded-2xl shadow-sm space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="modal-header flex items-center justify-between border-b border-[var(--capital-line,#e4dfd3)] pb-3">
+              <h3 className="font-bold text-base text-[var(--capital-text,#f6f3e9)] flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-[var(--capital-accent,#927025)]" />
                 <span>Editar Parcelamento / Contrato</span>
               </h3>
               <button 
                 type="button"
                 onClick={() => setEditingItem(null)}
-                className="text-[#B0B8BD] hover:text-[#F6F3E9] cursor-pointer"
+                className="text-[var(--capital-muted,#b0b8bd)] hover:text-[var(--capital-text,#f6f3e9)] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -690,19 +690,19 @@ export function InstallmentsProjection({
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#b0b8bd)] block mb-1">
                   Nome do Parcelamento / Contrato
                 </label>
                 <input 
                   type="text"
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-semibold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
+                  className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-semibold text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#E4C77B] block mb-1 flex items-center gap-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-accent,#927025)] block mb-1 flex items-center gap-1">
                   <CreditCard className="w-3.5 h-3.5" />
                   Cartão / Forma de Pagamento
                 </label>
@@ -717,7 +717,7 @@ export function InstallmentsProjection({
                         setEditForm(prev => ({ ...prev, paymentMethod: val, isCustomMethod: false }))
                       }
                     }}
-                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B] cursor-pointer"
+                    className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-bold text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)] cursor-pointer"
                   >
                     {availableCards.map(card => (
                       <option key={card} value={card}>{card}</option>
@@ -731,12 +731,12 @@ export function InstallmentsProjection({
                       placeholder="Ex: Cartão Itaú Personalité, Cartão Inter..."
                       value={editForm.customPaymentMethod}
                       onChange={(e) => setEditForm({ ...editForm, customPaymentMethod: e.target.value })}
-                      className="w-full rounded-xl bg-[#191D21] border border-[#E4C77B] px-3 py-2 text-xs font-bold text-[#F6F3E9] focus:outline-none"
+                      className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-accent,#927025)] px-3 py-2 text-xs font-bold text-[var(--capital-text,#f6f3e9)] focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => setEditForm({ ...editForm, isCustomMethod: false, paymentMethod: availableCards[0] || '' })}
-                      className="text-[10px] text-[#B0B8BD] hover:text-[#F6F3E9] p-1 cursor-pointer"
+                      className="text-[10px] text-[var(--capital-muted,#b0b8bd)] hover:text-[var(--capital-text,#f6f3e9)] p-1 cursor-pointer"
                     >
                       ✕
                     </button>
@@ -746,7 +746,7 @@ export function InstallmentsProjection({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#b0b8bd)] block mb-1">
                     Valor da Parcela (R$)
                   </label>
                   <input 
@@ -754,75 +754,75 @@ export function InstallmentsProjection({
                     step="0.01"
                     value={editForm.monthlyValue}
                     onChange={(e) => setEditForm({ ...editForm, monthlyValue: e.target.value })}
-                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-mono font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
+                    className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-mono font-bold text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#b0b8bd)] block mb-1">
                     Categoria
                   </label>
                   <input 
                     type="text"
                     value={editForm.category}
                     onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
+                    className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#b0b8bd)] block mb-1">
                     Parcela Atual
                   </label>
                   <input 
                     type="number"
                     value={editForm.currentInstallment}
                     onChange={(e) => setEditForm({ ...editForm, currentInstallment: e.target.value })}
-                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-mono font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
+                    className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-mono font-bold text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#b0b8bd)] block mb-1">
                     Total de Parcelas
                   </label>
                   <input 
                     type="number"
                     value={editForm.totalInstallments}
                     onChange={(e) => setEditForm({ ...editForm, totalInstallments: e.target.value })}
-                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-mono font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
+                    className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-mono font-bold text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#b0b8bd)] block mb-1">
                   Observações / Detalhes do Contrato
                 </label>
                 <textarea 
                   rows={2}
                   value={editForm.contractNotes}
                   onChange={(e) => setEditForm({ ...editForm, contractNotes: e.target.value })}
-                  className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
+                  className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)]"
                 />
               </div>
 
-              <div className="pt-2 border-t border-[#3B4246]">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-[#B0B8BD]">
+              <div className="pt-2 border-t border-[var(--capital-line,#e4dfd3)]">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-[var(--capital-muted,#b0b8bd)]">
                   <input 
                     type="checkbox"
                     checked={editForm.isPerpetual}
                     onChange={(e) => setEditForm({ ...editForm, isPerpetual: e.target.checked })}
-                    className="rounded border-[#3B4246] bg-[#191D21] text-[#E4C77B] focus:ring-[#E4C77B] w-4 h-4 cursor-pointer"
+                    className="rounded border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#232a2e)] text-[var(--capital-accent,#927025)] focus:ring-[#E4C77B] w-4 h-4 cursor-pointer"
                   />
                   <span>Mensalidade contínua (Sem término definido)</span>
                 </label>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#3B4246]">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--capital-line,#e4dfd3)]">
               <button
                 type="button"
                 onClick={() => setEditingItem(null)}
@@ -846,16 +846,16 @@ export function InstallmentsProjection({
       {/* ── MODAL DE NOVO PARCELAMENTO ──────────────────────────────────── */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-[#11161B]/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <form onSubmit={handleSaveNew} className="capital-modal w-full max-w-md border border-[#3B4246] bg-[#232A2E] text-[#F6F3E9] p-6 rounded-2xl shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="modal-header flex items-center justify-between border-b border-[#3B4246] pb-3">
-              <h3 className="font-bold text-base text-[#F6F3E9] flex items-center gap-2">
-                <PlusCircle className="w-4 h-4 text-[#E4C77B]" />
+          <form onSubmit={handleSaveNew} className="capital-modal w-full max-w-md border border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#232a2e)] text-[var(--capital-text,#f6f3e9)] p-6 rounded-2xl shadow-sm space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="modal-header flex items-center justify-between border-b border-[var(--capital-line,#e4dfd3)] pb-3">
+              <h3 className="font-bold text-base text-[var(--capital-text,#f6f3e9)] flex items-center gap-2">
+                <PlusCircle className="w-4 h-4 text-[var(--capital-accent,#927025)]" />
                 <span>Novo Parcelamento ou Dívida</span>
               </h3>
               <button 
                 type="button" 
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-[#B0B8BD] hover:text-[#F6F3E9] cursor-pointer"
+                className="text-[var(--capital-muted,#b0b8bd)] hover:text-[var(--capital-text,#f6f3e9)] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -863,7 +863,7 @@ export function InstallmentsProjection({
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#b0b8bd)] block mb-1">
                   Nome do Parcelamento / Contrato
                 </label>
                 <input 
@@ -872,12 +872,12 @@ export function InstallmentsProjection({
                   placeholder="Ex: Compra Notebook 10x, Lava e Seca..."
                   value={newForm.name}
                   onChange={(e) => setNewForm({ ...newForm, name: e.target.value })}
-                  className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-semibold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
+                  className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-semibold text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)]"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#E4C77B] block mb-1 flex items-center gap-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-accent,#927025)] block mb-1 flex items-center gap-1">
                   <CreditCard className="w-3.5 h-3.5" />
                   Cartão / Forma de Pagamento
                 </label>
@@ -892,7 +892,7 @@ export function InstallmentsProjection({
                         setNewForm(prev => ({ ...prev, paymentMethod: val, isCustomMethod: false }))
                       }
                     }}
-                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B] cursor-pointer"
+                    className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-bold text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)] cursor-pointer"
                   >
                     {availableCards.map(card => (
                       <option key={card} value={card}>{card}</option>
@@ -906,12 +906,12 @@ export function InstallmentsProjection({
                       placeholder="Ex: Cartão Itaú Personalité, Cartão Inter..."
                       value={newForm.customPaymentMethod}
                       onChange={(e) => setNewForm({ ...newForm, customPaymentMethod: e.target.value })}
-                      className="w-full rounded-xl bg-[#191D21] border border-[#E4C77B] px-3 py-2 text-xs font-bold text-[#F6F3E9] focus:outline-none"
+                      className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-accent,#927025)] px-3 py-2 text-xs font-bold text-[var(--capital-text,#f6f3e9)] focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => setNewForm({ ...newForm, isCustomMethod: false, paymentMethod: availableCards[0] || '' })}
-                      className="text-[10px] text-[#B0B8BD] hover:text-[#F6F3E9] p-1 cursor-pointer"
+                      className="text-[10px] text-[var(--capital-muted,#b0b8bd)] hover:text-[var(--capital-text,#f6f3e9)] p-1 cursor-pointer"
                     >
                       ✕
                     </button>
@@ -921,7 +921,7 @@ export function InstallmentsProjection({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#b0b8bd)] block mb-1">
                     Valor da Parcela (R$)
                   </label>
                   <input 
@@ -931,51 +931,51 @@ export function InstallmentsProjection({
                     placeholder="0,00"
                     value={newForm.monthlyValue}
                     onChange={(e) => setNewForm({ ...newForm, monthlyValue: e.target.value })}
-                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-mono font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
+                    className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-mono font-bold text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#b0b8bd)] block mb-1">
                     Categoria
                   </label>
                   <input 
                     type="text"
                     value={newForm.category}
                     onChange={(e) => setNewForm({ ...newForm, category: e.target.value })}
-                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
+                    className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#b0b8bd)] block mb-1">
                     Parcela Atual
                   </label>
                   <input 
                     type="number"
                     value={newForm.currentInstallment}
                     onChange={(e) => setNewForm({ ...newForm, currentInstallment: e.target.value })}
-                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-mono font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
+                    className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-mono font-bold text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#b0b8bd)] block mb-1">
                     Total de Parcelas
                   </label>
                   <input 
                     type="number"
                     value={newForm.totalInstallments}
                     onChange={(e) => setNewForm({ ...newForm, totalInstallments: e.target.value })}
-                    className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs font-mono font-bold text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
+                    className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-mono font-bold text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-[#B0B8BD] block mb-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#b0b8bd)] block mb-1">
                   Observações / Detalhes do Contrato
                 </label>
                 <textarea 
@@ -983,24 +983,24 @@ export function InstallmentsProjection({
                   placeholder="Ex: Compra de eletrodoméstico parcelada no cartão"
                   value={newForm.contractNotes}
                   onChange={(e) => setNewForm({ ...newForm, contractNotes: e.target.value })}
-                  className="w-full rounded-xl bg-[#191D21] border border-[#3B4246] px-3 py-2 text-xs text-[#F6F3E9] focus:outline-none focus:border-[#E4C77B]"
+                  className="w-full rounded-xl bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)]"
                 />
               </div>
 
-              <div className="pt-2 border-t border-[#3B4246]">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-[#B0B8BD]">
+              <div className="pt-2 border-t border-[var(--capital-line,#e4dfd3)]">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-[var(--capital-muted,#b0b8bd)]">
                   <input 
                     type="checkbox"
                     checked={newForm.isPerpetual}
                     onChange={(e) => setNewForm({ ...newForm, isPerpetual: e.target.checked })}
-                    className="rounded border-[#3B4246] bg-[#191D21] text-[#E4C77B] focus:ring-[#E4C77B] w-4 h-4 cursor-pointer"
+                    className="rounded border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#232a2e)] text-[var(--capital-accent,#927025)] focus:ring-[#E4C77B] w-4 h-4 cursor-pointer"
                   />
                   <span>Mensalidade contínua (Sem término definido)</span>
                 </label>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#3B4246]">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--capital-line,#e4dfd3)]">
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}

@@ -1,5 +1,45 @@
 import { USER_TAXONOMY, USER_TAXONOMY_MAP, getSubcategoriesForCategory } from '@/utils/taxonomy'
 import { CategoryRulesEngine } from '@/utils/categoryRulesEngine'
+import { detectInvoiceProfile, InvoiceProfile, InvoiceProfileId } from '@/services/invoiceProfiles'
+
+export type InvoiceTransactionType = 'purchase' | 'refund' | 'fee' | 'bill_payment' | 'cash_withdrawal' | 'adjustment'
+
+export interface InvoiceRejectedLine {
+  reason: 'financial_offer' | 'future_installment' | 'institutional' | 'outside_transaction_section' | 'invalid_transaction'
+  /** Structural marker only; never the source document text. */
+  marker: string
+}
+
+export interface CardReconciliation {
+  card: string
+  expected_subtotal?: number
+  extracted_subtotal: number
+  difference?: number
+  transaction_count: number
+}
+
+export interface InvoiceParseDiagnostics {
+  profile: { id: InvoiceProfileId, label: string, maturity: 'specialized' | 'generic_semantic' }
+  profile_id: InvoiceProfileId
+  profile_label: string
+  profile_maturity: 'specialized' | 'generic_semantic'
+  confidence: 'high' | 'medium' | 'low'
+  requires_review: boolean
+  requiresReview: boolean
+  excluded_lines: InvoiceRejectedLine[]
+  /** Aggregated rejections, safe to expose without retaining invoice text. */
+  rejected: Array<{ reason: InvoiceRejectedLine['reason'], count: number }>
+  card_reconciliations: CardReconciliation[]
+  cardReconciliations: CardReconciliation[]
+  expected_invoice_total?: number
+  declaredTotal?: number
+  extracted_invoice_total: number
+  extractedTotal: number
+  invoice_difference?: number
+  delta?: number
+  /** Structural-only candidates for a future semantic provider. Never source text. */
+  ambiguous_blocks?: Array<{ id: string, labels: string[], candidate_count: number, exclusion_markers: string[] }>
+}
 
 export interface ExtractedTransaction {
   date: string
@@ -13,6 +53,13 @@ export interface ExtractedTransaction {
   is_card_bill_payment?: boolean
   installment_current?: number | null
   installment_total?: number | null
+  /** Optional semantics for review UI; legacy import fields remain unchanged. */
+  transaction_type?: InvoiceTransactionType
+  /** Signed value for reconciliation. `amount` stays backwards compatible. */
+  signed_amount?: number
+  entryType?: InvoiceTransactionType
+  signedAmount?: number
+  direction?: 'debit' | 'credit'
 }
 
 export interface DocumentParseResult {
@@ -22,6 +69,7 @@ export interface DocumentParseResult {
   total_amount: number
   transactions: ExtractedTransaction[]
   raw_summary?: Record<string, number>
+  diagnostics?: InvoiceParseDiagnostics
 }
 
 /**
@@ -222,17 +270,345 @@ function parseCsvContent(text: string): ExtractedTransaction[] {
   return txs
 }
 
+function normalizePdfLine(line: string): string {
+  return line
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F\uFFFD]/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .trim()
+}
+
+function findLastCurrencyValue(line: string): number | undefined {
+  const amounts = line.match(/(?:r\$\s*)?-?\s*(?:\d{1,3}(?:\.\d{3})*|\d+),\d{2}/gi)
+  if (!amounts?.length) return undefined
+  const value = parseCurrencyValue(amounts[amounts.length - 1])
+  return value === 0 ? undefined : value
+}
+
+function transactionKind(description: string): InvoiceTransactionType {
+  if (/estorno|reembolso|devolu[cç][aã]o|cr[eé]dito\s+(?:de|em)\s+fatura/i.test(description)) return 'refund'
+  if (/pagamento|inclus[aã]o\s+de\s+pagamento|pgto\b/i.test(description)) return 'bill_payment'
+  if (/saque|cash\s+advance/i.test(description)) return 'cash_withdrawal'
+  if (/anuidade|tarifa|iof\b|encargo|multa/i.test(description)) return 'fee'
+  if (/ajuste|lan[cç]amento\s+manual/i.test(description)) return 'adjustment'
+  return 'purchase'
+}
+
+function signedAmountFor(kind: InvoiceTransactionType, absoluteValue: number, rawValue: number): number {
+  if (rawValue < 0 || kind === 'refund' || kind === 'bill_payment') return -Math.abs(absoluteValue)
+  return Math.abs(absoluteValue)
+}
+
+function extractInstallment(description: string): { current: number | null, total: number | null } {
+  const match = description.match(/(?:parcela\s+|parc\.?\s*)?(\d{1,2})\s*\/\s*(\d{1,2})/i)
+  if (!match) return { current: null, total: null }
+  const current = Number(match[1])
+  const total = Number(match[2])
+  return current > 0 && total >= current ? { current, total } : { current: null, total: null }
+}
+
+function inferInvoiceYear(lines: string[]): number {
+  for (const line of lines) {
+    const match = line.match(/(?:vencimento|fechamento|fatura)\D{0,20}(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}|\d{1,2}\s+(?:de\s+)?[a-z]{3,9}\s+(?:de\s+)?\d{4})/i)
+    if (match) return Number(parseInvoiceDate(match[1]).slice(0, 4))
+  }
+  const explicitYear = lines.join(' ').match(/\b(20\d{2})\b/)
+  return explicitYear ? Number(explicitYear[1]) : new Date().getFullYear()
+}
+
+function transactionYear(dateText: string, invoiceYear: number, invoicePeriod: string): number {
+  if (/\b20\d{2}\b/.test(dateText)) return invoiceYear
+  const transactionMonth = Number(parseInvoiceDate(dateText, invoiceYear).slice(5, 7))
+  const invoiceMonth = Number(invoicePeriod.slice(5, 7))
+  // A January statement commonly includes December purchases. Dates explicitly
+  // carrying a year are handled by parseInvoiceDate itself.
+  return transactionMonth > invoiceMonth ? invoiceYear - 1 : invoiceYear
+}
+
+function detectInvoicePeriod(lines: string[], fallbackYear: number): string {
+  for (const line of lines) {
+    const match = line.match(/(?:vencimento|fechamento|fatura)\D{0,20}(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}|\d{1,2}\s+(?:de\s+)?[a-z]{3,9}\s+(?:de\s+)?\d{4})/i)
+    if (match) return parseInvoiceDate(match[1], fallbackYear).slice(0, 7)
+  }
+  return `${fallbackYear}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+}
+
+function buildTransaction(input: {
+  dateText: string
+  description: string
+  rawValue: number
+  defaultYear: number
+  card: string
+  invoicePeriod?: string
+}): ExtractedTransaction | null {
+  const description = input.description.replace(/[\*•|]+/g, ' ').replace(/\s+/g, ' ').trim()
+  if (description.length < 2) return null
+  const installment = extractInstallment(description)
+  const type = transactionKind(description)
+  const amount = Math.abs(input.rawValue)
+  const pred = CategoryRulesEngine.predict(description, 'PF')
+  const signedAmount = signedAmountFor(type, amount, input.rawValue)
+  return {
+    date: parseInvoiceDate(input.dateText, input.invoicePeriod ? transactionYear(input.dateText, input.defaultYear, input.invoicePeriod) : input.defaultYear),
+    description,
+    amount,
+    accountOrCard: input.card,
+    category: pred.category,
+    subcategory: pred.subcategory,
+    subdivision: pred.subdivision,
+    is_fixed: pred.isCardBillPayment || Boolean(installment.total && installment.total > 1),
+    is_card_bill_payment: type === 'bill_payment' || pred.isCardBillPayment,
+    installment_current: installment.current,
+    installment_total: installment.total,
+    transaction_type: type,
+    signed_amount: signedAmount,
+    entryType: type,
+    signedAmount,
+    direction: signedAmount < 0 ? 'credit' : 'debit',
+  }
+}
+
+function lineHasDateAndValue(line: string): { date: string, description: string, value: number } | null {
+  const dateMatch = line.match(/^\s*(\d{1,2}[\/\.-]\d{1,2}(?:[\/\.-]\d{2,4})?|\d{1,2}\s+(?:de\s+)?[a-z]{3,9}(?:\s+\d{2,4})?)(?:\s+|$)/i)
+  const value = findLastCurrencyValue(line)
+  if (!dateMatch || value === undefined) return null
+  const valueText = line.match(/(?:r\$\s*)?-?\s*(?:\d{1,3}(?:\.\d{3})*|\d+),\d{2}\s*$/i)?.[0]
+  if (!valueText) return null
+  const description = line.slice(dateMatch[0].length, line.length - valueText.length).replace(/\br\$\s*/gi, '').trim()
+  return description ? { date: dateMatch[1], description, value } : null
+}
+
+function isFinancialOffer(line: string, profile: InvoiceProfile): boolean {
+  return profile.excludedSectionAnchors.some(anchor => anchor.test(line))
+}
+
+function beginsExcludedSection(line: string): boolean {
+  return /parcelamento\s+(?:da\s+)?fatura|op[cç][oõ]es\s+de\s+parcelamento|encargos?\s+(?:do|de)\s+parcelamento|compras?\s+parceladas?\s*-?\s*pr[oó]ximas?\s+faturas?/i.test(line)
+}
+
+function isInstitutionalLine(line: string, profile: InvoiceProfile): boolean {
+  return profile.excludedLineAnchors.some(anchor => anchor.test(line)) ||
+    /h\s*o\s*l\s*d\s*i\s*n\s*g|u\s*n\s*i\s*b\s*a\s*n\s*c\s*o|\d{2}[\.\s]*\d{3}[\.\s]*\d{3}[\/\s]*\d{4}[-\s]*\d{2}/i.test(line)
+}
+
+function rejectedSummary(items: InvoiceRejectedLine[]): Array<{ reason: InvoiceRejectedLine['reason'], count: number }> {
+  const counts = new Map<InvoiceRejectedLine['reason'], number>()
+  for (const item of items) counts.set(item.reason, (counts.get(item.reason) || 0) + 1)
+  return [...counts.entries()].map(([reason, count]) => ({ reason, count }))
+}
+
+function makeDiagnostics(input: {
+  profile: InvoiceProfile
+  confidence: InvoiceParseDiagnostics['confidence']
+  requiresReview: boolean
+  excluded: InvoiceRejectedLine[]
+  cards?: CardReconciliation[]
+  declaredTotal?: number
+  extractedTotal: number
+  candidateCount?: number
+}): InvoiceParseDiagnostics {
+  const delta = input.declaredTotal === undefined ? undefined : Number((input.extractedTotal - input.declaredTotal).toFixed(2))
+  const cards = input.cards || []
+  const rejected = rejectedSummary(input.excluded)
+  return {
+    profile: { id: input.profile.id, label: input.profile.label, maturity: input.profile.maturity },
+    profile_id: input.profile.id,
+    profile_label: input.profile.label,
+    profile_maturity: input.profile.maturity,
+    confidence: input.confidence,
+    requires_review: input.requiresReview,
+    requiresReview: input.requiresReview,
+    excluded_lines: input.excluded,
+    rejected,
+    card_reconciliations: cards,
+    cardReconciliations: cards,
+    expected_invoice_total: input.declaredTotal,
+    declaredTotal: input.declaredTotal,
+    extracted_invoice_total: input.extractedTotal,
+    extractedTotal: input.extractedTotal,
+    invoice_difference: delta,
+    delta,
+    ambiguous_blocks: input.requiresReview ? [{
+      id: 'deterministic-review',
+      labels: [input.profile.id, input.profile.maturity],
+      candidate_count: input.candidateCount || 0,
+      exclusion_markers: rejected.map(item => item.reason),
+    }] : [],
+  }
+}
+
+function parseC6Invoice(lines: string[], profile: InvoiceProfile, defaultYear: number, invoicePeriod: string): {
+  transactions: ExtractedTransaction[]
+  expectedTotal?: number
+  expectedSubtotals: Map<string, number>
+  excluded: InvoiceRejectedLine[]
+} {
+  const transactions: ExtractedTransaction[] = []
+  const expectedSubtotals = new Map<string, number>()
+  const excluded: InvoiceRejectedLine[] = []
+  let expectedTotal: number | undefined
+  // Text-mode exports sometimes omit the per-card header. Preserve the legacy
+  // import path, but mark it for review because it cannot be reconciled.
+  let currentCard: string | null = lines.some(line => /c6\s+carbon(?:\s+virtual)?\s+final\s+\d{4}/i.test(line))
+    ? null
+    : 'C6 Cartão de Crédito'
+  let insideExcludedSection = false
+
+  for (const line of lines) {
+    const totalMatch = line.match(/(?:valor|total)(?:\s+da|\s+desta)?\s+fatura\D{0,25}(r?\$?\s*[\d.,]+)/i)
+    if (totalMatch) expectedTotal = parseCurrencyValue(totalMatch[1])
+
+    const cardMatch = line.match(/c6\s+carbon(?:\s+virtual)?\s+final\s+(\d{4})/i)
+    if (cardMatch) {
+      const virtual = /virtual/i.test(line) ? ' Virtual' : ''
+      currentCard = `C6 Carbon${virtual} Final ${cardMatch[1]}`
+      const subtotalMatch = line.match(/subtotal\s+(?:deste|do)\s+cart[aã]o\D{0,25}(r?\$?\s*[\d.,]+)/i)
+      if (subtotalMatch) expectedSubtotals.set(currentCard, parseCurrencyValue(subtotalMatch[1]))
+      insideExcludedSection = false
+      continue
+    }
+
+    if (/transa[cç][oõ]es\s+dos\s+cart[oõ]es\s+adicionais/i.test(line)) {
+      insideExcludedSection = false
+      continue
+    }
+
+    if (isFinancialOffer(line, profile)) {
+      insideExcludedSection = beginsExcludedSection(line)
+      excluded.push({ reason: /pr[oó]ximas?\s+faturas?/i.test(line) ? 'future_installment' : 'financial_offer', marker: 'section_anchor' })
+      continue
+    }
+    if (isInstitutionalLine(line, profile)) {
+      excluded.push({ reason: 'institutional', marker: 'institutional_anchor' })
+      continue
+    }
+    if (insideExcludedSection) {
+      if (lineHasDateAndValue(line)) excluded.push({ reason: 'financial_offer', marker: 'transaction_inside_excluded_section' })
+      continue
+    }
+    if (!currentCard) {
+      if (lineHasDateAndValue(line)) excluded.push({ reason: 'outside_transaction_section', marker: 'missing_card_anchor' })
+      continue
+    }
+
+    const candidate = lineHasDateAndValue(line)
+    if (!candidate) continue
+    const transaction = buildTransaction({ dateText: candidate.date, description: candidate.description, rawValue: candidate.value, defaultYear, card: currentCard, invoicePeriod })
+    if (transaction) transactions.push(transaction)
+    else excluded.push({ reason: 'invalid_transaction', marker: 'incomplete_transaction' })
+  }
+  return { transactions, expectedTotal, expectedSubtotals, excluded }
+}
+
+function parseTextInvoice(rawText: string): DocumentParseResult {
+  const lines = rawText.split(/\r?\n/).map(normalizePdfLine).filter(Boolean)
+  const profile = detectInvoiceProfile(rawText)
+  const defaultYear = inferInvoiceYear(lines)
+  const expectedPeriod = detectInvoicePeriod(lines, defaultYear)
+
+  if (profile.id === 'c6') {
+    const c6 = parseC6Invoice(lines, profile, defaultYear, expectedPeriod)
+    const cards = new Map<string, ExtractedTransaction[]>()
+    for (const tx of c6.transactions) {
+      const key = tx.accountOrCard || 'Cartão de Crédito'
+      cards.set(key, [...(cards.get(key) || []), tx])
+    }
+    const cardReconciliations = [...cards.entries()].map(([card, txs]) => {
+      const extracted = txs
+        .filter(tx => tx.transaction_type !== 'bill_payment')
+        .reduce((sum, tx) => sum + (tx.signed_amount ?? tx.amount), 0)
+      const expected = c6.expectedSubtotals.get(card)
+      return {
+        card,
+        expected_subtotal: expected,
+        extracted_subtotal: Number(extracted.toFixed(2)),
+        difference: expected === undefined ? undefined : Number((extracted - expected).toFixed(2)),
+        transaction_count: txs.length,
+      }
+    })
+    const extractedInvoiceTotal = cardReconciliations.reduce((sum, card) => sum + card.extracted_subtotal, 0)
+    const invoiceDifference = c6.expectedTotal === undefined ? undefined : Number((extractedInvoiceTotal - c6.expectedTotal).toFixed(2))
+    const requiresReview = c6.expectedTotal === undefined || cardReconciliations.some(card => card.expected_subtotal === undefined || (card.difference !== undefined && Math.abs(card.difference) > 0.01)) || (invoiceDifference !== undefined && Math.abs(invoiceDifference) > 0.01)
+    return {
+      document_type: 'C6_FATURA_PDF',
+      period: expectedPeriod,
+      institution: profile.label,
+      total_amount: c6.expectedTotal ?? Number(extractedInvoiceTotal.toFixed(2)),
+      transactions: c6.transactions,
+      diagnostics: makeDiagnostics({ profile, confidence: requiresReview ? 'medium' : 'high', requiresReview, excluded: c6.excluded, cards: cardReconciliations, declaredTotal: c6.expectedTotal, extractedTotal: Number(extractedInvoiceTotal.toFixed(2)), candidateCount: c6.transactions.length }),
+    }
+  }
+
+  const transactions: ExtractedTransaction[] = []
+  const excluded: InvoiceRejectedLine[] = []
+  let insideExcludedSection = false
+  let currentCard = profile.label === 'Fatura bancária genérica' ? 'Cartão de Crédito' : profile.label
+  let expectedTotal: number | undefined
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index]
+    const totalMatch = line.match(/(?:valor|total)(?:\s+da|\s+desta)?\s+fatura\D{0,25}(r?\$?\s*[\d.,]+)/i)
+    if (totalMatch) expectedTotal = parseCurrencyValue(totalMatch[1])
+    if (insideExcludedSection && (
+      profile.transactionAnchors.some(anchor => anchor.test(line)) ||
+      /^(?:lan[cç]amentos|compras|transa[cç][oõ]es|cart[aã]o\s+(?:final|virtual|adicional))/i.test(line)
+    )) {
+      insideExcludedSection = false
+    }
+    if (isFinancialOffer(line, profile)) {
+      insideExcludedSection = beginsExcludedSection(line)
+      excluded.push({ reason: /pr[oó]ximas?\s+faturas?/i.test(line) ? 'future_installment' : 'financial_offer', marker: 'section_anchor' })
+      continue
+    }
+    if (isInstitutionalLine(line, profile)) {
+      excluded.push({ reason: 'institutional', marker: 'institutional_anchor' })
+      continue
+    }
+    if (insideExcludedSection) {
+      if (lineHasDateAndValue(line)) excluded.push({ reason: 'financial_offer', marker: 'transaction_inside_excluded_section' })
+      continue
+    }
+    const candidate = lineHasDateAndValue(line)
+    if (candidate) {
+      const transaction = buildTransaction({ dateText: candidate.date, description: candidate.description, rawValue: candidate.value, defaultYear, card: currentCard, invoicePeriod: expectedPeriod })
+      if (transaction) transactions.push(transaction)
+      continue
+    }
+    // PDF extractors occasionally put date on a line by itself.
+    const dateOnly = line.match(/^(\d{1,2}[\/-]\d{1,2}(?:[\/-]\d{2,4})?|\d{1,2}\s+(?:de\s+)?[a-z]{3,9})$/i)
+    const next = lines[index + 1] ? lineHasDateAndValue(`01/01 ${lines[index + 1]}`) : null
+    if (dateOnly && next) {
+      const transaction = buildTransaction({ dateText: dateOnly[1], description: next.description, rawValue: next.value, defaultYear, card: currentCard, invoicePeriod: expectedPeriod })
+      if (transaction) transactions.push(transaction)
+      index++
+    }
+  }
+
+  const extractedInvoiceTotal = transactions
+    .filter(tx => tx.transaction_type !== 'bill_payment')
+    .reduce((sum, tx) => sum + (tx.signed_amount ?? tx.amount), 0)
+  const invoiceDifference = expectedTotal === undefined ? undefined : Number((extractedInvoiceTotal - expectedTotal).toFixed(2))
+  const requiresReview = profile.maturity === 'generic_semantic' || (invoiceDifference !== undefined && Math.abs(invoiceDifference) > 0.01)
+  return {
+    document_type: 'EXTRATO_BANCARIO',
+    period: transactions[0]?.date.slice(0, 7) || expectedPeriod,
+    institution: profile.label,
+    total_amount: expectedTotal ?? Number(extractedInvoiceTotal.toFixed(2)),
+    transactions,
+      diagnostics: makeDiagnostics({ profile, confidence: transactions.length ? (requiresReview ? 'medium' : 'high') : 'low', requiresReview, excluded, declaredTotal: expectedTotal, extractedTotal: Number(extractedInvoiceTotal.toFixed(2)), candidateCount: transactions.length }),
+  }
+}
+
 /**
- * Parser Inteligente de Texto/OCR de Faturas de Cartão e Extratos
+ * Parser determinístico de texto/OCR. O contrato legado (transactions,
+ * institution, period e total_amount) é preservado; `diagnostics` é opcional
+ * para a prévia de revisão e para uma futura camada semântica sanitizada.
  */
 export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult {
+  const genericProfile = detectInvoiceProfile('')
   if (!rawText || rawText.trim().length === 0) {
     return {
-      document_type: 'OUTRO',
-      period: new Date().toISOString().slice(0, 7),
-      institution: 'Fatura Bancária',
-      total_amount: 0,
-      transactions: []
+      document_type: 'OUTRO', period: new Date().toISOString().slice(0, 7), institution: 'Fatura Bancária', total_amount: 0, transactions: [],
+      diagnostics: makeDiagnostics({ profile: genericProfile, confidence: 'low', requiresReview: true, excluded: [], extractedTotal: 0 }),
     }
   }
 
@@ -247,7 +623,8 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
         period,
         institution: 'Extrato Bancário OFX',
         total_amount: totalAmount,
-        transactions: ofxTxs
+        transactions: ofxTxs,
+        diagnostics: makeDiagnostics({ profile: { ...genericProfile, label: 'Extrato OFX estruturado', maturity: 'specialized' }, confidence: 'high', requiresReview: false, excluded: [], extractedTotal: totalAmount })
       }
     }
   }
@@ -263,11 +640,17 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
         period,
         institution: 'Fatura/Extrato CSV',
         total_amount: totalAmount,
-        transactions: csvTxs
+        transactions: csvTxs,
+        diagnostics: makeDiagnostics({ profile: { ...genericProfile, label: 'Extrato CSV estruturado', maturity: 'specialized' }, confidence: 'high', requiresReview: false, excluded: [], extractedTotal: totalAmount })
       }
     }
   }
 
+  return parseTextInvoice(rawText)
+
+  /* Retired legacy line-by-line parser. Kept temporarily only to make the
+   * migration diff reviewable; it is intentionally outside the build. */
+  /*
   // Blacklist institucional: Termos de cabeçalho bancário, dados de boleto, agência e holdings que NUNCA são compras
   const INSTITUTIONAL_BLACKLIST = [
     /h\s*o\s*l\s*d\s*i\s*n\s*g/i,
@@ -496,4 +879,5 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
     total_amount: totalAmount,
     transactions
   }
+  */
 }

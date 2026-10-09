@@ -1,5 +1,7 @@
 'use client'
 
+import { AccessibleDialog } from './AccessibleDialog'
+
 import React, { useState, useMemo, useEffect } from 'react'
 import { 
   X, 
@@ -452,23 +454,21 @@ export function QuickTransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
+    <AccessibleDialog onClose={onClose} labelledBy="quick-transaction-title" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--capital-card,#f8fafc)] backdrop-blur-sm animate-in fade-in duration-150">
       <div 
-        className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 transition-all scale-100 flex flex-col max-h-[92vh]"
-        role="dialog"
-        aria-modal="true"
+        className="w-full max-w-lg rounded-xl overflow-hidden shadow-sm border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] transition-all scale-100 flex flex-col max-h-[92vh]"
       >
         {/* Header com Toggle Despesa vs Receita */}
-        <div className="p-5 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50 dark:bg-slate-950/60">
+        <div className="p-5 border-b border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] flex items-center justify-between bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)]">
           <div className="flex items-center gap-2">
-            <div className={`p-2 rounded-xl ${type === 'EXPENSE' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+            <div className={`p-2 rounded-xl ${type === 'EXPENSE' ? 'bg-[var(--capital-danger-soft,#fcecec)] text-[var(--capital-danger,#ad3333)]' : 'bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-success,#157449)]'}`}>
               {type === 'EXPENSE' ? <TrendingDown className="w-5 h-5" /> : <TrendingUp className="w-5 h-5" />}
             </div>
             <div>
-              <h3 className="font-display font-extrabold text-base md:text-lg text-slate-900 dark:text-white leading-tight">
+              <h3 id="quick-transaction-title" className="font-display font-semibold text-base md:text-lg text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] leading-tight">
                 Novo Lançamento Manual
               </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              <p className="text-[11px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
                 Integração imediata com as categorias da planilha e projeções
               </p>
             </div>
@@ -476,7 +476,8 @@ export function QuickTransactionModal({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
+            aria-label="Fechar janela"
+            className="p-1.5 rounded-full hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -485,15 +486,15 @@ export function QuickTransactionModal({
         {/* Formulário com scroll interno se necessário */}
         <form onSubmit={handleSubmit} className="p-5 md:p-6 overflow-y-auto space-y-4 flex-1">
           {successMessage && (
-            <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-500" />
+            <div className="p-3.5 rounded-xl bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] text-xs font-bold flex items-center gap-2 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-[var(--capital-success,#157449)]" />
               <span>{successMessage}</span>
             </div>
           )}
 
           {/* 1. Tipo: Despesa ou Receita */}
           <div>
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+            <label className="text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block mb-1.5">
               Tipo de Operação
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -502,8 +503,8 @@ export function QuickTransactionModal({
                 onClick={() => setType('EXPENSE')}
                 className={`py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all cursor-pointer ${
                   type === 'EXPENSE'
-                    ? 'bg-rose-600 text-white border-rose-600 shadow-md shadow-rose-600/20'
-                    : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
+                    ? 'bg-rose-600 text-white border-[var(--capital-danger,#ad3333)] shadow-md shadow-none'
+                    : 'border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)]'
                 }`}
               >
                 <TrendingDown className="w-4 h-4" />
@@ -515,8 +516,8 @@ export function QuickTransactionModal({
                 onClick={() => setType('INCOME')}
                 className={`py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all cursor-pointer ${
                   type === 'INCOME'
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20'
-                    : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
+                    ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] border-[var(--capital-accent,#927025)] shadow-md shadow-none'
+                    : 'border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)]'
                 }`}
               >
                 <TrendingUp className="w-4 h-4" />
@@ -528,32 +529,34 @@ export function QuickTransactionModal({
           {/* 2. Descrição e Valor */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+              <label className="text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block mb-1">
                 Descrição do Lançamento *
               </label>
               <input
                 type="text"
                 required
                 placeholder={type === 'EXPENSE' ? 'Ex: Seguro Veicular, Supermercado...' : 'Ex: Plantão Hospital São Lucas...'}
-                value={description}
+                aria-label="Descrição do lançamento"
+                  value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+                className="w-full px-3.5 py-2 rounded-xl text-xs bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] placeholder-slate-400 focus:outline-none focus:border-[var(--capital-accent,#927025)]"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+              <label className="text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block mb-1">
                 Valor Total (R$) *
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">R$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--capital-muted,#242a2e)]">R$</span>
                 <input
                   type="text"
                   required
                   placeholder="0,00"
+                  aria-label="Valor total em reais"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full pl-9 pr-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 tabular-nums"
+                  className="w-full pl-9 pr-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)] tabular-nums"
                 />
               </div>
             </div>
@@ -561,13 +564,13 @@ export function QuickTransactionModal({
 
           {/* 3. Se Despesa: Condição da Despesa (Fixa vs Parcelada vs Pontual) */}
           {type === 'EXPENSE' && (
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-white/10 space-y-3">
+            <div className="p-3.5 rounded-2xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <Repeat className="w-3.5 h-3.5 text-emerald-500" />
+                <label className="text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] flex items-center gap-1.5">
+                  <Repeat className="w-3.5 h-3.5 text-[var(--capital-success,#157449)]" />
                   Natureza da Despesa
                 </label>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                <span className="text-[10px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
                   {expenseCondition === 'FIXA' ? 'Entra no custo fixo da reserva' : expenseCondition === 'PARCELADA' ? 'Entra no cronograma de parcelas' : 'Lançamento pontual'}
                 </span>
               </div>
@@ -578,8 +581,8 @@ export function QuickTransactionModal({
                   onClick={() => setExpenseCondition('PONTUAL')}
                   className={`p-2.5 rounded-xl border text-center font-bold transition-all cursor-pointer ${
                     expenseCondition === 'PONTUAL'
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent shadow-xs'
-                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-white/5'
+                      ? 'bg-[var(--capital-card,#f8fafc)] text-[var(--capital-text,#242a2e)] dark:bg-[var(--capital-card,#fff)] dark:text-[var(--capital-text,#f6f3e9)] border-transparent shadow-xs'
+                      : 'border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)]'
                   }`}
                 >
                   <div className="text-[11px]">À Vista / Pontual</div>
@@ -591,8 +594,8 @@ export function QuickTransactionModal({
                   onClick={() => setExpenseCondition('FIXA')}
                   className={`p-2.5 rounded-xl border text-center font-bold transition-all cursor-pointer ${
                     expenseCondition === 'FIXA'
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-600/20'
-                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-white/5'
+                      ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] border-[var(--capital-accent,#927025)] shadow-md shadow-none'
+                      : 'border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)]'
                   }`}
                 >
                   <div className="text-[11px]">Despesa Fixa</div>
@@ -604,8 +607,8 @@ export function QuickTransactionModal({
                   onClick={() => setExpenseCondition('PARCELADA')}
                   className={`p-2.5 rounded-xl border text-center font-bold transition-all cursor-pointer ${
                     expenseCondition === 'PARCELADA'
-                      ? 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-600/20'
-                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-white/5'
+                      ? 'bg-[var(--capital-warning-soft,#fcf1dc)] text-[var(--capital-warning,#8b5b15)] border-[var(--capital-warning,#8b5b15)] shadow-md shadow-none'
+                      : 'border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)]'
                   }`}
                 >
                   <div className="text-[11px]">Parcelada</div>
@@ -615,12 +618,12 @@ export function QuickTransactionModal({
 
               {/* Se PARCELADA: Seletor de Parcelas */}
               {expenseCondition === 'PARCELADA' && (
-                <div className="pt-2 border-t border-slate-200 dark:border-white/10 space-y-2 animate-in fade-in">
+                <div className="pt-2 border-t border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] space-y-2 animate-in fade-in">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    <span className="font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
                       Número de Parcelas:
                     </span>
-                    <span className="font-mono font-black text-amber-600 dark:text-amber-400">
+                    <span className="font-mono font-semibold text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)]">
                       {installmentsCount}x de R$ {installmentValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
@@ -633,8 +636,8 @@ export function QuickTransactionModal({
                         onClick={() => setInstallmentsCount(num)}
                         className={`px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           installmentsCount === num
-                            ? 'bg-amber-500 text-slate-950 font-black scale-105'
-                            : 'bg-white dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 hover:border-amber-500/50'
+                            ? 'bg-amber-500 text-[var(--capital-button-text,#242a2e)] font-semibold scale-105'
+                            : 'bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#fff)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] hover:border-[var(--capital-warning,#8b5b15)]'
                         }`}
                       >
                         {num}x
@@ -642,7 +645,7 @@ export function QuickTransactionModal({
                     ))}
                   </div>
 
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                  <p className="text-[10px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-1">
                     Será projetado automaticamente no módulo de parcelamentos e previsibilidade de caixa.
                   </p>
                 </div>
@@ -656,19 +659,19 @@ export function QuickTransactionModal({
               {/* Bloco de Categoria com Abas */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                  <label className="text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block">
                     Categoria da Planilha *
                   </label>
 
                   {/* Abas para Categoria: Existente vs Nova */}
-                  <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-white/10">
+                  <div className="flex items-center bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] p-0.5 rounded-lg border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                     <button
                       type="button"
                       onClick={() => setCategoryMode('SELECT')}
                       className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all ${
                         categoryMode === 'SELECT'
-                          ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
-                          : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                          ? 'bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] shadow-xs'
+                          : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)]'
                       }`}
                     >
                       Existentes
@@ -678,8 +681,8 @@ export function QuickTransactionModal({
                       onClick={() => setCategoryMode('NEW')}
                       className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 ${
                         categoryMode === 'NEW'
-                          ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-700'
+                          ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] shadow-xs'
+                          : 'text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] hover:text-[var(--capital-success,#157449)]'
                       }`}
                     >
                       <Plus className="w-3 h-3" />
@@ -690,37 +693,39 @@ export function QuickTransactionModal({
 
                 {categoryMode === 'SELECT' ? (
                   <select
-                    value={category}
+                    aria-label="Categoria do lançamento"
+                  value={category}
                     onChange={(e) => handleCategoryChange(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 font-medium"
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)] font-medium"
                   >
                     <option value="">Selecione uma categoria...</option>
                     {activeCategories.map((c) => (
                       <option key={c} value={c}>{c}</option>
                     ))}
-                    <option value="__NEW__" className="font-bold text-emerald-600 dark:text-emerald-400">
+                    <option value="__NEW__" className="font-bold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]">
                       ➕ + Criar Nova Categoria...
                     </option>
                   </select>
                 ) : (
                   <div className="flex gap-1.5 animate-in fade-in">
                     <div className="relative flex-1">
-                      <Tag className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-emerald-500" />
+                      <Tag className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-[var(--capital-success,#157449)]" />
                       <input
                         type="text"
                         autoFocus
                         placeholder="Nome da nova categoria..."
-                        value={newCategoryInput}
+                        aria-label="Nome da nova categoria"
+                  value={newCategoryInput}
                         onChange={(e) => setNewCategoryInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddNewCategory() } }}
-                        className="w-full pl-8 pr-2.5 py-1.5 rounded-xl text-xs bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-400 dark:border-emerald-500/40 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
+                        className="w-full pl-8 pr-2.5 py-1.5 rounded-xl text-xs bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] dark:border-[var(--capital-accent,#927025)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[var(--capital-accent,#927025)] font-medium"
                       />
                     </div>
                     <button
                       type="button"
                       onClick={handleAddNewCategory}
                       disabled={!newCategoryInput.trim()}
-                      className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition-all shrink-0"
+                      className="px-2.5 py-1.5 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] disabled:opacity-50 text-[var(--capital-button-text,#211f19)] font-bold text-xs flex items-center gap-1 shadow-xs transition-all shrink-0"
                     >
                       <Plus className="w-3 h-3" />
                       Salvar
@@ -728,7 +733,7 @@ export function QuickTransactionModal({
                     <button
                       type="button"
                       onClick={() => setCategoryMode('SELECT')}
-                      className="px-2 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold shrink-0"
+                      className="px-2 py-1.5 rounded-xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-muted,#242a2e)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#232a2e)] text-xs font-semibold shrink-0"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -737,15 +742,15 @@ export function QuickTransactionModal({
 
                 {/* Badge de Ativo de Investimento Vinculado */}
                 {investmentAsset && (
-                  <div className="mt-1.5 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs animate-in fade-in">
-                    <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-bold truncate">
+                  <div className="mt-1.5 p-2 rounded-xl bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] flex items-center justify-between text-xs animate-in fade-in">
+                    <div className="flex items-center gap-1.5 text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] font-bold truncate">
                       <PieChart className="w-3.5 h-3.5 shrink-0" />
                       <span className="truncate">{investmentAction === 'APORTE' ? 'Aporte em:' : 'Resgate de:'} <strong>{investmentAsset}</strong></span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setIsInvestmentModalOpen(true)}
-                      className="text-[10px] text-emerald-600 dark:text-emerald-400 underline font-bold shrink-0 ml-1 cursor-pointer"
+                      className="text-[10px] text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] underline font-bold shrink-0 ml-1 cursor-pointer"
                     >
                       Mudar
                     </button>
@@ -755,13 +760,14 @@ export function QuickTransactionModal({
 
               {/* Conta / Cartão de Origem */}
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                <label className="text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block mb-1.5">
                   Conta / Cartão de Origem
                 </label>
                 <select
+                  aria-label="Cartão ou conta"
                   value={account}
                   onChange={(e) => setAccount(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 font-medium"
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)] font-medium"
                 >
                   {availableCards.map(c => (
                     <option key={c.id} value={c.name}>{c.name}</option>
@@ -781,29 +787,29 @@ export function QuickTransactionModal({
             </div>
 
             {/* 5. Subcategoria da Planilha (Carrega todas as existentes da categoria selecionada + opção de criar nova) */}
-            <div className="p-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-950/50 border border-slate-200/80 dark:border-white/10 space-y-2.5 transition-all">
+            <div className="p-3.5 rounded-2xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] space-y-2.5 transition-all">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-emerald-500" />
+                  <label className="text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-[var(--capital-success,#157449)]" />
                     <span>Subcategoria da Planilha *</span>
                   </label>
                   {category && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-500/20 truncate max-w-[140px]">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] font-bold border border-[var(--capital-accent,#927025)] truncate max-w-[140px]">
                       {category}
                     </span>
                   )}
                 </div>
 
                 {category && (
-                  <div className="flex items-center bg-slate-200/70 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-white/10">
+                  <div className="flex items-center bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] p-0.5 rounded-lg border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                     <button
                       type="button"
                       onClick={() => setSubcategoryMode('SELECT')}
                       className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all ${
                         subcategoryMode === 'SELECT'
-                          ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
-                          : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                          ? 'bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] shadow-xs'
+                          : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)]'
                       }`}
                     >
                       Existentes ({currentCategorySubcategories.length})
@@ -813,8 +819,8 @@ export function QuickTransactionModal({
                       onClick={() => setSubcategoryMode('NEW')}
                       className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 ${
                         subcategoryMode === 'NEW'
-                          ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-700'
+                          ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] shadow-xs'
+                          : 'text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] hover:text-[var(--capital-success,#157449)]'
                       }`}
                     >
                       <Plus className="w-3 h-3" />
@@ -825,15 +831,16 @@ export function QuickTransactionModal({
               </div>
 
               {!category ? (
-                <div className="p-3 rounded-xl border border-dashed border-slate-200 dark:border-white/10 text-center bg-white/40 dark:bg-white/5">
-                  <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                <div className="p-3 rounded-xl border border-dashed border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-center bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#fff)]">
+                  <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] font-medium">
                     👆 Selecione uma categoria acima para abrir todas as subcategorias existentes.
                   </p>
                 </div>
               ) : subcategoryMode === 'SELECT' ? (
                 <div className="space-y-2 animate-in fade-in duration-150">
                   <select
-                    value={subcategory}
+                    aria-label="Subcategoria do lançamento"
+                  value={subcategory}
                     onChange={(e) => {
                       if (e.target.value === '__NEW_SUB__') {
                         setSubcategoryMode('NEW')
@@ -841,13 +848,13 @@ export function QuickTransactionModal({
                         setSubcategory(e.target.value)
                       }
                     }}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 font-medium"
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)] font-medium"
                   >
                     <option value="">Selecione uma subcategoria existente de {category}...</option>
                     {currentCategorySubcategories.map((sub) => (
                       <option key={sub} value={sub}>{sub}</option>
                     ))}
-                    <option value="__NEW_SUB__" className="font-bold text-emerald-600 dark:text-emerald-400">
+                    <option value="__NEW_SUB__" className="font-bold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]">
                       ➕ + Criar Nova Subcategoria em "{category}"...
                     </option>
                   </select>
@@ -855,7 +862,7 @@ export function QuickTransactionModal({
                   {/* Chips Rápidos de Subcategorias Existentes para seleção com 1 clique */}
                   {currentCategorySubcategories.length > 0 && (
                     <div className="pt-1">
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-1.5">
+                      <span className="text-[10px] font-bold text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block mb-1.5">
                         Sugestões Rápidas de {category} (Clique para selecionar):
                       </span>
                       <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
@@ -868,8 +875,8 @@ export function QuickTransactionModal({
                               onClick={() => setSubcategory(sub)}
                               className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
                                 isSelected
-                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-emerald-500/50 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20'
+                                  ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] border-[var(--capital-accent,#927025)] shadow-xs'
+                                  : 'bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] hover:border-[var(--capital-accent,#927025)] hover:bg-[var(--capital-soft,#f6f0df)] dark:hover:bg-[var(--capital-soft,#f6f0df)]'
                               }`}
                             >
                               {sub}
@@ -885,22 +892,23 @@ export function QuickTransactionModal({
                 <div className="space-y-2 animate-in fade-in duration-150">
                   <div className="flex gap-1.5">
                     <div className="relative flex-1">
-                      <Layers className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-emerald-500" />
+                      <Layers className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-[var(--capital-success,#157449)]" />
                       <input
                         type="text"
                         autoFocus
                         placeholder={`Nome da nova subcategoria para "${category}"...`}
-                        value={newSubcategoryInput}
+                        aria-label="Nome da nova subcategoria"
+                  value={newSubcategoryInput}
                         onChange={(e) => setNewSubcategoryInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddNewSubcategory() } }}
-                        className="w-full pl-8 pr-2.5 py-1.5 rounded-xl text-xs bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-400 dark:border-emerald-500/40 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-medium"
+                        className="w-full pl-8 pr-2.5 py-1.5 rounded-xl text-xs bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] dark:border-[var(--capital-accent,#927025)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[var(--capital-accent,#927025)] font-medium"
                       />
                     </div>
                     <button
                       type="button"
                       onClick={handleAddNewSubcategory}
                       disabled={!newSubcategoryInput.trim()}
-                      className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition-all shrink-0"
+                      className="px-2.5 py-1.5 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] disabled:opacity-50 text-[var(--capital-button-text,#211f19)] font-bold text-xs flex items-center gap-1 shadow-xs transition-all shrink-0"
                     >
                       <Plus className="w-3 h-3" />
                       Salvar
@@ -908,12 +916,12 @@ export function QuickTransactionModal({
                     <button
                       type="button"
                       onClick={() => setSubcategoryMode('SELECT')}
-                      className="px-2 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold shrink-0"
+                      className="px-2 py-1.5 rounded-xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-muted,#242a2e)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#232a2e)] text-xs font-semibold shrink-0"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                  <p className="text-[10px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
                     💡 Esta subcategoria será salva automaticamente e ficará disponível sempre que você selecionar <strong>{category}</strong>.
                   </p>
                 </div>
@@ -922,24 +930,25 @@ export function QuickTransactionModal({
 
             {/* Subdivisão Nível 3 (Hospital / Local / Tag) */}
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1 flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-indigo-500" />
+              <label className="text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block mb-1 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-[var(--capital-accent,#927025)]" />
                 Subdivisão Nível 3 (Local / Hospital)
               </label>
               <input
                 type="text"
                 placeholder="Ex: Hospital Madre Teresa, Mater Dei..."
-                value={subdivision}
+                aria-label="Local ou hospital"
+                  value={subdivision}
                 onChange={(e) => setSubdivision(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 font-medium"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] placeholder-slate-400 focus:outline-none focus:border-[var(--capital-accent,#927025)] font-medium"
               />
             </div>
           </div>
 
           {/* Chips de Sugestões Rápidas de Hospitais */}
           {(category === 'Transporte' || subcategory.toLowerCase().includes('estacionamento') || subdivision.toLowerCase().includes('hospital')) && (
-            <div className="p-3 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 space-y-1.5 animate-in fade-in">
-              <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5">
+            <div className="p-3 rounded-2xl bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] space-y-1.5 animate-in fade-in">
+              <span className="text-[11px] font-bold text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5" />
                 Hospitais Médicos (Clique para preencher a subdivisão Nível 3):
               </span>
@@ -962,8 +971,8 @@ export function QuickTransactionModal({
                     }}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
                       subdivision === hosp 
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' 
-                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-indigo-500/50'
+                        ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] border-[var(--capital-accent,#927025)] shadow-xs'
+                        : 'bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] hover:border-[var(--capital-accent,#927025)]'
                     }`}
                   >
                     🏥 {hosp}
@@ -976,19 +985,20 @@ export function QuickTransactionModal({
           {/* 5. Data e Escopo PF/PJ */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+              <label className="text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block mb-1">
                 Data do Lançamento
               </label>
               <input
                 type="date"
-                value={date}
+                aria-label="Data do lançamento"
+                  value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)]"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+              <label className="text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block mb-1">
                 Classificação Contábil
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -997,8 +1007,8 @@ export function QuickTransactionModal({
                   onClick={() => setScope('PF')}
                   className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                     scope === 'PF'
-                      ? 'bg-emerald-500 text-slate-950 border-emerald-500 font-black'
-                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400'
+                      ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] border-[var(--capital-accent,#927025)] font-semibold'
+                      : 'border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                   }`}
                 >
                   Pessoa Física (PF)
@@ -1008,8 +1018,8 @@ export function QuickTransactionModal({
                   onClick={() => setScope('PJ')}
                   className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                     scope === 'PJ'
-                      ? 'bg-blue-600 text-white border-blue-600 font-black'
-                      : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400'
+                      ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] border-[var(--capital-accent,#927025)] font-semibold'
+                      : 'border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                   }`}
                 >
                   Pessoa Jurídica (PJ)
@@ -1019,11 +1029,11 @@ export function QuickTransactionModal({
           </div>
 
           {/* Rodapé com Botões de Ação */}
-          <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-end gap-2.5">
+          <div className="pt-4 border-t border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-all cursor-pointer"
+              className="px-4 py-2 rounded-xl text-xs font-bold text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-all cursor-pointer"
             >
               Cancelar
             </button>
@@ -1031,7 +1041,7 @@ export function QuickTransactionModal({
             <button
               type="submit"
               disabled={isSubmitting || !description || parsedAmount <= 0}
-              className="px-5 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              className="px-5 py-2 rounded-xl text-xs font-semibold bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] shadow-md shadow-none transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? (
                 <span>Salvando...</span>
@@ -1056,6 +1066,6 @@ export function QuickTransactionModal({
         transactionDescription={description}
         onSelectAsset={handleInvestmentSelect}
       />
-    </div>
+    </AccessibleDialog>
   )
 }

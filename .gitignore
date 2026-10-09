@@ -48,6 +48,7 @@ Screenshot_*.png
 # Dados temporários
 .tmp/
 scratch/
+/Novo layout/
 
 # Executáveis locais
 cloudflared.exe

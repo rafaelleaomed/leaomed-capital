@@ -68,7 +68,7 @@ export function ExecutiveHubCards({
   return (
     <div className="space-y-4">
       {/* ── BANNER HERO DE DESTAQUE NOBRE: CENTRAL DE INGESTÃO MULTICANAL ── */}
-      <div className="relative overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950/40 p-5 md:p-7 shadow-xl shadow-emerald-950/20 text-white">
+      <div className="relative overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950/40 p-5 md:p-7 shadow-xl shadow-emerald-950/20 text-[var(--capital-text,#242a2e)]">
         {/* Glow & Texture Effects */}
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-64 h-64 rounded-full bg-emerald-600/5 blur-2xl pointer-events-none" />
@@ -86,7 +86,7 @@ export function ExecutiveHubCards({
               </span>
             </div>
 
-            <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white leading-tight">
+            <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-[var(--capital-text,#242a2e)] leading-tight">
               Puxe seus dados via <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">PDF, CSV ou Fotos</span>
             </h2>
             
@@ -108,7 +108,7 @@ export function ExecutiveHubCards({
 
             <button
               onClick={onOpenQuickTx}
-              className="w-full sm:w-auto px-4 py-3.5 rounded-2xl border border-white/15 bg-white/5 hover:bg-white/10 text-white font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer backdrop-blur-md"
+              className="w-full sm:w-auto px-4 py-3.5 rounded-2xl border border-white/15 bg-white/5 hover:bg-white/10 text-[var(--capital-text,#242a2e)] font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer backdrop-blur-md"
             >
               <FileText className="w-4 h-4 text-emerald-400" />
               <span>Lançamento Rápido</span>
@@ -137,7 +137,7 @@ export function ExecutiveHubCards({
             <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Saldo Líquido ({currentFilter === 'CONSOLIDATED' ? 'Consolidado' : currentFilter})
             </h3>
-            <div className="text-xl md:text-2xl font-black font-mono tracking-tight text-slate-900 dark:text-white mt-1">
+            <div className="text-xl md:text-2xl font-black font-mono tracking-tight text-slate-900 dark:text-[var(--capital-text,#242a2e)] mt-1">
               {maskValue(displayBalance)}
             </div>
           </div>
@@ -164,7 +164,7 @@ export function ExecutiveHubCards({
             <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Planilha Orçamentária
             </h3>
-            <div className="text-sm md:text-base font-bold text-slate-900 dark:text-white mt-1">
+            <div className="text-sm md:text-base font-bold text-slate-900 dark:text-[var(--capital-text,#242a2e)] mt-1">
               Fixos vs Variáveis
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
@@ -194,7 +194,7 @@ export function ExecutiveHubCards({
             <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Carteira & Alocação
             </h3>
-            <div className="text-xl md:text-2xl font-black font-mono tracking-tight text-slate-900 dark:text-white mt-1">
+            <div className="text-xl md:text-2xl font-black font-mono tracking-tight text-slate-900 dark:text-[var(--capital-text,#242a2e)] mt-1">
               {maskValue(178476.35)}
             </div>
           </div>
@@ -221,7 +221,7 @@ export function ExecutiveHubCards({
             <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Fim dos Parcelamentos
             </h3>
-            <div className="text-sm md:text-base font-bold text-slate-900 dark:text-white mt-1">
+            <div className="text-sm md:text-base font-bold text-slate-900 dark:text-[var(--capital-text,#242a2e)] mt-1">
               Alívio de Caixa Futuro
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">

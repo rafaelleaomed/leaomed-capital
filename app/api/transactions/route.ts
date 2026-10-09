@@ -13,9 +13,11 @@ function generateTransactionHash(t: {
   amount: number
   description: string
   accountId?: string
+  sourceAccountOrCard?: string
 }): string {
   const normDesc = (t.description || '').trim().toLowerCase().replace(/\s+/g, ' ')
-  const raw = `${t.date}|${Number(t.amount).toFixed(2)}|${normDesc}|${t.accountId || 'default'}`
+  const source = (t.sourceAccountOrCard || '').trim().toLowerCase().replace(/\s+/g, ' ')
+  const raw = `${t.date}|${Number(t.amount).toFixed(2)}|${normDesc}|${t.accountId || 'default'}|${source}`
   return crypto.createHash('sha256').update(raw).digest('hex')
 }
 
@@ -112,6 +114,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Nenhuma transação enviada.' }, { status: 400 })
     }
 
+    const invalidTransactionIndex = transactionsToInsert.findIndex((tx: any) => {
+      const amount = Number(tx?.amount)
+      return !tx?.date || !/^\d{4}-\d{2}-\d{2}$/.test(tx.date) || !tx?.description?.trim() || !Number.isFinite(amount) || amount === 0
+    })
+    if (invalidTransactionIndex >= 0) {
+      return NextResponse.json({
+        success: false,
+        error: `Lançamento inválido na posição ${invalidTransactionIndex + 1}. Informe data, descrição e valor diferente de zero.`
+      }, { status: 400 })
+    }
+
     // Busca ou cria uma conta padrão para o usuário caso não informada
     const existingAccounts = await sql`
       SELECT id, type FROM public.accounts WHERE user_id = ${userId} LIMIT 2
@@ -141,6 +154,7 @@ export async function POST(req: NextRequest) {
 
     let insertedCount = 0
     let duplicateCount = 0
+    let failedCount = 0
 
     for (const tx of transactionsToInsert) {
       if (!tx.date || tx.amount === undefined || tx.amount === null || !tx.description) {
@@ -154,7 +168,8 @@ export async function POST(req: NextRequest) {
         date: tx.date,
         amount: Number(tx.amount),
         description: tx.description,
-        accountId
+        accountId,
+        sourceAccountOrCard: tx.accountOrCard || tx.sourceAccountOrCard
       })
 
       const amount = Number(tx.amount)
@@ -186,16 +201,22 @@ export async function POST(req: NextRequest) {
           duplicateCount++
         } else {
           console.error('Erro ao inserir transação:', insertErr)
+          failedCount++
         }
       }
     }
 
-    return NextResponse.json({
-      success: true,
+    const response = {
+      success: failedCount === 0,
+      partial: failedCount > 0,
       insertedCount,
       duplicateCount,
-      message: `${insertedCount} transações processadas com sucesso.`
-    })
+      failedCount,
+      message: failedCount > 0
+        ? `${insertedCount} lançamentos gravados; ${failedCount} não puderam ser gravados.`
+        : `${insertedCount} transações processadas com sucesso.`
+    }
+    return NextResponse.json(response, { status: failedCount > 0 ? 500 : 200 })
   } catch (error: any) {
     console.error('Erro na rota POST /api/transactions:', error)
     return NextResponse.json(

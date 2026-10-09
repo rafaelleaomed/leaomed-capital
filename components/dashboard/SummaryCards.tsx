@@ -52,7 +52,7 @@ export function SummaryCards({
             </div>
           </div>
           <div className={`font-mono text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums ${
-            isPositive ? 'text-slate-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'
+            isPositive ? 'text-slate-900 dark:text-[var(--capital-text,#242a2e)]' : 'text-rose-600 dark:text-rose-400'
           }`}>
             {maskValue(currentBalance)}
           </div>

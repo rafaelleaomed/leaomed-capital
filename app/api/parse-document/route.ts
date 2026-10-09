@@ -4,6 +4,8 @@ import { extractTextFromPdf, PdfPasswordException } from '@/services/pdfExtracto
 import Tesseract from 'tesseract.js'
 import * as XLSX from 'xlsx'
 import { getAuthenticatedUserId } from '@/utils/auth-helpers'
+import { reviewSanitizedInvoiceBlocks, SanitizedInvoiceBlock } from '@/services/invoiceLayoutProvider'
+import { getJevAccessForUser } from '@/services/userJevAccess'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // limite compatível com Vercel Hobby
@@ -11,9 +13,35 @@ export const maxDuration = 60 // limite compatível com Vercel Hobby
 const MAX_FILES_PER_REQUEST = 10
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024 // 15MB por arquivo
 
+async function parseDocumentWithLayoutReview(text: string, apiKey?: string): Promise<DocumentParseResult> {
+  const parsed = parseInvoiceFromTextOrOCR(text)
+  const diagnostics = parsed.diagnostics as (DocumentParseResult['diagnostics'] & {
+    ambiguous_blocks?: SanitizedInvoiceBlock[]
+    jev_layout_review?: unknown
+  }) | undefined
+  const blocks = Array.isArray(diagnostics?.ambiguous_blocks) ? diagnostics.ambiguous_blocks : []
+
+  if (!diagnostics || blocks.length === 0) return parsed
+
+  const review = await reviewSanitizedInvoiceBlocks(diagnostics.profile_id, blocks, apiKey)
+  diagnostics.jev_layout_review = {
+    used: review.used,
+    requires_review: review.requiresReview,
+    decisions: review.decisions
+  }
+  if (review.requiresReview) {
+    diagnostics.requiresReview = true
+    diagnostics.requires_review = true
+    diagnostics.confidence = 'low'
+  }
+  return parsed
+}
+
 export async function POST(req: NextRequest) {
-  const { userId, errorResponse } = await getAuthenticatedUserId()
-  if (errorResponse) return errorResponse
+  const auth = await getAuthenticatedUserId()
+  if (auth.errorResponse || !auth.userId || !auth.user) return auth.errorResponse || NextResponse.json({ success: false, error: 'Não autorizado.' }, { status: 401 })
+  const { userId, user } = auth
+  const jevAccess = await getJevAccessForUser({ id: userId, email: user.email })
 
   try {
     const contentType = req.headers.get('content-type') || ''
@@ -26,6 +54,7 @@ export async function POST(req: NextRequest) {
       period: string
       totalAmount: number
       transactionCount: number
+      diagnostics?: DocumentParseResult['diagnostics']
       transactions: Array<{
         desc: string
         val: number
@@ -38,6 +67,9 @@ export async function POST(req: NextRequest) {
         isCardBillPayment?: boolean
         installmentCurrent?: number | null
         installmentTotal?: number | null
+        entryType?: string
+        signedAmount?: number
+        direction?: 'debit' | 'credit'
       }>
     }> = []
 
@@ -169,7 +201,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Parsing das transações
-        const parseResult: DocumentParseResult = parseInvoiceFromTextOrOCR(extractedText)
+        const parseResult = await parseDocumentWithLayoutReview(extractedText, jevAccess.apiKey)
 
         const batchTxs = parseResult.transactions.map(t => ({
           desc: t.description,
@@ -182,7 +214,10 @@ export async function POST(req: NextRequest) {
           isFixed: t.is_fixed,
           isCardBillPayment: t.is_card_bill_payment,
           installmentCurrent: t.installment_current,
-          installmentTotal: t.installment_total
+          installmentTotal: t.installment_total,
+          entryType: t.entryType,
+          signedAmount: t.signedAmount,
+          direction: t.direction
         }))
 
         allBatches.push({
@@ -193,6 +228,7 @@ export async function POST(req: NextRequest) {
           period: parseResult.period,
           totalAmount: parseResult.total_amount,
           transactionCount: batchTxs.length,
+          diagnostics: parseResult.diagnostics,
           transactions: batchTxs
         })
       }
@@ -202,7 +238,7 @@ export async function POST(req: NextRequest) {
       const rawText = typeof body.text === 'string' ? body.text : ''
       const safeFileName = typeof body.fileName === 'string' ? body.fileName.replace(/[^a-zA-Z0-9_\-\.\s]/g, '') : 'Extrato_Digitado.txt'
 
-      const parseResult = parseInvoiceFromTextOrOCR(rawText)
+      const parseResult = await parseDocumentWithLayoutReview(rawText, jevAccess.apiKey)
       const batchTxs = parseResult.transactions.map(t => ({
         desc: t.description,
         val: t.is_card_bill_payment ? -Math.abs(t.amount) : Math.abs(t.amount),
@@ -214,7 +250,10 @@ export async function POST(req: NextRequest) {
         isFixed: t.is_fixed,
         isCardBillPayment: t.is_card_bill_payment,
         installmentCurrent: t.installment_current,
-        installmentTotal: t.installment_total
+        installmentTotal: t.installment_total,
+        entryType: t.entryType,
+        signedAmount: t.signedAmount,
+        direction: t.direction
       }))
 
       allBatches.push({
@@ -225,6 +264,7 @@ export async function POST(req: NextRequest) {
         period: parseResult.period,
         totalAmount: parseResult.total_amount,
         transactionCount: batchTxs.length,
+        diagnostics: parseResult.diagnostics,
         transactions: batchTxs
       })
     }
@@ -249,10 +289,9 @@ export async function POST(req: NextRequest) {
       totalTransactions
     })
   } catch (error: unknown) {
-    const errorMsg = error instanceof Error ? error.message : 'Falha ao processar arquivo'
-    console.error('Erro na rota /api/parse-document:', errorMsg)
+    console.error('Erro na rota /api/parse-document:', error instanceof Error ? error.name : 'unknown_error')
     return NextResponse.json(
-      { success: false, error: `Erro no processamento do documento: ${errorMsg}` },
+      { success: false, error: 'Erro no processamento do documento. Tente novamente.' },
       { status: 422 }
     )
   }

@@ -47,6 +47,7 @@ interface GranularExpenseAuditorProps {
   isDemo?: boolean
   selectedMonth?: number
   selectedYear?: number
+  initialCategory?: string
 }
 
 export const BH_HOSPITALS = [
@@ -184,13 +185,18 @@ export function GranularExpenseAuditor({
   currentFilter = 'PF', 
   isDemo = false,
   selectedMonth,
-  selectedYear
+  selectedYear,
+  initialCategory
 }: GranularExpenseAuditorProps) {
   const [transactions, setTransactions] = useState<GranularTransaction[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [txTypeFilter, setTxTypeFilter] = useState<'ALL' | 'EXPENSE' | 'INCOME'>('ALL')
   const [selectedAccount, setSelectedAccount] = useState<string>('ALL')
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory ? normalizeCategoryName(initialCategory) : 'ALL')
+  useEffect(() => {
+    setSelectedCategory(initialCategory ? normalizeCategoryName(initialCategory) : 'ALL')
+    setSelectedSubdivision('ALL')
+  }, [initialCategory])
   const [selectedSubdivision, setSelectedSubdivision] = useState<string>('ALL')
   const [showIgnored, setShowIgnored] = useState(true)
   const [onlyUncategorized, setOnlyUncategorized] = useState(false)
@@ -1055,20 +1061,20 @@ export function GranularExpenseAuditor({
     <div className="space-y-5 animate-in fade-in duration-200">
       {/* 1. BANNER DO DETECTOR INTELIGENTE DE DUPLICIDADES (Cartão vs Débito de Fatura em Conta) */}
       {duplicateReport.hasDuplicates && (
-        <div className="p-4 md:p-5 rounded-3xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-amber-950 dark:text-amber-100">
+        <div className="p-4 md:p-5 rounded-xl bg-[var(--capital-warning-soft,#fcf1dc)] dark:bg-[var(--capital-warning-soft,#fcf1dc)] border border-[var(--capital-warning,#8b5b15)] text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
-              <span className="p-2 rounded-2xl bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 mt-0.5 shrink-0">
+              <span className="p-2 rounded-2xl bg-[var(--capital-warning-soft,#fcf1dc)] text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] border border-[var(--capital-warning,#8b5b15)] mt-0.5 shrink-0">
                 <AlertTriangle className="w-5 h-5" />
               </span>
               <div>
-                <h4 className="font-bold text-sm md:text-base text-amber-950 dark:text-amber-100 flex items-center gap-2">
+                <h4 className="font-bold text-sm md:text-base text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] flex items-center gap-2">
                   Prevenção de Duplicidade Ativa (Cartão vs Pagamento em Conta)
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-500/30">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--capital-warning-soft,#fcf1dc)] text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] border border-[var(--capital-warning,#8b5b15)]">
                     Aviso Contábil
                   </span>
                 </h4>
-                <p className="text-xs text-amber-900 dark:text-amber-200/90 mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] mt-1 max-w-2xl leading-relaxed">
                   Como você concentra seus gastos nos <strong>cartões de crédito</strong>, identificamos o débito do pagamento total da fatura na conta corrente concomitantemente aos lançamentos individuais do cartão. O sistema auto-deduplicou os débitos de fatura para não somar seus gastos duas vezes.
                 </p>
               </div>
@@ -1077,7 +1083,7 @@ export function GranularExpenseAuditor({
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={handleDeduplicateAll}
-                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/20 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-[var(--capital-button-text,#242a2e)] font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-none cursor-pointer"
                 title="Garante que todos os débitos de fatura fiquem ignorados e não dupliquem suas despesas"
               >
                 <ShieldCheck className="w-4 h-4" />
@@ -1090,20 +1096,20 @@ export function GranularExpenseAuditor({
 
       {/* 2. BANNER DE LANÇAMENTOS SEM CATEGORIA OU SEM SUBCATEGORIA */}
       {uncategorizedItems.length > 0 && (
-        <div className="p-4 md:p-5 rounded-3xl bg-amber-500/15 dark:bg-amber-500/20 border border-amber-500/35 text-amber-950 dark:text-amber-100">
+        <div className="p-4 md:p-5 rounded-xl bg-[var(--capital-warning-soft,#fcf1dc)] dark:bg-[var(--capital-warning-soft,#fcf1dc)] border border-[var(--capital-warning,#8b5b15)] text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
-              <span className="p-2 rounded-2xl bg-amber-500/25 text-amber-700 dark:text-amber-400 border border-amber-500/40 mt-0.5 shrink-0">
+              <span className="p-2 rounded-2xl bg-[var(--capital-warning-soft,#fcf1dc)] text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] border border-[var(--capital-warning,#8b5b15)] mt-0.5 shrink-0">
                 <HelpCircle className="w-5 h-5" />
               </span>
               <div>
-                <h4 className="font-bold text-sm md:text-base text-amber-950 dark:text-amber-100 flex items-center gap-2">
+                <h4 className="font-bold text-sm md:text-base text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] flex items-center gap-2">
                   {uncategorizedItems.length} Lançamento(s) Pendente(s) de Classificação
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-500/30">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--capital-warning-soft,#fcf1dc)] text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] border border-[var(--capital-warning,#8b5b15)]">
                     Ação Necessária
                   </span>
                 </h4>
-                <p className="text-xs text-amber-900 dark:text-amber-200/90 mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] mt-1 max-w-2xl leading-relaxed">
                   Identificamos <strong>{uncategorizedItems.length} despesa(s)</strong> (totalizando <strong>R$ {uncategorizedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>) sem categoria ou subcategoria definida. Classifique-as para manter a precisão contábil do orçamento.
                 </p>
               </div>
@@ -1114,8 +1120,8 @@ export function GranularExpenseAuditor({
                 onClick={() => setOnlyUncategorized(!onlyUncategorized)}
                 className={`px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer ${
                   onlyUncategorized
-                    ? 'bg-amber-400 text-slate-950 ring-2 ring-amber-300 shadow-amber-400/30'
-                    : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20'
+                    ? 'bg-amber-400 text-[var(--capital-button-text,#242a2e)] ring-2 ring-amber-300 shadow-none'
+                    : 'bg-amber-500 hover:bg-amber-400 text-[var(--capital-button-text,#242a2e)] shadow-none'
                 }`}
               >
                 <Filter className="w-4 h-4" />
@@ -1128,21 +1134,21 @@ export function GranularExpenseAuditor({
 
       {/* 3. WIDGET INTERATIVO: SUBDIVISÃO NÍVEL 3 (Exibido SOMENTE quando houver filtro ativo de categoria ou subdivisão) */}
       {level3Stats.hasData && (
-        <div className="p-4 md:p-5 rounded-3xl bg-slate-900 border border-indigo-500/30 text-white space-y-3.5 shadow-md animate-in fade-in duration-200">
+        <div className="p-4 md:p-5 rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-accent,#927025)] text-[var(--capital-text,#242a2e)] space-y-3.5 shadow-md animate-in fade-in duration-200">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
-              <span className="p-2 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+              <span className="p-2 rounded-2xl bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] border border-[var(--capital-accent,#927025)]">
                 <Building2 className="w-4 h-4" />
               </span>
               <div>
-                <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                <h4 className="font-bold text-sm text-[var(--capital-text,#242a2e)] flex items-center gap-2">
                   {level3Stats.title}
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] border border-[var(--capital-accent,#927025)]">
                     Nível 3 (Tags & Locais)
                   </span>
                 </h4>
-                <p className="text-[11px] text-slate-400">
-                  Total acumulado no escopo: <strong className="text-white font-mono">R$ {level3Stats.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                <p className="text-[11px] text-[var(--capital-muted,#242a2e)]">
+                  Total acumulado no escopo: <strong className="text-[var(--capital-text,#242a2e)] font-mono">R$ {level3Stats.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
                 </p>
               </div>
             </div>
@@ -1150,7 +1156,7 @@ export function GranularExpenseAuditor({
             {selectedSubdivision !== 'ALL' && (
               <button
                 onClick={() => setSelectedSubdivision('ALL')}
-                className="text-xs text-indigo-400 hover:text-indigo-300 font-bold underline cursor-pointer"
+                className="text-xs text-[var(--capital-accent,#927025)] hover:text-[var(--capital-accent,#927025)] font-bold underline cursor-pointer"
               >
                 Limpar filtro ({selectedSubdivision})
               </button>
@@ -1167,33 +1173,33 @@ export function GranularExpenseAuditor({
                   onClick={() => setSelectedSubdivision(isSelected ? 'ALL' : item.name)}
                   className={`p-3 rounded-2xl border transition-all cursor-pointer ${
                     isSelected
-                      ? 'border-indigo-400 bg-indigo-500/20 ring-2 ring-indigo-400/40 shadow-sm'
-                      : 'border-slate-800 bg-slate-950/60 hover:border-slate-700'
+                      ? 'border-[var(--capital-accent,#927025)] bg-[var(--capital-soft,#f6f0df)] ring-2 ring-[var(--capital-accent,#927025)] shadow-sm'
+                      : 'border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)] hover:border-[var(--capital-line,#e4dfd3)]'
                   }`}
                   title={`Clique para filtrar lançamentos em ${item.name}`}
                 >
                   <div className="flex items-center justify-between gap-1 mb-1">
-                    <span className="text-xs font-bold text-white truncate" title={item.name}>
+                    <span className="text-xs font-bold text-[var(--capital-text,#242a2e)] truncate" title={item.name}>
                       🏷️ {item.name}
                     </span>
-                    <span className="text-[10px] font-mono font-bold text-indigo-400">
+                    <span className="text-[10px] font-mono font-bold text-[var(--capital-accent,#927025)]">
                       {item.pct.toFixed(1)}%
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between text-xs mt-2">
-                    <span className="font-mono font-bold text-sm text-indigo-300">
+                    <span className="font-mono font-bold text-sm text-[var(--capital-accent,#927025)]">
                       R$ {item.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-[var(--capital-muted,#242a2e)]">
                       {item.count} {item.count === 1 ? 'item' : 'itens'}
                     </span>
                   </div>
 
                   {/* Barra de Progresso */}
-                  <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2">
+                  <div className="w-full bg-[var(--capital-card,#f8fafc)] h-1.5 rounded-full overflow-hidden mt-2">
                     <div
-                      className="bg-gradient-to-r from-indigo-500 to-teal-400 h-full rounded-full transition-all duration-500"
+                      className="bg-[var(--capital-soft,#f6f0df)] from-indigo-500 to-teal-400 h-full rounded-full transition-all duration-500"
                       style={{ width: `${Math.min(100, item.pct)}%` }}
                     />
                   </div>
@@ -1205,22 +1211,22 @@ export function GranularExpenseAuditor({
       )}
 
       {/* 4. Barra Superior de Filtros e Ações */}
-      <div className="p-4 md:p-5 rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm space-y-3">
+      <div className="p-4 md:p-5 rounded-xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] shadow-sm space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Busca por Texto */}
           <div className="relative flex-1 min-w-[240px]">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[var(--capital-muted,#242a2e)] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input 
               type="text"
               placeholder="Buscar por estabelecimento, categoria, hospital, conta..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="w-full pl-9 pr-4 py-2 rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-xs text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)]"
             />
             {searchTerm && (
               <button 
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-muted,#242a2e)]"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -1233,7 +1239,7 @@ export function GranularExpenseAuditor({
             <select
               value={txTypeFilter}
               onChange={(e) => setTxTypeFilter(e.target.value as 'ALL' | 'EXPENSE' | 'INCOME')}
-              className="rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              className="rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] focus:outline-none cursor-pointer"
             >
               <option value="ALL">🌐 Todos os Lançamentos</option>
               <option value="EXPENSE">🔴 Apenas Despesas (-)</option>
@@ -1244,7 +1250,7 @@ export function GranularExpenseAuditor({
             <select
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="rounded-xl bg-slate-50 dark:bg-slate-950 border border-emerald-500/40 dark:border-emerald-500/40 px-3 py-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 focus:outline-none cursor-pointer"
+              className="rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-accent,#927025)] dark:border-[var(--capital-accent,#927025)] px-3 py-2 text-xs font-bold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] focus:outline-none cursor-pointer"
             >
               {availablePeriods.map(p => (
                 <option key={p} value={p}>{formatPeriodLabel(p)}</option>
@@ -1256,7 +1262,7 @@ export function GranularExpenseAuditor({
             <select
               value={selectedAccount}
               onChange={(e) => setSelectedAccount(e.target.value)}
-              className="rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              className="rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] focus:outline-none cursor-pointer"
             >
               <option value="ALL">Todas as Contas / Cartões</option>
               {availableAccounts.map(acc => (
@@ -1268,7 +1274,7 @@ export function GranularExpenseAuditor({
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              className="rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] focus:outline-none cursor-pointer"
             >
               <option value="ALL">Todas as Categorias</option>
               {availableCategories.map(cat => (
@@ -1281,7 +1287,7 @@ export function GranularExpenseAuditor({
               <select
                 value={selectedSubdivision}
                 onChange={(e) => setSelectedSubdivision(e.target.value)}
-                className="rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/30 px-3 py-2 text-xs font-semibold text-indigo-700 dark:text-indigo-300 focus:outline-none cursor-pointer"
+                className="rounded-xl bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] dark:border-[var(--capital-accent,#927025)] px-3 py-2 text-xs font-semibold text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] focus:outline-none cursor-pointer"
               >
                 <option value="ALL">Todos os Hospitais / Locais</option>
                 {availableSubdivisions.map(subdiv => (
@@ -1294,7 +1300,7 @@ export function GranularExpenseAuditor({
             <select
               value={aiFilter}
               onChange={(e) => setAiFilter(e.target.value as any)}
-              className="rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/30 px-3 py-2 text-xs font-semibold text-indigo-700 dark:text-indigo-300 focus:outline-none cursor-pointer"
+              className="rounded-xl bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] dark:border-[var(--capital-accent,#927025)] px-3 py-2 text-xs font-semibold text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] focus:outline-none cursor-pointer"
             >
               <option value="ALL">Filtro IA: Todos</option>
               <option value="PENDING">⚠️ Somente Pendentes ({uncategorizedItems.length})</option>
@@ -1307,10 +1313,10 @@ export function GranularExpenseAuditor({
             <button
               onClick={handleCategorizePendingWithAi}
               disabled={isAiBatchRunning || uncategorizedItems.length === 0}
-              className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-50 ${
                 isAiBatchRunning 
-                  ? 'bg-indigo-600 text-white' 
-                  : 'bg-indigo-500 hover:bg-indigo-400 text-white shadow-indigo-500/25 active:scale-95'
+                  ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)]'
+                  : 'bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] shadow-none active:scale-95'
               }`}
               title="Aciona o Jev em fila concorrente para sugerir categorias para todos os lançamentos pendentes em modo sombra"
             >
@@ -1332,8 +1338,8 @@ export function GranularExpenseAuditor({
               onClick={() => setShowIgnored(!showIgnored)}
               className={`px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 showIgnored 
-                  ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' 
-                  : 'border-slate-200 dark:border-white/10 text-slate-500 hover:text-slate-700'
+                  ? 'border-[var(--capital-accent,#927025)] bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]'
+                  : 'border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)]'
               }`}
               title="Mostrar ou ocultar lançamentos marcados como deduplicados / ignorados"
             >
@@ -1344,7 +1350,7 @@ export function GranularExpenseAuditor({
             {/* Botão de Adicionar Novo Lançamento Manual */}
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-semibold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
               <span>+ Novo Lançamento</span>
@@ -1353,49 +1359,49 @@ export function GranularExpenseAuditor({
         </div>
 
         {/* Resumo de Totais do Extrato */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-white/5 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-xs">
           <div className="flex flex-wrap items-center gap-3 text-xs">
-            <span className="text-slate-500 dark:text-slate-400">
-              Lançamentos: <strong className="text-slate-900 dark:text-white font-mono">{metrics.count}</strong>
+            <span className="text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
+              Lançamentos: <strong className="text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] font-mono">{metrics.count}</strong>
             </span>
 
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] font-bold">
               🟢 Receitas (+): <strong className="font-mono">R$ {metrics.incomeActive.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
             </span>
 
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 font-bold">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--capital-danger-soft,#fcecec)] border border-[var(--capital-danger,#ad3333)] text-[var(--capital-danger,#ad3333)] dark:text-[var(--capital-danger,#ad3333)] font-bold">
               🔴 Despesas (-): <strong className="font-mono">R$ {metrics.expenseActive.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
             </span>
 
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-bold ${
               metrics.netBalance >= 0 
-                ? 'bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-300' 
-                : 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-300'
+                ? 'bg-[var(--capital-soft,#f6f0df)] border-[var(--capital-accent,#927025)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]'
+                : 'bg-[var(--capital-warning-soft,#fcf1dc)] border-[var(--capital-warning,#8b5b15)] text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)]'
             }`}>
               ⚖️ Saldo Líquido: <strong className="font-mono">{metrics.netBalance >= 0 ? '+' : ''}R$ {metrics.netBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
             </span>
 
             {metrics.deduplicatedVal > 0 && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 font-medium">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--capital-warning-soft,#fcf1dc)] border border-[var(--capital-warning,#8b5b15)] text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] font-medium">
                 👁️ Deduplicados: <strong className="font-mono">R$ {metrics.deduplicatedVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
               </span>
             )}
           </div>
-          <span className="text-[11px] text-slate-400 hidden md:inline">
+          <span className="text-[11px] text-[var(--capital-muted,#242a2e)] hidden md:inline">
             Clique no cabeçalho de qualquer coluna para ordenar ou no ícone de lápis para editar.
           </span>
         </div>
       </div>
 
       {/* 5. Tabela Granular de Transações Item a Item */}
-      <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] shadow-sm overflow-hidden">
         {/* Banner de Lote Ativo no topo da Tabela */}
         {selectedTxIds.size > 0 && (
-          <div className="p-3 bg-emerald-500/10 dark:bg-emerald-500/15 border-b border-emerald-500/20 flex flex-wrap items-center justify-between gap-2 px-4 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+          <div className="p-3 bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] border-b border-[var(--capital-accent,#927025)] flex flex-wrap items-center justify-between gap-2 px-4 text-xs font-semibold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <CheckCircle2 className="w-4 h-4 text-[var(--capital-success,#157449)]" />
               <span><strong>{selectedTxIds.size}</strong> lançamento(s) selecionado(s)</span>
-              <span className="font-mono font-bold text-slate-900 dark:text-white bg-emerald-500/20 px-2 py-0.5 rounded-md">
+              <span className="font-mono font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] bg-[var(--capital-soft,#f6f0df)] px-2 py-0.5 rounded-md">
                 Total: R$ {selectedTotalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
             </div>
@@ -1403,14 +1409,14 @@ export function GranularExpenseAuditor({
               <button
                 type="button"
                 onClick={handleSelectOnlyUncategorized}
-                className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 text-[11px] font-bold cursor-pointer transition-colors"
+                className="px-2.5 py-1 rounded-lg bg-[var(--capital-warning-soft,#fcf1dc)] hover:bg-[var(--capital-warning-soft,#fcf1dc)] text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] text-[11px] font-bold cursor-pointer transition-colors"
               >
                 Marcar só pendentes ({uncategorizedInViewCount})
               </button>
               <button
                 type="button"
                 onClick={handleClearSelection}
-                className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 text-[11px] font-bold cursor-pointer transition-colors"
+                className="px-2.5 py-1 rounded-lg bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:bg-[var(--capital-card,#f8fafc)] dark:hover:bg-[var(--capital-card,#232a2e)] text-[11px] font-bold cursor-pointer transition-colors"
               >
                 Desmarcar todos
               </button>
@@ -1420,7 +1426,7 @@ export function GranularExpenseAuditor({
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-950/70 border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold select-none">
+            <thead className="bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border-b border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] uppercase tracking-wider font-semibold select-none">
               <tr>
                 <th className="py-3 px-3 text-center w-10">
                   <input
@@ -1428,13 +1434,13 @@ export function GranularExpenseAuditor({
                     aria-label="Selecionar todos"
                     checked={filteredList.length > 0 && selectedTxIds.size === filteredList.length}
                     onChange={handleToggleSelectAll}
-                    className="rounded text-emerald-500 focus:ring-emerald-400 cursor-pointer w-4 h-4"
+                    className="rounded text-[var(--capital-success,#157449)] focus:ring-[var(--capital-accent,#927025)] cursor-pointer w-4 h-4"
                     title="Selecionar / Desmarcar todos os visíveis"
                   />
                 </th>
                 <th 
                   onClick={() => handleSort('date')} 
-                  className="py-3 px-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
+                  className="py-3 px-4 cursor-pointer hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors"
                   title="Clique para ordenar por data"
                 >
                   <div className="flex items-center gap-1">
@@ -1444,7 +1450,7 @@ export function GranularExpenseAuditor({
                 </th>
                 <th 
                   onClick={() => handleSort('description')} 
-                  className="py-3 px-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
+                  className="py-3 px-4 cursor-pointer hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors"
                   title="Clique para ordenar por estabelecimento / descrição"
                 >
                   <div className="flex items-center gap-1">
@@ -1454,7 +1460,7 @@ export function GranularExpenseAuditor({
                 </th>
                 <th 
                   onClick={() => handleSort('accountOrCard')} 
-                  className="py-3 px-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
+                  className="py-3 px-4 cursor-pointer hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors"
                   title="Clique para ordenar por conta / cartão"
                 >
                   <div className="flex items-center gap-1">
@@ -1464,7 +1470,7 @@ export function GranularExpenseAuditor({
                 </th>
                 <th 
                   onClick={() => handleSort('category')} 
-                  className="py-3 px-4 cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
+                  className="py-3 px-4 cursor-pointer hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors"
                   title="Clique para ordenar por categoria"
                 >
                   <div className="flex items-center gap-1">
@@ -1477,7 +1483,7 @@ export function GranularExpenseAuditor({
                 </th>
                 <th 
                   onClick={() => handleSort('amount')} 
-                  className="py-3 px-4 text-right cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
+                  className="py-3 px-4 text-right cursor-pointer hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors"
                   title="Clique para ordenar por valor"
                 >
                   <div className="flex items-center justify-end gap-1">
@@ -1487,7 +1493,7 @@ export function GranularExpenseAuditor({
                 </th>
                 <th 
                   onClick={() => handleSort('isIgnored')} 
-                  className="py-3 px-4 text-center cursor-pointer hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors"
+                  className="py-3 px-4 text-center cursor-pointer hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors"
                   title="Clique para ordenar por status"
                 >
                   <div className="flex items-center justify-center gap-1">
@@ -1498,10 +1504,10 @@ export function GranularExpenseAuditor({
                 <th className="py-3 px-4 text-center">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+            <tbody className="divide-y divide-[var(--capital-line,#e4dfd3)] dark:divide-[var(--capital-line,#e4dfd3)]">
               {sortedList.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={8} className="py-12 text-center text-[var(--capital-muted,#242a2e)]">
                     Nenhum lançamento encontrado para os filtros selecionados.
                   </td>
                 </tr>
@@ -1514,13 +1520,13 @@ export function GranularExpenseAuditor({
                   return (
                     <tr 
                       key={tx.id} 
-                      className={`hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors ${
+                      className={`hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-white/[0.02] transition-colors ${
                         isSelected 
-                          ? 'bg-emerald-500/15 dark:bg-emerald-500/20 ring-1 ring-inset ring-emerald-500/40' 
+                          ? 'bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] ring-1 ring-inset ring-[var(--capital-accent,#927025)]'
                           : tx.isIgnored 
-                            ? 'opacity-50 bg-slate-100/40 dark:bg-slate-950/20' 
+                            ? 'opacity-50 bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)]'
                             : isUncat 
-                              ? 'bg-amber-500/5 dark:bg-amber-500/10' 
+                              ? 'bg-[var(--capital-warning-soft,#fcf1dc)] dark:bg-[var(--capital-warning-soft,#fcf1dc)]'
                               : ''
                       }`}
                     >
@@ -1530,36 +1536,36 @@ export function GranularExpenseAuditor({
                           aria-label={`Selecionar ${tx.description}`}
                           checked={isSelected}
                           onChange={() => handleToggleSelectTx(tx.id)}
-                          className="rounded text-emerald-500 focus:ring-emerald-400 cursor-pointer w-4 h-4"
+                          className="rounded text-[var(--capital-success,#157449)] focus:ring-[var(--capital-accent,#927025)] cursor-pointer w-4 h-4"
                         />
                       </td>
-                      <td className="py-3 px-4 font-mono text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                      <td className="py-3 px-4 font-mono text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] whitespace-nowrap">
                         {tx.date}
                       </td>
-                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white max-w-xs truncate" title={tx.description}>
+                      <td className="py-3 px-4 font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] max-w-xs truncate" title={tx.description}>
                         {tx.description}
                         {tx.isDuplicateSuspect && (
-                          <span className="ml-2 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                          <span className="ml-2 text-[10px] font-bold text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] bg-[var(--capital-warning-soft,#fcf1dc)] px-1.5 py-0.5 rounded border border-[var(--capital-warning,#8b5b15)]">
                             Fatura Cartão
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[11px] font-medium">
-                          <CreditCard className="w-3 h-3 text-slate-400" />
+                      <td className="py-3 px-4 text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] text-[11px] font-medium">
+                          <CreditCard className="w-3 h-3 text-[var(--capital-muted,#242a2e)]" />
                           {tx.accountOrCard}
                         </span>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex flex-col gap-0.5">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-slate-800 dark:text-slate-200">
-                              {tx.category || <span className="text-amber-500 font-bold">⚠️ Sem Categoria</span>}
+                            <span className="font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]">
+                              {tx.category || <span className="text-[var(--capital-warning,#8b5b15)] font-bold">⚠️ Sem Categoria</span>}
                             </span>
                             {isUncat && (
                               <button
                                 onClick={() => handleOpenEdit(tx)}
-                                className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 hover:bg-amber-400 transition-colors"
+                                className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500 text-[var(--capital-button-text,#242a2e)] hover:bg-amber-400 transition-colors"
                               >
                                 Classificar
                               </button>
@@ -1567,20 +1573,20 @@ export function GranularExpenseAuditor({
                           </div>
                           
                           <div className="flex flex-wrap items-center gap-1">
-                            <span className="text-[10px] text-slate-400">
-                              {tx.subcategory || <span className="text-amber-500/80">⚠️ Sem Subcategoria</span>}
+                            <span className="text-[10px] text-[var(--capital-muted,#242a2e)]">
+                              {tx.subcategory || <span className="text-[var(--capital-warning,#8b5b15)]">⚠️ Sem Subcategoria</span>}
                             </span>
 
                             {/* Subdivisão Nível 3 (Hospital / Local) */}
                             {tx.subdivision && (
-                              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
+                              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] border border-[var(--capital-accent,#927025)]">
                                 🏥 {tx.subdivision}
                               </span>
                             )}
 
                             {/* Vínculo de Investimento */}
                             {tx.investmentAsset && (
-                              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                              <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-success,#157449)] border border-[var(--capital-accent,#927025)]">
                                 💼 {tx.investmentAction === 'APORTE' ? 'Aporte:' : 'Resgate:'} {tx.investmentAsset}
                               </span>
                             )}
@@ -1588,14 +1594,14 @@ export function GranularExpenseAuditor({
 
                           {/* Bloco de Sugestão Jev (Modo Sombra) */}
                           {tx.aiSuggestedCategory && tx.categorizationStatus !== 'confirmed' && (
-                            <div className="mt-1.5 p-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-between gap-1.5 animate-in fade-in">
-                              <div className="flex items-center gap-1 text-[10px] text-indigo-300 font-medium truncate">
-                                <Sparkles className="w-3 h-3 text-indigo-400 shrink-0" />
+                            <div className="mt-1.5 p-1.5 rounded-lg bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] flex items-center justify-between gap-1.5 animate-in fade-in">
+                              <div className="flex items-center gap-1 text-[10px] text-[var(--capital-accent,#927025)] font-medium truncate">
+                                <Sparkles className="w-3 h-3 text-[var(--capital-accent,#927025)] shrink-0" />
                                 <span>
                                   <strong>{tx.aiSuggestedCategory}</strong> &gt; {tx.aiSuggestedSubcategory}
                                 </span>
                                 {typeof tx.categoryConfidence === 'number' && (
-                                  <span className="text-[9px] font-mono font-bold text-indigo-200 bg-indigo-500/20 px-1 py-0.2 rounded">
+                                  <span className="text-[9px] font-mono font-bold text-[var(--capital-accent,#927025)] bg-[var(--capital-soft,#f6f0df)] px-1 py-0.2 rounded">
                                     {(tx.categoryConfidence * 100).toFixed(0)}%
                                   </span>
                                 )}
@@ -1604,7 +1610,7 @@ export function GranularExpenseAuditor({
                                 <button
                                   type="button"
                                   onClick={() => handleAcceptAiSuggestion(tx)}
-                                  className="px-1.5 py-0.5 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-bold flex items-center gap-0.5 transition-colors cursor-pointer"
+                                  className="px-1.5 py-0.5 rounded bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] text-[10px] font-bold flex items-center gap-0.5 transition-colors cursor-pointer"
                                   title="Aceitar sugestão da IA"
                                 >
                                   <Check className="w-3 h-3" />
@@ -1613,7 +1619,7 @@ export function GranularExpenseAuditor({
                                 <button
                                   type="button"
                                   onClick={() => handleRejectAiSuggestion(tx)}
-                                  className="px-1 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 text-[10px] font-bold transition-colors cursor-pointer"
+                                  className="px-1 py-0.5 rounded bg-[var(--capital-card,#f8fafc)] hover:bg-[var(--capital-card,#f8fafc)] text-[var(--capital-muted,#242a2e)] text-[10px] font-bold transition-colors cursor-pointer"
                                   title="Rejeitar sugestão"
                                 >
                                   <X className="w-3 h-3" />
@@ -1627,49 +1633,49 @@ export function GranularExpenseAuditor({
                       {/* Coluna Origem / IA */}
                       <td className="py-3 px-4 text-center whitespace-nowrap">
                         {tx.categorySource === 'local_rule' ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30" title={tx.certaintyLabel || 'Regra memorizada'}>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-success,#157449)] border border-[var(--capital-accent,#927025)]" title={tx.certaintyLabel || 'Regra memorizada'}>
                             <BookmarkCheck className="w-3 h-3" />
                             Regra
                           </span>
                         ) : tx.categorySource === 'jev' || tx.aiSuggestedCategory ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30" title="Sugestão gerada pelo Jev em Modo Sombra">
-                            <BrainCircuit className="w-3 h-3 text-indigo-400" />
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] border border-[var(--capital-accent,#927025)]" title="Sugestão gerada pelo Jev em Modo Sombra">
+                            <BrainCircuit className="w-3 h-3 text-[var(--capital-accent,#927025)]" />
                             Jev
                           </span>
                         ) : tx.categorySource === 'manual' ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] border border-[var(--capital-accent,#927025)]">
                             Manual
                           </span>
                         ) : isUncat ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--capital-warning-soft,#fcf1dc)] text-[var(--capital-warning,#8b5b15)] border border-[var(--capital-warning,#8b5b15)]">
                             Pendente
                           </span>
                         ) : (
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[10px] text-[var(--capital-muted,#242a2e)]">
                             Importado
                           </span>
                         )}
                       </td>
                       <td className={`py-3 px-4 text-right font-mono font-bold whitespace-nowrap ${
                         tx.isIgnored 
-                          ? 'text-slate-400 line-through' 
+                          ? 'text-[var(--capital-muted,#242a2e)] line-through'
                           : isPositive 
-                            ? 'text-emerald-600 dark:text-emerald-400' 
-                            : 'text-rose-600 dark:text-rose-400'
+                            ? 'text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]'
+                            : 'text-[var(--capital-danger,#ad3333)] dark:text-[var(--capital-danger,#ad3333)]'
                       }`}>
                         {isPositive ? '+' : '-'} R$ {Math.abs(tx.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="py-3 px-4 text-center whitespace-nowrap">
                         {tx.isIgnored ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] bg-[var(--capital-warning-soft,#fcf1dc)] px-2 py-0.5 rounded-full border border-[var(--capital-warning,#8b5b15)]">
                             Deduplicado
                           </span>
                         ) : isUncat ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-500 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--capital-warning,#8b5b15)] bg-[var(--capital-warning-soft,#fcf1dc)] px-2 py-0.5 rounded-full border border-[var(--capital-warning,#8b5b15)]">
                             ⚠️ Pendente
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] bg-[var(--capital-soft,#f6f0df)] px-2 py-0.5 rounded-full border border-[var(--capital-accent,#927025)]">
                             Ativo
                           </span>
                         )}
@@ -1678,7 +1684,7 @@ export function GranularExpenseAuditor({
                         <div className="inline-flex items-center gap-1">
                           <button
                             onClick={() => handleOpenEdit(tx)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-success,#157449)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors cursor-pointer"
                             title="Editar lançamento e classificar"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
@@ -1687,8 +1693,8 @@ export function GranularExpenseAuditor({
                             onClick={() => handleToggleIgnore(tx.id)}
                             className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                               tx.isIgnored 
-                                ? 'text-amber-500 hover:bg-amber-500/10' 
-                                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-white/5'
+                                ? 'text-[var(--capital-warning,#8b5b15)] hover:bg-[var(--capital-warning-soft,#fcf1dc)]'
+                                : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-muted,#242a2e)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)]'
                             }`}
                             title={tx.isIgnored ? 'Reativar no cálculo de despesas' : 'Deduplicar / Ignorar do cálculo'}
                           >
@@ -1696,7 +1702,7 @@ export function GranularExpenseAuditor({
                           </button>
                           <button
                             onClick={() => handleDelete(tx.id)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-danger,#ad3333)] hover:bg-[var(--capital-danger-soft,#fcecec)] transition-colors cursor-pointer"
                             title="Excluir lançamento"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1714,16 +1720,16 @@ export function GranularExpenseAuditor({
 
       {/* 6. MODAL DE EDIÇÃO INDIVIDUAL DA DESPESA / RECEITA */}
       {editingTx && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-150">
-          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900 text-slate-100 shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="font-bold text-base text-white flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-emerald-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-[var(--capital-card,#f8fafc)] backdrop-blur-md animate-in fade-in duration-150">
+          <div className="w-full max-w-lg rounded-xl border border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)] text-[var(--capital-text,#242a2e)] shadow-sm p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-[var(--capital-line,#e4dfd3)] pb-3">
+              <h3 className="font-bold text-base text-[var(--capital-text,#242a2e)] flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-[var(--capital-success,#157449)]" />
                 Editar Lançamento Individual
               </h3>
               <button 
                 onClick={() => setEditingTx(null)}
-                className="text-slate-400 hover:text-white cursor-pointer"
+                className="text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1732,10 +1738,10 @@ export function GranularExpenseAuditor({
             <div className="space-y-3">
               {/* TOGGLE: DESPESA (-) VS RECEITA (+) */}
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block mb-1">
                   Tipo de Lançamento
                 </label>
-                <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-950 border border-white/10">
+                <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)]">
                   <button
                     type="button"
                     onClick={() => {
@@ -1752,8 +1758,8 @@ export function GranularExpenseAuditor({
                     }}
                     className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       editForm.txType === 'EXPENSE'
-                        ? 'bg-rose-600 text-white font-black shadow-md'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-rose-600 text-white font-semibold shadow-md'
+                        : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)]'
                     }`}
                   >
                     <span>🔴 Despesa (-)</span>
@@ -1774,8 +1780,8 @@ export function GranularExpenseAuditor({
                     }}
                     className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       editForm.txType === 'INCOME'
-                        ? 'bg-emerald-600 text-white font-black shadow-md'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] font-semibold shadow-md'
+                        : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-button-text,#211f19)]'
                     }`}
                   >
                     <span>🟢 Receita (+)</span>
@@ -1784,20 +1790,20 @@ export function GranularExpenseAuditor({
               </div>
 
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block mb-1">
                   Estabelecimento / Descrição
                 </label>
                 <input 
                   type="text"
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                  className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-semibold text-[var(--capital-text,#242a2e)] focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block mb-1">
                     Valor (R$)
                   </label>
                   <input 
@@ -1805,18 +1811,18 @@ export function GranularExpenseAuditor({
                     step="0.01"
                     value={editForm.amount}
                     onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-mono font-bold text-[var(--capital-text,#242a2e)] focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)]"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block mb-1">
                     Data
                   </label>
                   <input 
                     type="date"
                     value={editForm.date}
                     onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs text-[var(--capital-text,#242a2e)] focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)]"
                   />
                 </div>
               </div>
@@ -1824,13 +1830,13 @@ export function GranularExpenseAuditor({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block">
                       Categoria ({editForm.txType === 'INCOME' ? 'Receita' : 'Despesa'})
                     </label>
                     <button
                       type="button"
                       onClick={() => handleOpenInvestmentLink('EDIT', 'APORTE')}
-                      className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 hover:underline cursor-pointer"
+                      className="text-[10px] font-bold text-[var(--capital-success,#157449)] flex items-center gap-1 hover:underline cursor-pointer"
                     >
                       <PieChart className="w-3 h-3" />
                       <span>{editForm.investmentAsset ? 'Ativo OK' : 'Investimento?'}</span>
@@ -1861,7 +1867,7 @@ export function GranularExpenseAuditor({
                           }))
                         }
                       }}
-                      className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                      className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-semibold text-[var(--capital-text,#242a2e)] focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)] cursor-pointer"
                     >
                       <option value="">-- Selecione uma Categoria --</option>
                       {(editForm.txType === 'INCOME' ? incomeCategories : expenseCategories).map(cat => (
@@ -1876,12 +1882,12 @@ export function GranularExpenseAuditor({
                         placeholder="Nome da Nova Categoria"
                         value={editForm.customCategory}
                         onChange={(e) => setEditForm({ ...editForm, customCategory: e.target.value })}
-                        className="w-full rounded-xl bg-slate-950 border border-emerald-500 px-3 py-2 text-xs font-bold text-emerald-300 focus:outline-none"
+                        className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-accent,#927025)] px-3 py-2 text-xs font-bold text-[var(--capital-success,#157449)] focus:outline-none"
                       />
                       <button
                         type="button"
                         onClick={() => setEditForm({ ...editForm, isCustomCategory: false, category: expenseCategories[0] || '' })}
-                        className="text-[10px] text-slate-400 hover:text-white p-1"
+                        className="text-[10px] text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] p-1"
                         title="Voltar às categorias existentes"
                       >
                         ✕
@@ -1891,7 +1897,7 @@ export function GranularExpenseAuditor({
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block mb-1">
                     Subcategoria
                   </label>
                   {(!editForm.isCustomCategory && !editForm.isCustomSubcategory) ? (
@@ -1905,7 +1911,7 @@ export function GranularExpenseAuditor({
                           setEditForm(prev => ({ ...prev, subcategory: val, isCustomSubcategory: false }))
                         }
                       }}
-                      className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                      className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-semibold text-[var(--capital-text,#242a2e)] focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)] cursor-pointer"
                     >
                       <option value="">-- Selecione uma Subcategoria --</option>
                       {getSubcategoriesForCategory(editForm.category).map(sub => (
@@ -1920,13 +1926,13 @@ export function GranularExpenseAuditor({
                         placeholder="Nome da Nova Subcategoria"
                         value={editForm.customSubcategory}
                         onChange={(e) => setEditForm({ ...editForm, customSubcategory: e.target.value })}
-                        className="w-full rounded-xl bg-slate-950 border border-emerald-500 px-3 py-2 text-xs font-bold text-emerald-300 focus:outline-none"
+                        className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-accent,#927025)] px-3 py-2 text-xs font-bold text-[var(--capital-success,#157449)] focus:outline-none"
                       />
                       {!editForm.isCustomCategory && (
                         <button
                           type="button"
                           onClick={() => setEditForm({ ...editForm, isCustomSubcategory: false })}
-                          className="text-[10px] text-slate-400 hover:text-white p-1"
+                          className="text-[10px] text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] p-1"
                         >
                           ✕
                         </button>
@@ -1938,7 +1944,7 @@ export function GranularExpenseAuditor({
 
               {/* Subdivisão Nível 3 (Hospital / Local / Tag) */}
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400 block mb-1 flex items-center gap-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-accent,#927025)] block mb-1 flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
                   Subdivisão Nível 3 (Local / Hospital / Tag)
                 </label>
@@ -1947,13 +1953,13 @@ export function GranularExpenseAuditor({
                   placeholder="Ex: Hospital Madre Teresa, Presente Casamento..."
                   value={editForm.subdivision}
                   onChange={(e) => setEditForm({ ...editForm, subdivision: e.target.value })}
-                  className="w-full rounded-xl bg-slate-950 border border-indigo-500/30 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-accent,#927025)] px-3 py-2 text-xs text-[var(--capital-text,#242a2e)] focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)]"
                 />
 
                 {/* Chips e Sugestões Nível 3 para a categoria selecionada */}
                 {getSubdivisionsForScope(editForm.category, editForm.subcategory).length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    <span className="text-[10px] text-indigo-300 font-semibold w-full block">Subdivisões Existentes:</span>
+                    <span className="text-[10px] text-[var(--capital-accent,#927025)] font-semibold w-full block">Subdivisões Existentes:</span>
                     {getSubdivisionsForScope(editForm.category, editForm.subcategory).map((tag) => (
                       <button
                         key={tag}
@@ -1964,8 +1970,8 @@ export function GranularExpenseAuditor({
                         }))}
                         className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
                           editForm.subdivision === tag
-                            ? 'bg-indigo-600 text-white border-indigo-600 font-bold'
-                            : 'bg-slate-950 text-indigo-300 border-white/10 hover:border-indigo-400'
+                            ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] border-[var(--capital-accent,#927025)] font-bold'
+                            : 'bg-[var(--capital-card,#f8fafc)] text-[var(--capital-accent,#927025)] border-[var(--capital-line,#e4dfd3)] hover:border-[var(--capital-accent,#927025)]'
                         }`}
                       >
                         🏷️ {tag}
@@ -1977,54 +1983,54 @@ export function GranularExpenseAuditor({
 
               {/* Vínculo de Investimento */}
               {editForm.investmentAsset && (
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 text-emerald-400 font-bold truncate">
+                <div className="p-2.5 rounded-xl bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 text-[var(--capital-success,#157449)] font-bold truncate">
                     <PieChart className="w-3.5 h-3.5 shrink-0" />
                     <span>Vinculado a: <strong>{editForm.investmentAsset}</strong> ({editForm.investmentAction === 'APORTE' ? 'Aporte' : 'Resgate'})</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleOpenInvestmentLink('EDIT', editForm.investmentAction || 'APORTE')}
-                    className="text-[10px] text-emerald-400 underline font-bold cursor-pointer"
+                    className="text-[10px] text-[var(--capital-success,#157449)] underline font-bold cursor-pointer"
                   >
                     Trocar Ativo
                   </button>
                 </div>
               )}
 
-              <div className="pt-2 border-t border-white/5 space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+              <div className="pt-2 border-t border-[var(--capital-line,#e4dfd3)] space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-[var(--capital-text,#242a2e)]">
                   <input 
                     type="checkbox"
                     checked={editForm.isFixed}
                     onChange={(e) => setEditForm({ ...editForm, isFixed: e.target.checked })}
-                    className="rounded border-white/20 bg-slate-950 text-emerald-500 focus:ring-emerald-400 w-4 h-4 cursor-pointer"
+                    className="rounded border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)] text-[var(--capital-success,#157449)] focus:ring-[var(--capital-accent,#927025)] w-4 h-4 cursor-pointer"
                   />
                   <span>Despesa fixa recorrente</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-emerald-400 font-semibold">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-[var(--capital-success,#157449)] font-semibold">
                   <input 
                     type="checkbox"
                     checked={editForm.updateRuleToo}
                     onChange={(e) => setEditForm({ ...editForm, updateRuleToo: e.target.checked })}
-                    className="rounded border-white/20 bg-slate-950 text-emerald-500 focus:ring-emerald-400 w-4 h-4 cursor-pointer"
+                    className="rounded border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)] text-[var(--capital-success,#157449)] focus:ring-[var(--capital-accent,#927025)] w-4 h-4 cursor-pointer"
                   />
                   <span>Sempre categorizar lançamentos semelhantes nesta categoria</span>
                 </label>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--capital-line,#e4dfd3)]">
               <button
                 onClick={() => setEditingTx(null)}
-                className="px-4 py-2 rounded-xl border border-white/10 text-xs font-bold text-slate-300 hover:text-white cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-[var(--capital-line,#e4dfd3)] text-xs font-bold text-[var(--capital-text,#242a2e)] hover:text-[var(--capital-text,#242a2e)] cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSaveEdit}
-                className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-none cursor-pointer"
               >
                 <Check className="w-4 h-4" />
                 <span>Salvar Alterações</span>
@@ -2036,17 +2042,17 @@ export function GranularExpenseAuditor({
 
       {/* 7. MODAL DE ADIÇÃO MANUAL DE NOVO LANÇAMENTO */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-150">
-          <form onSubmit={handleCreateNew} className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900 text-slate-100 shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="font-bold text-base text-white flex items-center gap-2">
-                <PlusCircle className="w-4 h-4 text-emerald-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-[var(--capital-card,#f8fafc)] backdrop-blur-md animate-in fade-in duration-150">
+          <form onSubmit={handleCreateNew} className="w-full max-w-lg rounded-xl border border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)] text-[var(--capital-text,#242a2e)] shadow-sm p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-[var(--capital-line,#e4dfd3)] pb-3">
+              <h3 className="font-bold text-base text-[var(--capital-text,#242a2e)] flex items-center gap-2">
+                <PlusCircle className="w-4 h-4 text-[var(--capital-success,#157449)]" />
                 Novo Lançamento Manual
               </h3>
               <button 
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-slate-400 hover:text-white cursor-pointer"
+                className="text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -2055,10 +2061,10 @@ export function GranularExpenseAuditor({
             <div className="space-y-3">
               {/* TOGGLE: NOVAN DESPESA (-) VS NOVA RECEITA (+) */}
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block mb-1">
                   Tipo de Lançamento
                 </label>
-                <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-950 border border-white/10">
+                <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)]">
                   <button
                     type="button"
                     onClick={() => {
@@ -2075,8 +2081,8 @@ export function GranularExpenseAuditor({
                     }}
                     className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       newForm.txType === 'EXPENSE'
-                        ? 'bg-rose-600 text-white font-black shadow-md'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-rose-600 text-white font-semibold shadow-md'
+                        : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)]'
                     }`}
                   >
                     <span>🔴 Nova Despesa (-)</span>
@@ -2097,8 +2103,8 @@ export function GranularExpenseAuditor({
                     }}
                     className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       newForm.txType === 'INCOME'
-                        ? 'bg-emerald-600 text-white font-black shadow-md'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] font-semibold shadow-md'
+                        : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-button-text,#211f19)]'
                     }`}
                   >
                     <span>🟢 Nova Receita (+)</span>
@@ -2107,7 +2113,7 @@ export function GranularExpenseAuditor({
               </div>
 
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block mb-1">
                   Estabelecimento / Descrição
                 </label>
                 <input 
@@ -2126,13 +2132,13 @@ export function GranularExpenseAuditor({
                       subdivision: pred.subdivision || prev.subdivision
                     }))
                   }}
-                  className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-semibold text-[var(--capital-text,#242a2e)] focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block mb-1">
                     Valor (R$)
                   </label>
                   <input 
@@ -2142,11 +2148,11 @@ export function GranularExpenseAuditor({
                     placeholder="0,00"
                     value={newForm.amount}
                     onChange={(e) => setNewForm({ ...newForm, amount: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-mono font-bold text-[var(--capital-text,#242a2e)] focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)]"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block mb-1">
                     Data
                   </label>
                   <input 
@@ -2154,20 +2160,20 @@ export function GranularExpenseAuditor({
                     required
                     value={newForm.date}
                     onChange={(e) => setNewForm({ ...newForm, date: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs text-[var(--capital-text,#242a2e)] focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block mb-1">
                     Cartão / Conta
                   </label>
                   <select
                     value={newForm.accountOrCard}
                     onChange={(e) => setNewForm({ ...newForm, accountOrCard: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                    className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-semibold text-[var(--capital-text,#242a2e)] focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)] cursor-pointer"
                   >
                     {availableAccounts.map(acc => (
                       <option key={acc} value={acc}>{acc}</option>
@@ -2177,13 +2183,13 @@ export function GranularExpenseAuditor({
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block">
                       Categoria ({newForm.txType === 'INCOME' ? 'Receita' : 'Despesa'})
                     </label>
                     <button
                       type="button"
                       onClick={() => handleOpenInvestmentLink('NEW', 'APORTE')}
-                      className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 hover:underline cursor-pointer"
+                      className="text-[10px] font-bold text-[var(--capital-success,#157449)] flex items-center gap-1 hover:underline cursor-pointer"
                     >
                       <PieChart className="w-3 h-3" />
                       <span>{newForm.investmentAsset ? 'Ativo OK' : 'Investimento?'}</span>
@@ -2214,7 +2220,7 @@ export function GranularExpenseAuditor({
                           }))
                         }
                       }}
-                      className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                      className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-semibold text-[var(--capital-text,#242a2e)] focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)] cursor-pointer"
                     >
                       <option value="">-- Selecione uma Categoria --</option>
                       {(newForm.txType === 'INCOME' ? incomeCategories : expenseCategories).map(cat => (
@@ -2229,12 +2235,12 @@ export function GranularExpenseAuditor({
                         placeholder="Nome da Nova Categoria"
                         value={newForm.customCategory}
                         onChange={(e) => setNewForm({ ...newForm, customCategory: e.target.value })}
-                        className="w-full rounded-xl bg-slate-950 border border-emerald-500 px-3 py-2 text-xs font-bold text-emerald-300 focus:outline-none"
+                        className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-accent,#927025)] px-3 py-2 text-xs font-bold text-[var(--capital-success,#157449)] focus:outline-none"
                       />
                       <button
                         type="button"
                         onClick={() => setNewForm({ ...newForm, isCustomCategory: false, category: expenseCategories[0] || '' })}
-                        className="text-[10px] text-slate-400 hover:text-white p-1"
+                        className="text-[10px] text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] p-1"
                         title="Voltar às categorias existentes"
                       >
                         ✕
@@ -2246,7 +2252,7 @@ export function GranularExpenseAuditor({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block mb-1">
                     Subcategoria
                   </label>
                   {(!newForm.isCustomCategory && !newForm.isCustomSubcategory) ? (
@@ -2260,7 +2266,7 @@ export function GranularExpenseAuditor({
                           setNewForm(prev => ({ ...prev, subcategory: val, isCustomSubcategory: false }))
                         }
                       }}
-                      className="w-full rounded-xl bg-slate-950 border border-white/10 px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                      className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs font-semibold text-[var(--capital-text,#242a2e)] focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)] cursor-pointer"
                     >
                       <option value="">-- Selecione uma Subcategoria --</option>
                       {getSubcategoriesForCategory(newForm.category).map(sub => (
@@ -2275,13 +2281,13 @@ export function GranularExpenseAuditor({
                         placeholder="Nome da Nova Subcategoria"
                         value={newForm.customSubcategory}
                         onChange={(e) => setNewForm({ ...newForm, customSubcategory: e.target.value })}
-                        className="w-full rounded-xl bg-slate-950 border border-emerald-500 px-3 py-2 text-xs font-bold text-emerald-300 focus:outline-none"
+                        className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-accent,#927025)] px-3 py-2 text-xs font-bold text-[var(--capital-success,#157449)] focus:outline-none"
                       />
                       {!newForm.isCustomCategory && (
                         <button
                           type="button"
                           onClick={() => setNewForm({ ...newForm, isCustomSubcategory: false })}
-                          className="text-[10px] text-slate-400 hover:text-white p-1"
+                          className="text-[10px] text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] p-1"
                         >
                           ✕
                         </button>
@@ -2291,7 +2297,7 @@ export function GranularExpenseAuditor({
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400 block mb-1 flex items-center gap-1">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-accent,#927025)] block mb-1 flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
                     Subdivisão (Hospital / Local / Tag)
                   </label>
@@ -2300,7 +2306,7 @@ export function GranularExpenseAuditor({
                     placeholder="Ex: Hospital Madre Teresa, Presente Casamento..."
                     value={newForm.subdivision}
                     onChange={(e) => setNewForm({ ...newForm, subdivision: e.target.value })}
-                    className="w-full rounded-xl bg-slate-950 border border-indigo-500/30 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    className="w-full rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-accent,#927025)] px-3 py-2 text-xs text-[var(--capital-text,#242a2e)] focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)]"
                   />
                 </div>
               </div>
@@ -2308,7 +2314,7 @@ export function GranularExpenseAuditor({
               {/* Chips e Sugestões Nível 3 para a nova despesa */}
               {getSubdivisionsForScope(newForm.category, newForm.subcategory).length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="text-[10px] text-indigo-300 font-semibold w-full block">Subdivisões Existentes:</span>
+                  <span className="text-[10px] text-[var(--capital-accent,#927025)] font-semibold w-full block">Subdivisões Existentes:</span>
                   {getSubdivisionsForScope(newForm.category, newForm.subcategory).map((tag) => (
                     <button
                       key={tag}
@@ -2319,8 +2325,8 @@ export function GranularExpenseAuditor({
                       }))}
                       className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
                         newForm.subdivision === tag
-                          ? 'bg-indigo-600 text-white border-indigo-600 font-bold'
-                          : 'bg-slate-950 text-slate-300 border-white/10 hover:border-indigo-400'
+                          ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] border-[var(--capital-accent,#927025)] font-bold'
+                          : 'bg-[var(--capital-card,#f8fafc)] text-[var(--capital-text,#242a2e)] border-[var(--capital-line,#e4dfd3)] hover:border-[var(--capital-accent,#927025)]'
                       }`}
                     >
                       🏷️ {tag}
@@ -2331,55 +2337,55 @@ export function GranularExpenseAuditor({
 
               {/* Vínculo de Investimento */}
               {newForm.investmentAsset && (
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 text-emerald-400 font-bold truncate">
+                <div className="p-2.5 rounded-xl bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 text-[var(--capital-success,#157449)] font-bold truncate">
                     <PieChart className="w-3.5 h-3.5 shrink-0" />
                     <span>Vinculado a: <strong>{newForm.investmentAsset}</strong> ({newForm.investmentAction === 'APORTE' ? 'Aporte' : 'Resgate'})</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleOpenInvestmentLink('NEW', newForm.investmentAction || 'APORTE')}
-                    className="text-[10px] text-emerald-400 underline font-bold cursor-pointer"
+                    className="text-[10px] text-[var(--capital-success,#157449)] underline font-bold cursor-pointer"
                   >
                     Trocar Ativo
                   </button>
                 </div>
               )}
 
-              <div className="pt-2 border-t border-white/5 space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+              <div className="pt-2 border-t border-[var(--capital-line,#e4dfd3)] space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-[var(--capital-text,#242a2e)]">
                   <input 
                     type="checkbox"
                     checked={newForm.isFixed}
                     onChange={(e) => setNewForm({ ...newForm, isFixed: e.target.checked })}
-                    className="rounded border-white/20 bg-slate-950 text-emerald-500 focus:ring-emerald-400 w-4 h-4 cursor-pointer"
+                    className="rounded border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)] text-[var(--capital-success,#157449)] focus:ring-[var(--capital-accent,#927025)] w-4 h-4 cursor-pointer"
                   />
                   <span>Lançamento fixo recorrente</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-emerald-400 font-semibold">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-[var(--capital-success,#157449)] font-semibold">
                   <input 
                     type="checkbox"
                     checked={newForm.saveAsRule}
                     onChange={(e) => setNewForm({ ...newForm, saveAsRule: e.target.checked })}
-                    className="rounded border-white/20 bg-slate-950 text-emerald-500 focus:ring-emerald-400 w-4 h-4 cursor-pointer"
+                    className="rounded border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)] text-[var(--capital-success,#157449)] focus:ring-[var(--capital-accent,#927025)] w-4 h-4 cursor-pointer"
                   />
                   <span>Lembrar e sempre categorizar lançamentos semelhantes nesta categoria</span>
                 </label>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--capital-line,#e4dfd3)]">
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="px-4 py-2 rounded-xl border border-white/10 text-xs font-bold text-slate-300 hover:text-white cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-[var(--capital-line,#e4dfd3)] text-xs font-bold text-[var(--capital-text,#242a2e)] hover:text-[var(--capital-text,#242a2e)] cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20 cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-none cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>Salvar Lançamento</span>
@@ -2402,20 +2408,20 @@ export function GranularExpenseAuditor({
 
       {/* 9. BARRA FLUTUANTE DE CATEGORIZAÇÃO EM LOTE */}
       {selectedTxIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-4xl rounded-3xl bg-slate-900/95 dark:bg-slate-950/95 border-2 border-emerald-500 shadow-2xl backdrop-blur-xl p-4 text-white animate-in slide-in-from-bottom-5 duration-200">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-white/10 pb-3 mb-3">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-4xl rounded-xl bg-[var(--capital-card,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border-2 border-[var(--capital-accent,#927025)] shadow-sm backdrop-blur-xl p-4 text-[var(--capital-text,#242a2e)] animate-in slide-in-from-bottom-5 duration-200">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-[var(--capital-line,#e4dfd3)] pb-3 mb-3">
             <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold">
+              <div className="p-1.5 rounded-lg bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-bold">
                 <Layers className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                <h4 className="text-xs font-bold text-[var(--capital-text,#242a2e)] flex items-center gap-2">
                   <span>Categorizar {selectedTxIds.size} lançamento(s) selecionado(s)</span>
-                  <span className="font-mono text-emerald-400 font-extrabold text-xs bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  <span className="font-mono text-[var(--capital-success,#157449)] font-semibold text-xs bg-[var(--capital-soft,#f6f0df)] px-2 py-0.5 rounded border border-[var(--capital-accent,#927025)]">
                     Total: R$ {selectedTotalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </h4>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-[var(--capital-muted,#242a2e)]">
                   Defina a categoria e subcategoria desejadas para aplicar a todos simultaneamente.
                 </p>
               </div>
@@ -2425,15 +2431,15 @@ export function GranularExpenseAuditor({
               <button
                 type="button"
                 onClick={handleSelectOnlyUncategorized}
-                className="text-[11px] font-semibold text-amber-400 hover:underline cursor-pointer"
+                className="text-[11px] font-semibold text-[var(--capital-warning,#8b5b15)] hover:underline cursor-pointer"
               >
                 Marcar só pendentes ({uncategorizedInViewCount})
               </button>
-              <span className="text-slate-600">|</span>
+              <span className="text-[var(--capital-muted,#242a2e)]">|</span>
               <button
                 type="button"
                 onClick={handleClearSelection}
-                className="text-[11px] font-semibold text-slate-400 hover:text-white cursor-pointer"
+                className="text-[11px] font-semibold text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] cursor-pointer"
               >
                 Desmarcar ({selectedTxIds.size})
               </button>
@@ -2444,7 +2450,7 @@ export function GranularExpenseAuditor({
           <div className="space-y-3">
             {/* TOGGLE DESPESA VS RECEITA NA BARRA DE LOTE */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 bg-slate-800 p-1 rounded-xl border border-white/10">
+              <div className="flex items-center gap-1.5 bg-[var(--capital-card,#f8fafc)] p-1 rounded-xl border border-[var(--capital-line,#e4dfd3)]">
                 <button
                   type="button"
                   onClick={() => {
@@ -2458,8 +2464,8 @@ export function GranularExpenseAuditor({
                   }}
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     bulkTxType === 'EXPENSE'
-                      ? 'bg-rose-600 text-white font-black shadow-xs'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-rose-600 text-white font-semibold shadow-xs'
+                      : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)]'
                   }`}
                 >
                   <span>🔴 Despesas</span>
@@ -2477,8 +2483,8 @@ export function GranularExpenseAuditor({
                   }}
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     bulkTxType === 'INCOME'
-                      ? 'bg-emerald-600 text-white font-black shadow-xs'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] font-semibold shadow-xs'
+                      : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-button-text,#211f19)]'
                   }`}
                 >
                   <span>🟢 Receitas</span>
@@ -2488,22 +2494,22 @@ export function GranularExpenseAuditor({
                   onClick={() => setBulkTxType('ALL')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     bulkTxType === 'ALL'
-                      ? 'bg-indigo-600 text-white font-black shadow-xs'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] font-semibold shadow-xs'
+                      : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-button-text,#211f19)]'
                   }`}
                 >
                   <span>🌐 Todas</span>
                 </button>
               </div>
 
-              <span className="text-[10px] text-slate-400">
+              <span className="text-[10px] text-[var(--capital-muted,#242a2e)]">
                 Lançamentos marcados serão ajustados para {bulkTxType === 'INCOME' ? 'Receitas (+)' : bulkTxType === 'EXPENSE' ? 'Despesas (-)' : 'o tipo original'}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block mb-1">
                   Categoria ({bulkTxType === 'INCOME' ? 'Receitas' : bulkTxType === 'EXPENSE' ? 'Despesas' : 'Todas'})
                 </label>
 
@@ -2511,7 +2517,7 @@ export function GranularExpenseAuditor({
                   <select
                     value={bulkCategory}
                     onChange={(e) => handleBulkCategoryChange(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-white/10 text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)] cursor-pointer"
                   >
                     {(bulkTxType === 'INCOME' ? incomeCategories : bulkTxType === 'EXPENSE' ? expenseCategories : availableCategories).map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
@@ -2525,12 +2531,12 @@ export function GranularExpenseAuditor({
                       placeholder="Nova Categoria..."
                       value={bulkCustomCategory}
                       onChange={(e) => setBulkCustomCategory(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-emerald-500 text-emerald-300 text-xs font-bold focus:outline-none"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-accent,#927025)] text-[var(--capital-success,#157449)] text-xs font-bold focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => setIsBulkCustomCategory(false)}
-                      className="text-[10px] text-slate-400 hover:text-white p-1"
+                      className="text-[10px] text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] p-1"
                     >
                       ✕
                     </button>
@@ -2539,7 +2545,7 @@ export function GranularExpenseAuditor({
               </div>
 
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block mb-1">
                   Subcategoria
                 </label>
                 {(!isBulkCustomCategory && !isBulkCustomSubcategory) ? (
@@ -2554,7 +2560,7 @@ export function GranularExpenseAuditor({
                         setBulkSubcategory(val)
                       }
                     }}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-white/10 text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)] cursor-pointer"
                   >
                     {getSubcategoriesForCategory(bulkCategory).map(sub => (
                       <option key={sub} value={sub}>{sub}</option>
@@ -2568,13 +2574,13 @@ export function GranularExpenseAuditor({
                       placeholder="Nova Subcategoria..."
                       value={bulkCustomSubcategory}
                       onChange={(e) => setBulkCustomSubcategory(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-emerald-500 text-emerald-300 text-xs font-bold focus:outline-none"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-accent,#927025)] text-[var(--capital-success,#157449)] text-xs font-bold focus:outline-none"
                     />
                     {!isBulkCustomCategory && (
                       <button
                         type="button"
                         onClick={() => setIsBulkCustomSubcategory(false)}
-                        className="text-[10px] text-slate-400 hover:text-white p-1"
+                        className="text-[10px] text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] p-1"
                       >
                         ✕
                       </button>
@@ -2584,7 +2590,7 @@ export function GranularExpenseAuditor({
               </div>
 
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 block mb-1 flex items-center gap-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-accent,#927025)] block mb-1 flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
                   Hospital / Local (Opcional)
                 </label>
@@ -2600,7 +2606,7 @@ export function GranularExpenseAuditor({
                         setBulkSubdivision(val)
                       }
                     }}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-indigo-500/30 text-indigo-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer"
+                    className="w-full px-3 py-2 rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-accent,#927025)] text-[var(--capital-accent,#927025)] text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)] cursor-pointer"
                   >
                     <option value="">Nenhum / Não alterar</option>
                     {hospitalsList.map(hosp => (
@@ -2615,12 +2621,12 @@ export function GranularExpenseAuditor({
                       placeholder="Novo Hospital / Local..."
                       value={bulkCustomSubdivision}
                       onChange={(e) => setBulkCustomSubdivision(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-indigo-500 text-indigo-300 text-xs font-bold focus:outline-none"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-accent,#927025)] text-[var(--capital-accent,#927025)] text-xs font-bold focus:outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => setIsBulkCustomSubdivision(false)}
-                      className="text-[10px] text-slate-400 hover:text-white p-1"
+                      className="text-[10px] text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] p-1"
                     >
                       ✕
                     </button>
@@ -2631,13 +2637,13 @@ export function GranularExpenseAuditor({
           </div>
 
           {/* Opção de Regra Inteligente e Botões de Ação */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 mt-3 border-t border-white/10">
-            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300 hover:text-white">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 mt-3 border-t border-[var(--capital-line,#e4dfd3)]">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-[var(--capital-text,#242a2e)] hover:text-[var(--capital-text,#242a2e)]">
               <input
                 type="checkbox"
                 checked={bulkLearnRule}
                 onChange={(e) => setBulkLearnRule(e.target.checked)}
-                className="rounded text-emerald-500 focus:ring-emerald-400 w-4 h-4 cursor-pointer"
+                className="rounded text-[var(--capital-success,#157449)] focus:ring-[var(--capital-accent,#927025)] w-4 h-4 cursor-pointer"
               />
               <span className="text-[11px]">
                 Memorizar como <strong>regra inteligente permanente</strong> para os próximos meses
@@ -2648,7 +2654,7 @@ export function GranularExpenseAuditor({
               <button
                 type="button"
                 onClick={handleBulkDelete}
-                className="px-3 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold border border-rose-500/30 flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3 py-2 rounded-xl bg-[var(--capital-danger-soft,#fcecec)] hover:bg-[var(--capital-danger-soft,#fcecec)] text-[var(--capital-danger,#ad3333)] text-xs font-bold border border-[var(--capital-danger,#ad3333)] flex items-center gap-1.5 transition-colors cursor-pointer"
                 title="Excluir lançamentos selecionados"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -2658,7 +2664,7 @@ export function GranularExpenseAuditor({
               <button
                 type="button"
                 onClick={handleApplyBulkCategorization}
-                className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/30 transition-all cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-semibold text-xs flex items-center gap-2 shadow-sm shadow-none transition-all cursor-pointer"
               >
                 <Check className="w-4 h-4" />
                 <span>Aplicar a Todos ({selectedTxIds.size})</span>
@@ -2670,50 +2676,50 @@ export function GranularExpenseAuditor({
 
       {/* Modal de Resumo da Categorização com IA / Jev */}
       {aiBatchSummary && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-indigo-500/30 text-white p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--capital-card,#f8fafc)] backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-lg rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-accent,#927025)] text-[var(--capital-text,#242a2e)] p-6 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--capital-line,#e4dfd3)]">
               <div className="flex items-center gap-2.5">
-                <span className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                <span className="p-2 rounded-xl bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] border border-[var(--capital-accent,#927025)]">
                   <BrainCircuit className="w-5 h-5" />
                 </span>
                 <div>
-                  <h3 className="font-bold text-base text-white">Resumo da Execução Jev (Modo Sombra)</h3>
-                  <p className="text-xs text-slate-400">Classificação inteligente em 2 camadas concluída</p>
+                  <h3 className="font-bold text-base text-[var(--capital-text,#242a2e)]">Resumo da Execução Jev (Modo Sombra)</h3>
+                  <p className="text-xs text-[var(--capital-muted,#242a2e)]">Classificação inteligente em 2 camadas concluída</p>
                 </div>
               </div>
               <button 
                 onClick={() => setAiBatchSummary(null)} 
-                className="text-slate-400 hover:text-white p-1 rounded-lg"
+                className="text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-slate-800/80 border border-white/5 space-y-0.5">
-                <span className="text-slate-400 text-[10px] uppercase font-semibold">Total Processado</span>
-                <p className="text-lg font-mono font-bold text-white">{aiBatchSummary.total_processed} itens</p>
+              <div className="p-3 rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] space-y-0.5">
+                <span className="text-[var(--capital-muted,#242a2e)] text-[10px] uppercase font-semibold">Total Processado</span>
+                <p className="text-lg font-mono font-bold text-[var(--capital-text,#242a2e)]">{aiBatchSummary.total_processed} itens</p>
               </div>
 
-              <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 space-y-0.5">
-                <span className="text-indigo-300 text-[10px] uppercase font-semibold">Sugestões Geradas</span>
-                <p className="text-lg font-mono font-bold text-indigo-300">{aiBatchSummary.suggested_count + aiBatchSummary.auto_applied_count}</p>
+              <div className="p-3 rounded-xl bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] space-y-0.5">
+                <span className="text-[var(--capital-accent,#927025)] text-[10px] uppercase font-semibold">Sugestões Geradas</span>
+                <p className="text-lg font-mono font-bold text-[var(--capital-accent,#927025)]">{aiBatchSummary.suggested_count + aiBatchSummary.auto_applied_count}</p>
               </div>
 
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-0.5">
-                <span className="text-amber-300 text-[10px] uppercase font-semibold">Revisão Humana Obrigatória</span>
-                <p className="text-lg font-mono font-bold text-amber-300">{aiBatchSummary.needs_review_count}</p>
+              <div className="p-3 rounded-xl bg-[var(--capital-warning-soft,#fcf1dc)] border border-[var(--capital-warning,#8b5b15)] space-y-0.5">
+                <span className="text-[var(--capital-warning,#8b5b15)] text-[10px] uppercase font-semibold">Revisão Humana Obrigatória</span>
+                <p className="text-lg font-mono font-bold text-[var(--capital-warning,#8b5b15)]">{aiBatchSummary.needs_review_count}</p>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-800/80 border border-white/5 space-y-0.5">
-                <span className="text-slate-400 text-[10px] uppercase font-semibold">Custo Estimado</span>
-                <p className="text-lg font-mono font-bold text-emerald-400">${aiBatchSummary.estimated_cost_usd} USD</p>
+              <div className="p-3 rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] space-y-0.5">
+                <span className="text-[var(--capital-muted,#242a2e)] text-[10px] uppercase font-semibold">Custo Estimado</span>
+                <p className="text-lg font-mono font-bold text-[var(--capital-success,#157449)]">${aiBatchSummary.estimated_cost_usd} USD</p>
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/20 text-[11px] text-indigo-200 flex items-start gap-2">
-              <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+            <div className="p-3 rounded-xl bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] text-[11px] text-[var(--capital-accent,#927025)] flex items-start gap-2">
+              <Info className="w-4 h-4 text-[var(--capital-accent,#927025)] shrink-0 mt-0.5" />
               <span>
                 <strong>Modo Sombra Ativo:</strong> As sugestões estão visíveis diretamente na tabela com badges roxos. Você pode confirmar com 1 clique (✓) ou rejeitar (✕). Nenhuma categoria foi modificada automaticamente sem o seu consentimento.
               </span>
@@ -2721,7 +2727,7 @@ export function GranularExpenseAuditor({
 
             <button
               onClick={() => setAiBatchSummary(null)}
-              className="w-full py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs transition-colors cursor-pointer"
+              className="w-full py-2.5 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] font-bold text-xs transition-colors cursor-pointer"
             >
               Entendido, ver sugestões na tabela
             </button>
@@ -2731,7 +2737,7 @@ export function GranularExpenseAuditor({
 
       {/* Toast Feedback */}
       {bulkToast && (
-        <div className="fixed top-20 right-6 z-50 p-4 rounded-2xl bg-emerald-600 text-white font-bold text-xs shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="fixed top-20 right-6 z-50 p-4 rounded-2xl bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] font-bold text-xs shadow-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-300">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>{bulkToast}</span>
         </div>
