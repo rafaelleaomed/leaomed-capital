@@ -1,5 +1,7 @@
 'use client'
 
+import { AccessibleDialog } from './AccessibleDialog'
+
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { 
   Search, 
@@ -297,22 +299,23 @@ export function GlobalQuickFinder({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 sm:pt-20 px-4">
+    <AccessibleDialog onClose={onClose} label="Buscar no app" className="fixed inset-0 z-50 flex items-start justify-center pt-12 sm:pt-20 px-4">
       {/* Backdrop */}
       <div 
         onClick={onClose}
-        className="fixed inset-0 bg-slate-950/70 backdrop-blur-md transition-opacity animate-in fade-in"
+        className="fixed inset-0 bg-transparent backdrop-blur-md transition-opacity animate-in fade-in"
       />
 
       {/* Modal Container */}
       <div 
         onKeyDown={handleKeyDown}
-        className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-150"
+        className="relative w-full max-w-2xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] rounded-2xl sm:rounded-xl shadow-sm overflow-hidden z-10 animate-in zoom-in-95 duration-150"
       >
         {/* Barra de Pesquisa Superior */}
-        <div className="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-white/10">
-          <Search className="w-5 h-5 text-emerald-500 shrink-0" />
+        <div className="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
+          <Search className="w-5 h-5 text-[var(--capital-success,#157449)] shrink-0" />
           <input
+            aria-label="Buscar despesa, cartão, categoria ou contrato"
             ref={inputRef}
             type="text"
             value={query}
@@ -321,31 +324,32 @@ export function GlobalQuickFinder({
               setSelectedIndex(0)
             }}
             placeholder="Buscar despesa, cartão, categoria, contrato (ex: Safra, C6, Transporte, Fatura)..."
-            className="w-full bg-transparent text-sm sm:text-base text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+            className="w-full bg-transparent text-sm sm:text-base text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] placeholder-slate-400 focus:outline-none"
           />
           {query ? (
             <button 
+              aria-label="Limpar busca"
               onClick={() => setQuery('')}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white"
+              className="p-1 rounded-lg text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-muted,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)]"
             >
               <X className="w-4 h-4" />
             </button>
           ) : (
-            <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/10 text-[10px] font-mono text-slate-500 dark:text-slate-400">
+            <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] text-[10px] font-mono text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
               ESC para sair
             </div>
           )}
         </div>
 
         {/* Lista de Resultados */}
-        <div className="max-h-[60vh] overflow-y-auto p-2 sm:p-3 divide-y divide-slate-100 dark:divide-white/5">
+        <div className="max-h-[60vh] overflow-y-auto p-2 sm:p-3 divide-y divide-[var(--capital-line,#e4dfd3)] dark:divide-[var(--capital-line,#e4dfd3)]">
           {filteredItems.length === 0 ? (
             <div className="text-center py-12 px-4">
-              <Search className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <Search className="w-8 h-8 text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mx-auto mb-2" />
+              <p className="text-sm font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
                 Nenhum resultado encontrado para &quot;{query}&quot;
               </p>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-[var(--capital-muted,#242a2e)] mt-1">
                 Tente buscar por &apos;Cartão&apos;, &apos;Safra&apos;, &apos;Investimentos&apos; ou &apos;Transporte&apos;.
               </p>
             </div>
@@ -361,31 +365,31 @@ export function GlobalQuickFinder({
                   onMouseEnter={() => setSelectedIndex(index)}
                   className={`w-full flex items-center justify-between p-3 sm:p-3.5 rounded-xl text-left transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/30'
-                      : 'hover:bg-slate-50 dark:hover:bg-white/5 border border-transparent'
+                      ? 'bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)]'
+                      : 'hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] border border-transparent'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                       isSelected
-                        ? 'bg-emerald-500 text-slate-950 font-bold'
-                        : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300'
+                        ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-bold'
+                        : 'bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                     }`}>
                       <Icon className="w-4 h-4" />
                     </div>
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                        <span className="text-xs sm:text-sm font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] truncate">
                           {item.title}
                         </span>
                         {item.badge && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 shrink-0">
+                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] shrink-0">
                             {item.badge}
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      <div className="text-[11px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] truncate">
                         {item.subtitle}
                       </div>
                     </div>
@@ -393,11 +397,11 @@ export function GlobalQuickFinder({
 
                   <div className="flex items-center gap-2.5 shrink-0 pl-2">
                     {item.value && (
-                      <span className="font-mono text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
+                      <span className="font-mono text-xs sm:text-sm font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]">
                         {item.value}
                       </span>
                     )}
-                    <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md hidden sm:inline-flex items-center gap-1">
+                    <span className="text-[10px] font-semibold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] px-2 py-0.5 rounded-md hidden sm:inline-flex items-center gap-1">
                       <span>Ir</span>
                       <ArrowRight className="w-3 h-3" />
                     </span>
@@ -409,25 +413,25 @@ export function GlobalQuickFinder({
         </div>
 
         {/* Rodapé Informativo */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 bg-slate-50 dark:bg-slate-950/80 border-t border-slate-100 dark:border-white/5 text-[11px] text-slate-400">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border-t border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[11px] text-[var(--capital-muted,#242a2e)]">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-white dark:bg-white/10 rounded border border-slate-200 dark:border-white/10 font-mono text-[10px]">↑</kbd>
-              <kbd className="px-1.5 py-0.5 bg-white dark:bg-white/10 rounded border border-slate-200 dark:border-white/10 font-mono text-[10px]">↓</kbd>
+              <kbd className="px-1.5 py-0.5 bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#fff)] rounded border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] font-mono text-[10px]">↑</kbd>
+              <kbd className="px-1.5 py-0.5 bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#fff)] rounded border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] font-mono text-[10px]">↓</kbd>
               <span>Navegar</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-white dark:bg-white/10 rounded border border-slate-200 dark:border-white/10 font-mono text-[10px]">ENTER</kbd>
+              <kbd className="px-1.5 py-0.5 bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#fff)] rounded border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] font-mono text-[10px]">ENTER</kbd>
               <span>Selecionar</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-1 text-emerald-500 font-medium">
+          <div className="flex items-center gap-1 text-[var(--capital-success,#157449)] font-medium">
             <Sparkles className="w-3 h-3" />
             <span>Busca Inteligente LeãoMed</span>
           </div>
         </div>
       </div>
-    </div>
+    </AccessibleDialog>
   )
 }

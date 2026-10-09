@@ -91,20 +91,20 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
   return (
     <div id="consolidado-anual" className="space-y-6 animate-in fade-in duration-300 scroll-mt-24">
       {/* Banner de Apresentação da Visão Anual */}
-      <div className="p-5 md:p-6 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-emerald-500/20 shadow-xl text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="p-5 md:p-6 rounded-xl bg-[var(--capital-soft,#f6f0df)] from-slate-900 via-slate-950 to-slate-900 border border-[var(--capital-accent,#927025)] shadow-sm text-[var(--capital-text,#242a2e)] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--capital-soft,#f6f0df)] rounded-full blur-3xl pointer-events-none" />
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
           <div>
             <div className="flex items-center gap-2">
-              <span className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <span className="p-2 rounded-xl bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-success,#157449)] border border-[var(--capital-accent,#927025)]">
                 <Layers className="w-5 h-5" />
               </span>
               <div>
-                <h3 className="font-display text-lg md:text-xl font-black tracking-tight text-white">
+                <h3 className="font-display text-lg md:text-xl font-semibold tracking-tight text-[var(--capital-text,#242a2e)]">
                   Consolidado Anual & Performance Acumulada
                 </h3>
-                <p className="text-xs text-slate-300">
+                <p className="text-xs text-[var(--capital-text,#242a2e)]">
                   Jan a Set de 2026 (9 meses auditados) • {
                     currentFilter === 'CONSOLIDATED' ? 'Visão Consolidada Integral (PJ + PF)' :
                     currentFilter === 'PJ' ? 'Faturamento & Custos da Clínica (Pessoa Jurídica)' : 'Orçamento Pessoal & Familiar (PF)'
@@ -115,7 +115,7 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-success,#157449)] border border-[var(--capital-accent,#927025)]">
               Taxa de Poupança Anual: {savingsRate.toFixed(1)}%
             </span>
           </div>
@@ -123,67 +123,67 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
 
         {/* 4 Grandes Números Anuais */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mt-6">
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-            <span className="text-[11px] font-semibold text-slate-400 block mb-1">Faturamento Anual Bruto</span>
-            <div className="text-xl sm:text-2xl font-black font-mono text-emerald-400 tabular-nums">
+          <div className="p-4 rounded-2xl bg-[var(--capital-card,#fff)] border border-[var(--capital-line,#e4dfd3)] backdrop-blur-md">
+            <span className="text-[11px] font-semibold text-[var(--capital-muted,#242a2e)] block mb-1">Faturamento Anual Bruto</span>
+            <div className="text-xl sm:text-2xl font-semibold font-mono text-[var(--capital-success,#157449)] tabular-nums">
               R$ {totalAnnualIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <span className="text-[10px] text-slate-400 mt-1 block">Média: R$ {(totalAnnualIncome / 9).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mês</span>
+            <span className="text-[10px] text-[var(--capital-muted,#242a2e)] mt-1 block">Média: R$ {(totalAnnualIncome / 9).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mês</span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-            <span className="text-[11px] font-semibold text-slate-400 block mb-1">Despesas Totais Anuais</span>
-            <div className="text-xl sm:text-2xl font-black font-mono text-rose-400 tabular-nums">
+          <div className="p-4 rounded-2xl bg-[var(--capital-card,#fff)] border border-[var(--capital-line,#e4dfd3)] backdrop-blur-md">
+            <span className="text-[11px] font-semibold text-[var(--capital-muted,#242a2e)] block mb-1">Despesas Totais Anuais</span>
+            <div className="text-xl sm:text-2xl font-semibold font-mono text-[var(--capital-danger,#ad3333)] tabular-nums">
               R$ {totalAnnualExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <span className="text-[10px] text-slate-400 mt-1 block">Média: R$ {(totalAnnualExpenses / 9).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mês</span>
+            <span className="text-[10px] text-[var(--capital-muted,#242a2e)] mt-1 block">Média: R$ {(totalAnnualExpenses / 9).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mês</span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-            <span className="text-[11px] font-semibold text-slate-400 block mb-1">Saldo Acumulado no Ano</span>
-            <div className={`text-xl sm:text-2xl font-black font-mono tabular-nums ${annualBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+          <div className="p-4 rounded-2xl bg-[var(--capital-card,#fff)] border border-[var(--capital-line,#e4dfd3)] backdrop-blur-md">
+            <span className="text-[11px] font-semibold text-[var(--capital-muted,#242a2e)] block mb-1">Saldo Acumulado no Ano</span>
+            <div className={`text-xl sm:text-2xl font-semibold font-mono tabular-nums ${annualBalance >= 0 ? 'text-[var(--capital-success,#157449)]' : 'text-[var(--capital-danger,#ad3333)]'}`}>
               {annualBalance >= 0 ? '+' : ''} R$ {annualBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <span className="text-[10px] text-slate-400 mt-1 block">Superávit total retido</span>
+            <span className="text-[10px] text-[var(--capital-muted,#242a2e)] mt-1 block">Superávit total retido</span>
           </div>
 
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-            <span className="text-[11px] font-semibold text-slate-400 block mb-1">Sobra Média Mensal</span>
-            <div className="text-xl sm:text-2xl font-black font-mono text-indigo-400 tabular-nums">
+          <div className="p-4 rounded-2xl bg-[var(--capital-card,#fff)] border border-[var(--capital-line,#e4dfd3)] backdrop-blur-md">
+            <span className="text-[11px] font-semibold text-[var(--capital-muted,#242a2e)] block mb-1">Sobra Média Mensal</span>
+            <div className="text-xl sm:text-2xl font-semibold font-mono text-[var(--capital-accent,#927025)] tabular-nums">
               R$ {averageMonthlySurplus.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <span className="text-[10px] text-slate-400 mt-1 block">Capacidade média de aporte</span>
+            <span className="text-[10px] text-[var(--capital-muted,#242a2e)] mt-1 block">Capacidade média de aporte</span>
           </div>
         </div>
       </div>
 
       {/* Gráfico 1: Barras Duplas Receitas x Despesas Mês a Mês */}
-      <div className="p-5 md:p-6 rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm space-y-4">
+      <div className="p-5 md:p-6 rounded-xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h4 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-emerald-500" />
+            <h4 className="font-display text-base font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-[var(--capital-success,#157449)]" />
               Comparativo Mensal: Receitas vs Despesas (2026)
             </h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
               Passe o mouse sobre as barras para inspecionar os valores exatos de cada mês
             </p>
           </div>
 
           <div className="flex items-center gap-4 text-xs font-semibold">
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-md bg-emerald-500" />
-              <span className="text-slate-700 dark:text-slate-300">Receitas</span>
+              <span className="w-3 h-3 rounded-md bg-[var(--capital-button,#c7a354)]" />
+              <span className="text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">Receitas</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-md bg-rose-500" />
-              <span className="text-slate-700 dark:text-slate-300">Despesas</span>
+              <span className="text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">Despesas</span>
             </div>
           </div>
         </div>
 
         {/* Barras SVG Interativas */}
-        <div className="h-64 sm:h-72 w-full pt-8 pb-4 flex items-end justify-between gap-2 sm:gap-4 border-b border-slate-200 dark:border-white/10">
+        <div className="h-64 sm:h-72 w-full pt-8 pb-4 flex items-end justify-between gap-2 sm:gap-4 border-b border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
           {monthlyItems.map((m) => {
             const incPct = maxVal > 0 ? (m.income / maxVal) * 100 : 0
             const expPct = maxVal > 0 ? (m.expenses / maxVal) * 100 : 0
@@ -198,11 +198,11 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
               >
                 {/* Tooltip flutuante no hover */}
                 {isSelected && (
-                  <div className="absolute -top-24 z-30 p-2.5 rounded-xl bg-slate-900 dark:bg-slate-950 text-white text-[11px] shadow-xl border border-white/20 whitespace-nowrap pointer-events-none animate-in fade-in duration-150">
-                    <span className="font-bold text-white block mb-1">{m.fullName} / 2026</span>
-                    <div className="text-emerald-400 font-mono">Receitas: R$ {m.income.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                    <div className="text-rose-400 font-mono">Despesas: R$ {m.expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                    <div className={`font-mono font-bold mt-1 pt-1 border-t border-white/10 ${m.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  <div className="absolute -top-24 z-30 p-2.5 rounded-xl bg-[var(--capital-card,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-text,#242a2e)] text-[11px] shadow-sm border border-[var(--capital-line,#e4dfd3)] whitespace-nowrap pointer-events-none animate-in fade-in duration-150">
+                    <span className="font-bold text-[var(--capital-text,#242a2e)] block mb-1">{m.fullName} / 2026</span>
+                    <div className="text-[var(--capital-success,#157449)] font-mono">Receitas: R$ {m.income.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div className="text-[var(--capital-danger,#ad3333)] font-mono">Despesas: R$ {m.expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div className={`font-mono font-bold mt-1 pt-1 border-t border-[var(--capital-line,#e4dfd3)] ${m.balance >= 0 ? 'text-[var(--capital-success,#157449)]' : 'text-[var(--capital-danger,#ad3333)]'}`}>
                       Saldo: {m.balance >= 0 ? '+' : ''} R$ {m.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
@@ -212,22 +212,22 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
                 <div className="w-full flex items-end justify-center gap-1 sm:gap-1.5 h-full">
                   {/* Barra Receitas */}
                   <div
-                    className="w-full max-w-[18px] sm:max-w-[26px] bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-md transition-all duration-300 group-hover:brightness-110"
+                    className="w-full max-w-[18px] sm:max-w-[26px] bg-[var(--capital-soft,#f6f0df)] from-emerald-600 to-emerald-400 rounded-t-md transition-all duration-300 group-hover:brightness-110"
                     style={{ height: `${incPct}%` }}
                   />
                   {/* Barra Despesas */}
                   <div
-                    className="w-full max-w-[18px] sm:max-w-[26px] bg-gradient-to-t from-rose-600 to-rose-400 rounded-t-md transition-all duration-300 group-hover:brightness-110"
+                    className="w-full max-w-[18px] sm:max-w-[26px] bg-[var(--capital-soft,#f6f0df)] from-rose-600 to-rose-400 rounded-t-md transition-all duration-300 group-hover:brightness-110"
                     style={{ height: `${expPct}%` }}
                   />
                 </div>
 
                 {/* Rótulo do Mês */}
                 <div className="mt-2 text-center">
-                  <span className={`text-xs font-bold block ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                  <span className={`text-xs font-bold block ${isSelected ? 'text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]' : 'text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'}`}>
                     {m.month}
                   </span>
-                  <span className={`text-[10px] font-mono block ${m.balance >= 0 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-rose-500 font-bold'}`}>
+                  <span className={`text-[10px] font-mono block ${m.balance >= 0 ? 'text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] font-semibold' : 'text-[var(--capital-danger,#ad3333)] font-bold'}`}>
                     {m.balance >= 0 ? '+' : ''}{(m.balance / 1000).toFixed(1)}k
                   </span>
                 </div>
@@ -237,38 +237,38 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
         </div>
 
         {/* Rodapé do Gráfico com Análise Executiva */}
-        <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2 gap-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] pt-2 gap-2">
           <span>* Observação Contábil: Os picos de despesas em Maio e Junho/2026 refletem a entrada e quitação do T-Cross e tributos concentrados.</span>
-          <span className="font-bold text-emerald-600 dark:text-emerald-400">Total Auditado: 9 meses</span>
+          <span className="font-bold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]">Total Auditado: 9 meses</span>
         </div>
       </div>
 
       {/* Gráfico 2: Evolução do Saldo Acumulado & Linha do Tempo */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="p-5 md:p-6 rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm space-y-4">
+        <div className="p-5 md:p-6 rounded-xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] shadow-sm space-y-4">
           <div>
-            <h4 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-500" />
+            <h4 className="font-display text-base font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[var(--capital-accent,#927025)]" />
               Curva de Acúmulo de Saldo (Jan a Set/2026)
             </h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
               Evolução progressiva da sobra financeira gerada ao longo do ano
             </p>
           </div>
 
-          <div className="h-44 w-full flex items-end justify-between gap-2 pt-4 pb-2 border-b border-slate-100 dark:border-white/5">
+          <div className="h-44 w-full flex items-end justify-between gap-2 pt-4 pb-2 border-b border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
             {accumulatedCurve.map((c, i) => {
               const heightPct = Math.max(10, Math.min(100, ((c.accumulated - minAccumulated) / rangeAcc) * 100))
               return (
                 <div key={c.month} className="flex-1 flex flex-col items-center justify-end h-full group">
-                  <span className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[10px] font-mono font-bold text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] opacity-0 group-hover:opacity-100 transition-opacity">
                     {(c.accumulated / 1000).toFixed(0)}k
                   </span>
                   <div
-                    className="w-full max-w-[20px] bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-t-md transition-all duration-500 group-hover:brightness-110"
+                    className="w-full max-w-[20px] bg-[var(--capital-soft,#f6f0df)] from-indigo-600 to-indigo-400 rounded-t-md transition-all duration-500 group-hover:brightness-110"
                     style={{ height: `${heightPct}%` }}
                   />
-                  <span className="text-[10px] text-slate-400 font-medium mt-1">
+                  <span className="text-[10px] text-[var(--capital-muted,#242a2e)] font-medium mt-1">
                     {c.month}
                   </span>
                 </div>
@@ -276,20 +276,20 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
             })}
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1">
+          <div className="flex items-center justify-between text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] pt-1">
             <span>Saldo acumulado total retido em Set/26</span>
-            <span className="font-black text-indigo-600 dark:text-indigo-400 font-mono">+ R$ {annualBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="font-semibold text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] font-mono">+ R$ {annualBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
 
         {/* 3. Centros de Custo Anuais */}
-        <div className="p-5 md:p-6 rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm space-y-4">
+        <div className="p-5 md:p-6 rounded-xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] shadow-sm space-y-4">
           <div>
-            <h4 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <PieChart className="w-4 h-4 text-emerald-500" />
+            <h4 className="font-display text-base font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] flex items-center gap-2">
+              <PieChart className="w-4 h-4 text-[var(--capital-success,#157449)]" />
               Grandes Centros de Custo Acumulados no Ano
             </h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
               Concentração das maiores saídas de caixa em 2026
             </p>
           </div>
@@ -306,14 +306,14 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                    <span className="font-bold text-slate-800 dark:text-slate-200">{cat.name}</span>
+                    <span className="font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]">{cat.name}</span>
                   </div>
                   <div className="font-mono tabular-nums text-right">
-                    <span className="font-bold text-slate-900 dark:text-white">R$ {cat.amount.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
-                    <span className="text-[10px] text-slate-400 ml-1">({cat.pct}%)</span>
+                    <span className="font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]">R$ {cat.amount.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
+                    <span className="text-[10px] text-[var(--capital-muted,#242a2e)] ml-1">({cat.pct}%)</span>
                   </div>
                 </div>
-                <div className="w-full bg-slate-100 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
+                <div className="w-full bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] rounded-full h-1.5 overflow-hidden">
                   <div className="h-full rounded-full transition-all duration-500" style={{ width: `${cat.pct}%`, backgroundColor: cat.color }} />
                 </div>
               </div>

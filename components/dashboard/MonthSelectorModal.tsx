@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useState } from 'react'
-import { ChevronLeft, ChevronRight, Calendar, X } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { AccessibleDialog } from './AccessibleDialog'
 
 interface MonthSelectorModalProps {
   isOpen: boolean
-  selectedMonth: number // 0 = Jan, 5 = Jun, 8 = Set, etc.
-  selectedYear: number  // ex: 2026
+  selectedMonth: number
+  selectedYear: number
   onSelect: (month: number, year: number) => void
   onClose: () => void
 }
@@ -23,6 +24,16 @@ const FULL_MONTH_NAMES = [
   'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ]
 
+const monthFromKey = (month: number, key: string) => {
+  if (key === 'ArrowRight') return (month + 1) % 12
+  if (key === 'ArrowLeft') return (month + 11) % 12
+  if (key === 'ArrowDown') return (month + 4) % 12
+  if (key === 'ArrowUp') return (month + 8) % 12
+  if (key === 'Home') return Math.floor(month / 4) * 4
+  if (key === 'End') return Math.floor(month / 4) * 4 + 3
+  return month
+}
+
 export function MonthSelectorModal({
   isOpen,
   selectedMonth,
@@ -31,16 +42,42 @@ export function MonthSelectorModal({
   onClose
 }: MonthSelectorModalProps) {
   const [viewYear, setViewYear] = useState(selectedYear)
+  const [focusedMonth, setFocusedMonth] = useState(selectedMonth)
+  const monthRefs = useRef<Array<HTMLButtonElement | null>>([])
+  const pendingFocus = useRef(selectedMonth)
+
+  useEffect(() => {
+    if (!isOpen) return
+    setViewYear(selectedYear)
+    setFocusedMonth(selectedMonth)
+    pendingFocus.current = selectedMonth
+  }, [isOpen, selectedMonth, selectedYear])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const frame = requestAnimationFrame(() => {
+      monthRefs.current[pendingFocus.current]?.focus()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [isOpen, viewYear])
 
   if (!isOpen) return null
 
-  // Mês e ano correntes reais do sistema
   const now = new Date()
-  const currentSystemMonth = now.getMonth() // ex: 8 = Setembro
-  const currentSystemYear = now.getFullYear() // ex: 2026
+  const currentSystemMonth = now.getMonth()
+  const currentSystemYear = now.getFullYear()
 
-  const handlePrevYear = () => setViewYear(prev => prev - 1)
-  const handleNextYear = () => setViewYear(prev => prev + 1)
+  const focusMonth = (monthIndex: number) => {
+    pendingFocus.current = monthIndex
+    setFocusedMonth(monthIndex)
+    monthRefs.current[monthIndex]?.focus()
+  }
+
+  const changeViewYear = (nextYear: number, monthToFocus = focusedMonth) => {
+    pendingFocus.current = monthToFocus
+    setFocusedMonth(monthToFocus)
+    setViewYear(nextYear)
+  }
 
   const handleSelectMonth = (monthIndex: number) => {
     onSelect(monthIndex, viewYear)
@@ -49,93 +86,90 @@ export function MonthSelectorModal({
 
   const handleJumpToCurrentMonth = () => {
     onSelect(currentSystemMonth, currentSystemYear)
-    setViewYear(currentSystemYear)
     onClose()
   }
 
+  const handleMonthKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, monthIndex: number) => {
+    if (event.key === 'PageUp' || event.key === 'PageDown') {
+      event.preventDefault()
+      changeViewYear(viewYear + (event.key === 'PageUp' ? -1 : 1), monthIndex)
+      return
+    }
+
+    if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
+    event.preventDefault()
+    focusMonth(monthFromKey(monthIndex, event.key))
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
-      <div 
-        className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 transition-all scale-100"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="month-selector-title"
-      >
-        {/* Header estilo Mobills com seletor de ano */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-700 dark:from-emerald-700 dark:to-teal-900 p-4 text-white flex items-center justify-between shadow-md">
-          <button
-            onClick={handlePrevYear}
-            className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
-            title="Ano anterior"
-            aria-label="Ano anterior"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+    <AccessibleDialog onClose={onClose} labelledBy="month-selector-title" className="month-selector-dialog">
+      <div className="month-selector-layout" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
+        <section className="month-selector-surface" aria-describedby="month-selector-help">
+          <header className="month-selector-header">
+            <button
+              type="button"
+              onClick={() => changeViewYear(viewYear - 1)}
+              className="month-selector-year-button"
+              title="Ano anterior"
+              aria-label="Ano anterior"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
 
-          <div className="text-center">
-            <span id="month-selector-title" className="font-display font-black text-lg tracking-wider">
-              {viewYear}
-            </span>
+            <div className="text-center">
+              <h2 id="month-selector-title">Selecionar mês</h2>
+              <strong aria-live="polite">{viewYear}</strong>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => changeViewYear(viewYear + 1)}
+              className="month-selector-year-button"
+              title="Próximo ano"
+              aria-label="Próximo ano"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </header>
+
+          <div className="month-selector-body">
+            <p id="month-selector-help" className="sr-only">Use as setas para percorrer os meses, Home e End para ir ao início ou fim da linha, e Page Up ou Page Down para trocar o ano.</p>
+            <div className="month-selector-grid" role="group" aria-label={`Meses de ${viewYear}`}>
+              {MONTH_NAMES.map((name, index) => {
+                const isSelected = selectedMonth === index && selectedYear === viewYear
+                const isSystemCurrent = currentSystemMonth === index && currentSystemYear === viewYear
+
+                return (
+                  <button
+                    type="button"
+                    key={name}
+                    ref={element => { monthRefs.current[index] = element }}
+                    tabIndex={focusedMonth === index ? 0 : -1}
+                    onFocus={() => setFocusedMonth(index)}
+                    onKeyDown={event => handleMonthKeyDown(event, index)}
+                    onClick={() => handleSelectMonth(index)}
+                    aria-label={`${FULL_MONTH_NAMES[index]} de ${viewYear}${isSelected ? ', selecionado' : ''}${isSystemCurrent ? ', mês atual' : ''}`}
+                    aria-pressed={isSelected}
+                    className={`month-selector-month ${isSelected ? 'is-selected' : ''} ${isSystemCurrent ? 'is-current' : ''}`}
+                  >
+                    <span>{name}</span>
+                    {isSystemCurrent && !isSelected && <i aria-hidden="true" />}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
-          <button
-            onClick={handleNextYear}
-            className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
-            title="Próximo ano"
-            aria-label="Próximo ano"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Grade 4x3 dos 12 Meses (Idêntica ao Mobills) */}
-        <div className="p-5">
-          <div className="grid grid-cols-4 gap-2.5">
-            {MONTH_NAMES.map((name, index) => {
-              const isSelected = selectedMonth === index && selectedYear === viewYear
-              const isSystemCurrent = currentSystemMonth === index && currentSystemYear === viewYear
-
-              return (
-                <button
-                  key={name}
-                  onClick={() => handleSelectMonth(index)}
-                  className={`py-3 rounded-xl font-bold text-xs tracking-wider transition-all select-none relative ${
-                    isSelected
-                      ? 'bg-emerald-600 text-white font-black shadow-md shadow-emerald-600/30 scale-105'
-                      : isSystemCurrent
-                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10'
-                  }`}
-                >
-                  <span>{name}</span>
-                  {isSystemCurrent && !isSelected && (
-                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-500" />
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Rodapé com Ações (CANCELAR e MÊS ATUAL) */}
-        <div className="px-5 py-3.5 border-t border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-slate-950/60 flex items-center justify-between text-xs font-bold">
-          <button
-            onClick={onClose}
-            className="text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors uppercase tracking-wider"
-          >
-            Cancelar
-          </button>
-
-          <button
-            onClick={handleJumpToCurrentMonth}
-            className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors uppercase tracking-wider font-black flex items-center gap-1"
-          >
-            <Calendar className="w-3.5 h-3.5" />
-            <span>Mês Atual</span>
-          </button>
-        </div>
+          <footer className="month-selector-footer">
+            <button type="button" onClick={onClose} className="month-selector-cancel">Cancelar</button>
+            <button type="button" onClick={handleJumpToCurrentMonth} className="month-selector-current">
+              <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Mês atual</span>
+            </button>
+          </footer>
+        </section>
       </div>
-    </div>
+    </AccessibleDialog>
   )
 }
 

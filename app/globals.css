@@ -1,5 +1,6 @@
 @import '../styles/capital.css';
 @import '../styles/brand.css';
+@import '../styles/authenticated-layout.css';
 
 @tailwind base;
 @tailwind components;

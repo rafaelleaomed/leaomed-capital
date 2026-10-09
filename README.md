@@ -124,7 +124,7 @@ A plataforma adota a arquitetura **A.N.T. (Architecture, Navigation, Tools)** co
 
 | Funcionalidade / Integração | Status Atual | Detalhamento Operacional |
 |---|---|---|
-| **Classificador Jev (TypeSafe AI)** | 🟢 **100% Operacional** | SDK/HTTP Provider integrado com primitives Choice e Noul, cascata de 5 etapas e modo sombra. |
+| **Classificador Jev (TypeSafe AI)** | 🟡 **Opcional por conta** | A chave da plataforma é restrita à conta proprietária; outras contas precisam cadastrar chave própria cifrada, ou usam regras locais. |
 | **OCR de Faturas & Prints de Extrato** | 🟢 **100% Operacional** | Processamento via Tesseract OCR server-side (`/api/parse-document`) com suporte a C6, Nubank e Itaú. |
 | **Gestão Orçamentária & Planilha Interativa** | 🟢 **100% Operacional** | Edição inline, cálculo de custos fixos/variáveis, segregação PF/PJ e alíquota de impostos ativa. |
 | **Extrato Granular & Seleção em Lote** | 🟢 **100% Operacional** | Auditoria item a item, categorização em lote com memória de regras e antiduplicação de fatura/conta. |
@@ -145,6 +145,8 @@ O projeto segue rigorosamente os padrões de segurança e Clean Architecture:
 - ✅ **Proteção contra IDOR / BOLA**: Endpoints autenticados validam a sessão server-side e forçam o `user_id` criptografado via cookie HTTP-Only.
 - ✅ **Sessões Seguras**: Autenticação gerenciada via `@supabase/ssr` com cookies criptografados, `httpOnly`, `sameSite: lax` e renovação automática de sliding session.
 - ✅ **Defesa em Profundidade contra SQL Injection**: Consultas parametrizadas via tagged template literals do `@neondatabase/serverless`.
+- ✅ **Jev por conta e sem exposição de chave**: a chave global só pode ser resolvida no servidor para a conta proprietária configurada; chaves pessoais são cifradas com AES-256-GCM, vinculadas ao `user_id` e nunca retornam ao navegador.
+- ✅ **Fallback seguro**: sem uma credencial habilitada, nenhuma chamada ao TypeSafe é feita e a categorização permanece nas regras locais com revisão humana.
 
 ---
 
@@ -179,7 +181,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY="sua-chave-anonima-jwt"
 SUPABASE_SERVICE_ROLE_KEY="sua-chave-service-role"
 
 # TypeSafe AI (Jev Classifier)
-TYPESAFE_API_KEY="apikey_sua_chave_typesafe_aqui"
+TYPESAFE_API_KEY="YOUR_TYPESAFE_API_KEY"
+JEV_PLATFORM_OWNER_EMAIL="rafaelleaobh@gmail.com"
+# UUID opcional da conta proprietária: use junto ao e-mail para defesa adicional.
+JEV_PLATFORM_OWNER_USER_ID=""
+# Gere uma chave base64 de 32 bytes; usada apenas no servidor para cifrar BYOK.
+JEV_CREDENTIAL_ENCRYPTION_KEY="BASE64_32_BYTE_KEY"
 STORE_AI_INPUTS=false
 AI_LOG_RETENTION_DAYS=90
 
@@ -198,6 +205,29 @@ Acesse `http://localhost:3000` (ou `http://localhost:3000/demo` para ver a demon
 ```bash
 npm run build
 npm run start
+```
+
+### 6. Jev por conta e segurança de chaves
+
+- A credencial global `TYPESAFE_API_KEY` só é elegível para a conta que corresponder a `JEV_PLATFORM_OWNER_EMAIL` e, quando configurado, a `JEV_PLATFORM_OWNER_USER_ID`.
+- Outra conta autenticada pode cadastrar sua própria chave em **Minha Conta → IA / Jev**. A chave é validada, cifrada no servidor com AES-256-GCM e nunca é devolvida à interface.
+- Sem credencial válida, o Jev é desabilitado automaticamente para a conta e o app usa regras locais; não há envio de documento ou transação ao TypeSafe.
+- O leitor de faturas envia ao Jev somente metadados estruturais sanitizados de blocos ambíguos. PDFs, nomes de comerciantes, datas, valores e números de cartão não são enviados por essa etapa.
+- Antes de tornar o repositório público, rode uma varredura de segredos e rotacione qualquer chave que tenha sido exposta em histórico anterior.
+
+Antes de aceitar chaves pessoais, aplique a migração `database/05_user_jev_credentials.sql` no banco PostgreSQL. Ela cria apenas o cofre cifrado por usuário e não contém credenciais.
+
+### 7. Manutenção de segurança
+
+- O importador limita cada envio a 10 arquivos de até 15 MB. A biblioteca `xlsx` ainda possui um alerta de segurança sem correção upstream; mantenha esse limite e substitua a biblioteca antes de uma abertura pública ampla do serviço.
+- Execute `npm audit`, `npx tsc --noEmit` e `npm run build` antes de cada publicação. Não use `npm audit fix --force` sem testar a migração para Tailwind 4.
+
+### Validação
+
+```bash
+npx tsc --noEmit
+node tests/document_upload_runtime.test.cjs
+npm run build
 ```
 
 ---

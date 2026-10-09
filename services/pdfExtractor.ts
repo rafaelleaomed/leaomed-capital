@@ -1,4 +1,4 @@
-import { PDFParse, PasswordException } from 'pdf-parse'
+import type { PDFParse as PDFParser } from 'pdf-parse'
 
 export class PdfPasswordException extends Error {
   code: number // 1: NEED_PASSWORD, 2: INCORRECT_PASSWORD
@@ -41,15 +41,22 @@ export function sanitizePdfText(rawText: string): string {
  * Utiliza o motor PDFParse oficial com suporte a ToUnicode CMaps, senha para arquivos protegidos e timeout de 8 segundos.
  */
 export async function extractTextFromPdf(buffer: Buffer, password?: string): Promise<string> {
+  // Initialize Node canvas globals before loading PDF.js. The embedded worker
+  // also avoids relying on a worker file omitted from a serverless deployment.
+  const { CanvasFactory, getData } = await import('pdf-parse/worker')
+  const { PDFParse, PasswordException } = await import('pdf-parse')
+  PDFParse.setWorker(getData())
+  let timeout: ReturnType<typeof setTimeout> | undefined
   const timeoutPromise = new Promise<string>((_, reject) =>
-    setTimeout(() => reject(new Error('Tempo limite para leitura do PDF excedido (8s)')), 8000)
+    timeout = setTimeout(() => reject(new Error('Tempo limite para leitura do PDF excedido (8s)')), 8000)
   )
 
   const parsePromise = (async (): Promise<string> => {
-    let parser: PDFParse | null = null
+    let parser: PDFParser | null = null
     try {
       parser = new PDFParse({
         data: buffer,
+        CanvasFactory,
         password: password ? String(password).trim() : undefined
       })
       const textResult = await parser.getText()
@@ -93,5 +100,9 @@ export async function extractTextFromPdf(buffer: Buffer, password?: string): Pro
     }
   })()
 
-  return await Promise.race([parsePromise, timeoutPromise])
+  try {
+    return await Promise.race([parsePromise, timeoutPromise])
+  } finally {
+    clearTimeout(timeout)
+  }
 }

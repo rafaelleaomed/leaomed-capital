@@ -34,7 +34,7 @@ export default async function DashboardPage({
   // Período dinâmico: se especificado na URL (?period=YYYY-MM), usa o informado.
   // Caso contrário, busca dinamicamente o período mais recente com transações no banco de dados para o usuário.
   const now = new Date()
-  let period = params.period && /^\d{4}-\d{2}$/.test(params.period) ? params.period : ''
+  let period = params.period && /^\d{4}-(0[1-9]|1[0-2])$/.test(params.period) ? params.period : ''
 
   if (!period) {
     try {

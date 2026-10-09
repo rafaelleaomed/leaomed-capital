@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedUserId } from '@/utils/auth-helpers'
-import { FinancialCategorizationService, CategorizeTransactionRequest } from '@/services/financialCategorizationService'
+import { createCategorizationServiceForUser, CategorizeTransactionRequest } from '@/services/financialCategorizationService'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
  * Endpoint unitário autenticado para categorização com cascata de 5 etapas.
  */
 export async function POST(req: Request) {
-  const { userId, errorResponse } = await getAuthenticatedUserId()
+  const { userId, user, errorResponse } = await getAuthenticatedUserId()
   if (errorResponse || !userId) {
     return errorResponse || NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
   }
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const service = new FinancialCategorizationService()
+    const service = await createCategorizationServiceForUser({ id: userId, email: user?.email })
     const requestPayload: CategorizeTransactionRequest = {
       id,
       raw_id,
@@ -45,10 +45,10 @@ export async function POST(req: Request) {
       success: true,
       result
     })
-  } catch (error: any) {
-    console.error('Erro na rota /api/categorize:', error)
+  } catch (error: unknown) {
+    console.error('Erro na rota /api/categorize:', error instanceof Error ? error.name : 'unknown_error')
     return NextResponse.json(
-      { success: false, error: error?.message || 'Falha interna ao processar categorização.' },
+      { success: false, error: 'Falha interna ao processar categorização.' },
       { status: 500 }
     )
   }

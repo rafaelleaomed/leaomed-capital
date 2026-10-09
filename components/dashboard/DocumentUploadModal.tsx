@@ -1,5 +1,7 @@
 'use client'
 
+import { AccessibleDialog } from './AccessibleDialog'
+
 import React, { useState, useRef } from 'react'
 import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, Sparkles, X, ArrowRight, ClipboardType, FileUp, Lock, KeyRound } from 'lucide-react'
 import { GranularTransactionStore } from '@/utils/granularTransactionStore'
@@ -73,6 +75,8 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [parsedTransactions, setParsedTransactions] = useState<any[]>([])
+  const [parseDiagnostics, setParseDiagnostics] = useState<any[]>([])
+  const [reviewAcknowledged, setReviewAcknowledged] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   
   // Suporte a PDFs protegidos por senha
@@ -93,6 +97,8 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
     setStatusMessage('Otimizando e analisando documento...')
     setErrorMessage(null)
     setParsedTransactions([])
+    setParseDiagnostics([])
+    setReviewAcknowledged(false)
     setIsSaved(false)
 
     try {
@@ -154,8 +160,10 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
       setPendingFiles([])
 
       const allTxs: any[] = []
+      const diagnostics: any[] = []
       if (Array.isArray(data.batches)) {
         for (const batch of data.batches) {
+          if (batch.diagnostics) diagnostics.push(batch.diagnostics)
           if (Array.isArray(batch.transactions)) {
             allTxs.push(...batch.transactions)
           }
@@ -166,7 +174,11 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
         setStatusMessage('Arquivo lido, porém nenhum lançamento com valor foi identificado.')
       } else {
         setParsedTransactions(allTxs)
-        setStatusMessage(`✅ ${allTxs.length} lançamentos extraídos da fatura com sucesso!`)
+        setParseDiagnostics(diagnostics)
+        const needsReview = diagnostics.some(diagnostic => diagnostic?.requiresReview || diagnostic?.requires_review)
+        setStatusMessage(needsReview
+          ? `⚠️ ${allTxs.length} lançamentos extraídos. Revise a conciliação antes de salvar.`
+          : `✅ ${allTxs.length} lançamentos extraídos da fatura com sucesso!`)
       }
     } catch (err: any) {
       console.error('Erro no upload de fatura:', err)
@@ -199,6 +211,8 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
     setStatusMessage('Processando texto e identificando lançamentos...')
     setErrorMessage(null)
     setParsedTransactions([])
+    setParseDiagnostics([])
+    setReviewAcknowledged(false)
     setIsSaved(false)
 
     try {
@@ -219,8 +233,10 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
       }
 
       const allTxs: any[] = []
+      const diagnostics: any[] = []
       if (Array.isArray(data.batches)) {
         for (const batch of data.batches) {
+          if (batch.diagnostics) diagnostics.push(batch.diagnostics)
           if (Array.isArray(batch.transactions)) {
             allTxs.push(...batch.transactions)
           }
@@ -231,7 +247,11 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
         setStatusMessage('Texto processado, mas nenhum lançamento com valor foi identificado.')
       } else {
         setParsedTransactions(allTxs)
-        setStatusMessage(`✅ ${allTxs.length} lançamentos identificados com sucesso!`)
+        setParseDiagnostics(diagnostics)
+        const needsReview = diagnostics.some(diagnostic => diagnostic?.requiresReview || diagnostic?.requires_review)
+        setStatusMessage(needsReview
+          ? `⚠️ ${allTxs.length} lançamentos identificados. Revise a conciliação antes de salvar.`
+          : `✅ ${allTxs.length} lançamentos identificados com sucesso!`)
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Erro ao analisar texto colado.')
@@ -242,25 +262,36 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
 
   const handleSaveToDatabase = async () => {
     if (parsedTransactions.length === 0) return
+    const needsReview = parseDiagnostics.some(diagnostic => diagnostic?.requiresReview || diagnostic?.requires_review)
+    if (needsReview && !reviewAcknowledged) {
+      setErrorMessage('Confirme que revisou a conciliação e os itens rejeitados antes de salvar.')
+      return
+    }
 
     setIsUploading(true)
     setStatusMessage('Salvando e categorizando lançamentos no banco de dados...')
     try {
-      const formatted = parsedTransactions.map(t => {
+      const formatted = parsedTransactions.flatMap(t => {
         const rawAmount = typeof t.val === 'number' ? t.val : parseFloat(t.val) || 0
-        const isPayment = Boolean(t.isCardBillPayment)
-        const amount = isPayment ? Math.abs(rawAmount) : -Math.abs(rawAmount)
+        const entryType = t.entryType || (t.isCardBillPayment ? 'bill_payment' : 'purchase')
+        if (entryType === 'bill_payment' || t.isCardBillPayment) return []
+        const signedAmount = typeof t.signedAmount === 'number' ? t.signedAmount : rawAmount
+        const isCredit = t.direction === 'credit' || entryType === 'refund' || signedAmount < 0
+        const amount = isCredit ? Math.abs(signedAmount) : -Math.abs(signedAmount)
 
-        return {
+        return [{
           date: t.date,
           description: t.desc,
           amount,
+          accountOrCard: t.accountOrCard,
           category: t.cat || 'Outros',
           subcategory: t.subcategory || 'Geral',
           isFixed: Boolean(t.isFixed),
-          isIgnored: isPayment
-        }
+          isIgnored: false
+        }]
       })
+
+      if (formatted.length === 0) throw new Error('A fatura não possui compras ou créditos elegíveis para salvar.')
 
       const res = await fetch('/api/transactions', {
         method: 'POST',
@@ -294,22 +325,20 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
+    <AccessibleDialog onClose={onClose} labelledBy="document-upload-title" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--capital-card,#f8fafc)] backdrop-blur-sm animate-in fade-in duration-150">
       <div 
-        className="w-full max-w-xl rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 transition-all p-6 space-y-4 max-h-[90vh] flex flex-col"
-        role="dialog"
-        aria-modal="true"
+        className="w-full max-w-xl rounded-xl overflow-hidden shadow-sm border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] transition-all p-6 space-y-4 max-h-[90vh] flex flex-col"
       >
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10">
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <div className="p-2 rounded-xl bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]">
               <UploadCloud className="w-5 h-5 stroke-[2.5]" />
             </div>
             <div>
-              <h3 className="font-display text-base font-bold text-slate-900 dark:text-white">
+              <h3 id="document-upload-title" className="font-display text-base font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]">
                 Anexar Fatura
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
                 Faturas em PDF, fotos ou texto direto do extrato bancário
               </p>
             </div>
@@ -317,7 +346,8 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
 
           <button 
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 transition-colors cursor-pointer"
+            aria-label="Fechar janela"
+            className="p-1.5 rounded-full hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] text-[var(--capital-muted,#242a2e)] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -325,13 +355,13 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
 
         {/* Alternador de Modo: Arquivo ou Colar Texto */}
         {!isSaved && parsedTransactions.length === 0 && (
-          <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-950 rounded-xl text-xs font-bold border border-slate-200/80 dark:border-white/5">
+          <div className="grid grid-cols-2 p-1 bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] rounded-xl text-xs font-bold border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
             <button
               onClick={() => setActiveTab('FILE')}
               className={`flex items-center justify-center gap-2 py-2 rounded-lg transition-all cursor-pointer ${
                 activeTab === 'FILE'
-                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] shadow-xs'
+                  : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)]'
               }`}
             >
               <FileUp className="w-3.5 h-3.5" />
@@ -341,8 +371,8 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
               onClick={() => setActiveTab('PASTE')}
               className={`flex items-center justify-center gap-2 py-2 rounded-lg transition-all cursor-pointer ${
                 activeTab === 'PASTE'
-                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] shadow-xs'
+                  : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)]'
               }`}
             >
               <ClipboardType className="w-3.5 h-3.5" />
@@ -353,6 +383,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
 
         {/* Input Oculto de Arquivo */}
         <input 
+          aria-label="Selecionar documentos para importação"
           ref={fileInputRef}
           type="file"
           accept=".pdf,.xlsx,.xls,image/png,image/jpeg,image/webp,.csv,.txt"
@@ -363,51 +394,52 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
 
         {/* Modo 1: Área de Seleção de Arquivo */}
         {!isSaved && parsedTransactions.length === 0 && activeTab === 'FILE' && (
-          <div 
+          <button type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-slate-200 dark:border-white/15 hover:border-emerald-500/50 rounded-2xl p-8 text-center cursor-pointer bg-slate-50/50 dark:bg-slate-950/40 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/10 transition-all flex flex-col items-center justify-center gap-3 group"
+            className="border-2 border-dashed border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] hover:border-[var(--capital-accent,#927025)] rounded-2xl p-8 text-center cursor-pointer bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] hover:bg-[var(--capital-soft,#f6f0df)] dark:hover:bg-[var(--capital-soft,#f6f0df)] transition-all flex flex-col items-center justify-center gap-3 group"
           >
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform shadow-xs">
+            <div className="p-4 rounded-2xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] group-hover:scale-105 transition-transform shadow-xs">
               <UploadCloud className="w-8 h-8" />
             </div>
             <div>
-              <p className="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+              <p className="text-sm font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] group-hover:text-[var(--capital-success,#157449)] dark:group-hover:text-[var(--capital-success,#157449)] transition-colors">
                 Toque para selecionar a fatura ou planilha
               </p>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-[var(--capital-muted,#242a2e)] mt-1">
                 Suporta PDF original (com ou sem senha), Excel (.xlsx/.xls) ou fotos
               </p>
             </div>
-          </div>
+          </button>
         )}
 
         {/* Opção Prévia de Senha do Banco */}
         {!isSaved && parsedTransactions.length === 0 && activeTab === 'FILE' && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1">
+            <div className="flex items-center justify-between text-[11px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] px-1">
               <button
                 type="button"
                 onClick={() => setShowAdvancePassword(!showAdvancePassword)}
-                className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer font-medium"
+                className="flex items-center gap-1.5 hover:text-[var(--capital-success,#157449)] dark:hover:text-[var(--capital-success,#157449)] transition-colors cursor-pointer font-medium"
               >
-                <Lock className="w-3.5 h-3.5 text-amber-500" />
+                <Lock className="w-3.5 h-3.5 text-[var(--capital-warning,#8b5b15)]" />
                 <span>{showAdvancePassword ? 'Ocultar campo de senha' : 'O PDF possui senha? Clique para informar'}</span>
               </button>
-              <span className="text-[10px] text-slate-400">Itaú, Bradesco, Santander, XP, etc.</span>
+              <span className="text-[10px] text-[var(--capital-muted,#242a2e)]">Itaú, Bradesco, Santander, XP, etc.</span>
             </div>
 
             {showAdvancePassword && (
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 space-y-1.5 animate-in fade-in">
-                <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                  <KeyRound className="w-3.5 h-3.5 text-emerald-500" />
+              <div className="p-3 rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] space-y-1.5 animate-in fade-in">
+                <label className="text-[11px] font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] flex items-center gap-1">
+                  <KeyRound className="w-3.5 h-3.5 text-[var(--capital-success,#157449)]" />
                   Senha de abertura do PDF (opcional)
                 </label>
                 <input
                   type="text"
+                  aria-label="Senha de abertura do PDF"
                   value={pdfPassword}
                   onChange={(e) => setPdfPassword(e.target.value)}
                   placeholder="Ex: Primeiros dígitos do CPF ou data de nascimento"
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-200 font-mono"
+                  className="w-full px-3 py-1.5 rounded-lg border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] text-xs text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] font-mono"
                 />
               </div>
             )}
@@ -416,12 +448,12 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
 
         {/* Alerta e Desbloqueio de Senha Obrigatória */}
         {requiresPassword && (
-          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 space-y-3 animate-in fade-in slide-in-from-top-2 shadow-xs">
-            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-bold text-xs">
-              <Lock className="w-4 h-4 text-amber-500 shrink-0" />
+          <div className="p-4 rounded-2xl bg-[var(--capital-warning-soft,#fcf1dc)] dark:bg-[var(--capital-warning-soft,#fcf1dc)] border border-[var(--capital-warning,#8b5b15)] dark:border-[var(--capital-warning,#8b5b15)] space-y-3 animate-in fade-in slide-in-from-top-2 shadow-xs">
+            <div className="flex items-center gap-2 text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] font-bold text-xs">
+              <Lock className="w-4 h-4 text-[var(--capital-warning,#8b5b15)] shrink-0" />
               <span>{isWrongPassword ? 'Senha incorreta para a fatura' : 'Fatura protegida por senha'}</span>
             </div>
-            <p className="text-[11px] text-amber-900 dark:text-amber-200/90 leading-relaxed">
+            <p className="text-[11px] text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] leading-relaxed">
               {isWrongPassword
                 ? 'A senha informada não conseguiu abrir este arquivo. Geralmente são os primeiros 4 a 6 dígitos do seu CPF ou sua data de nascimento (ex: 15051980).'
                 : 'O seu banco protegeu este arquivo por senha. Digite a senha abaixo para que possamos extrair todos os lançamentos instantaneamente.'}
@@ -430,7 +462,8 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
               <input
                 type="text"
                 autoFocus
-                value={pdfPassword}
+                aria-label="Senha de abertura do PDF"
+                  value={pdfPassword}
                 onChange={(e) => setPdfPassword(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && pdfPassword.trim() && !isUploading) {
@@ -438,12 +471,12 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
                   }
                 }}
                 placeholder="Digite a senha da fatura"
-                className="flex-1 px-3 py-2 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-white dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:border-amber-500 font-mono shadow-inner"
+                className="flex-1 px-3 py-2 rounded-xl border border-[var(--capital-warning,#8b5b15)] dark:border-[var(--capital-warning,#8b5b15)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] text-xs text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] placeholder:text-[var(--capital-muted,#242a2e)] focus:outline-hidden focus:border-[var(--capital-warning,#8b5b15)] font-mono shadow-inner"
               />
               <button
                 onClick={handleUnlockWithPassword}
                 disabled={isUploading || !pdfPassword.trim()}
-                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-xs active:scale-95"
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-[var(--capital-button-text,#242a2e)] font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-xs active:scale-95"
               >
                 {isUploading ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -460,15 +493,16 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
         {!isSaved && parsedTransactions.length === 0 && activeTab === 'PASTE' && (
           <div className="space-y-3">
             <textarea
+              aria-label="Texto da fatura ou extrato"
               value={pastedText}
               onChange={(e) => setPastedText(e.target.value)}
               placeholder="Cole aqui o texto copiado da sua fatura ou extrato do app bancário..."
-              className="w-full h-36 p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-950/50 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-hidden focus:border-emerald-500 font-mono resize-none"
+              className="w-full h-36 p-3 rounded-xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] text-xs text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] placeholder:text-[var(--capital-muted,#242a2e)] focus:outline-hidden focus:border-[var(--capital-accent,#927025)] font-mono resize-none"
             />
             <button
               onClick={handleProcessPastedText}
               disabled={isUploading || !pastedText.trim()}
-              className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-500/20 cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-none cursor-pointer disabled:opacity-50"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Processar Texto da Fatura</span>
@@ -478,14 +512,14 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
 
         {/* Mensagens de Carregamento e Erro */}
         {isUploading && (
-          <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 flex items-center gap-3 text-xs text-slate-700 dark:text-slate-300">
-            <Loader2 className="w-4 h-4 animate-spin text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <div role="status" className="p-4 rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] flex items-center gap-3 text-xs text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
+            <Loader2 className="w-4 h-4 animate-spin text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] shrink-0" />
             <span>{statusMessage}</span>
           </div>
         )}
 
         {errorMessage && !requiresPassword && (
-          <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 flex items-center gap-2.5 text-xs text-rose-700 dark:text-rose-300">
+          <div role="alert" className="p-3.5 rounded-xl bg-[var(--capital-danger-soft,#fcecec)] dark:bg-[var(--capital-danger-soft,#fcecec)] border border-[var(--capital-danger,#ad3333)] dark:border-[var(--capital-danger,#ad3333)] flex items-center gap-2.5 text-xs text-[var(--capital-danger,#ad3333)] dark:text-[var(--capital-danger,#ad3333)]">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
@@ -494,23 +528,40 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
         {/* Listagem Prévia dos Lançamentos Extraídos */}
         {parsedTransactions.length > 0 && !isSaved && (
           <div className="space-y-3 flex-1 overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+            <div className="flex items-center justify-between text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
               <span>Prévia dos Lançamentos ({parsedTransactions.length})</span>
-              <span className="text-emerald-600 dark:text-emerald-400">Pronto para importar</span>
+              <span className={parseDiagnostics.some(diagnostic => diagnostic?.requiresReview || diagnostic?.requires_review) ? 'text-[var(--capital-warning,#8b5b15)]' : 'text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]'}>
+                {parseDiagnostics.some(diagnostic => diagnostic?.requiresReview || diagnostic?.requires_review) ? 'Revisão necessária' : 'Pronto para importar'}
+              </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto border border-slate-200 dark:border-white/10 rounded-xl divide-y divide-slate-100 dark:divide-white/5 max-h-56">
+            {parseDiagnostics.map((diagnostic, index) => (
+              <div key={`${diagnostic.profile_id || diagnostic.profile?.id || 'perfil'}-${index}`} className="rounded-xl border border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-neutral,#f8fafc)] px-3 py-2 text-[11px] text-[var(--capital-muted,#242a2e)]">
+                <strong className="text-[var(--capital-text,#242a2e)]">Perfil: {diagnostic.profile_label || diagnostic.profile?.label || 'Genérico'}</strong>
+                {' · '}Conciliação: {typeof diagnostic.delta === 'number' ? `diferença de R$ ${Math.abs(diagnostic.delta).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'sem total declarado'}
+                {Array.isArray(diagnostic.rejected) && diagnostic.rejected.length > 0 ? ` · ${diagnostic.rejected.reduce((sum: number, item: any) => sum + (item.count || 0), 0)} itens rejeitados` : ''}
+              </div>
+            ))}
+
+            {parseDiagnostics.some(diagnostic => diagnostic?.requiresReview || diagnostic?.requires_review) && (
+              <label className="flex items-start gap-2 rounded-xl border border-[var(--capital-warning,#8b5b15)] bg-[var(--capital-warning-soft,#fcf1dc)] px-3 py-2 text-xs text-[var(--capital-text,#242a2e)]">
+                <input type="checkbox" checked={reviewAcknowledged} onChange={event => setReviewAcknowledged(event.target.checked)} className="mt-0.5" />
+                <span>Revisei a conciliação e confirmo os lançamentos exibidos antes de gravá-los.</span>
+              </label>
+            )}
+
+            <div className="flex-1 overflow-y-auto border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] rounded-xl divide-y divide-[var(--capital-line,#e4dfd3)] dark:divide-[var(--capital-line,#e4dfd3)] max-h-56">
               {parsedTransactions.map((tx, idx) => (
                 <div key={idx} className="p-2.5 flex items-center justify-between text-xs">
                   <div className="min-w-0 pr-3">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 truncate block">
+                    <span className="font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] truncate block">
                       {tx.desc}
                     </span>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-[var(--capital-muted,#242a2e)]">
                       {tx.date} • {tx.cat || 'Geral'}
                     </span>
                   </div>
-                  <span className={`font-mono font-bold shrink-0 ${tx.val < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  <span className={`font-mono font-bold shrink-0 ${tx.val < 0 ? 'text-[var(--capital-danger,#ad3333)] dark:text-[var(--capital-danger,#ad3333)]' : 'text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]'}`}>
                     R$ {Math.abs(tx.val).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
@@ -519,15 +570,15 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
 
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
-                onClick={() => setParsedTransactions([])}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-all cursor-pointer"
+                onClick={() => { setParsedTransactions([]); setParseDiagnostics([]); setReviewAcknowledged(false) }}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--capital-muted,#242a2e)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-all cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSaveToDatabase}
-                disabled={isUploading}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs transition-all shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer disabled:opacity-50"
+                disabled={isUploading || (parseDiagnostics.some(diagnostic => diagnostic?.requiresReview || diagnostic?.requires_review) && !reviewAcknowledged)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-semibold text-xs transition-all shadow-md shadow-none active:scale-95 cursor-pointer disabled:opacity-50"
               >
                 <span>Confirmar & Salvar no Banco</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -537,17 +588,17 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
         )}
 
         {isSaved && (
-          <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-2">
-            <CheckCircle2 className="w-10 h-10 text-emerald-600 dark:text-emerald-400 mx-auto" />
-            <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+          <div className="p-6 rounded-2xl bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] text-center space-y-2">
+            <CheckCircle2 className="w-10 h-10 text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] mx-auto" />
+            <h4 className="font-bold text-sm text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]">
               Fatura Importada com Sucesso!
             </h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
               Os lançamentos foram consolidados e integrados ao seu banco de dados.
             </p>
           </div>
         )}
       </div>
-    </div>
+    </AccessibleDialog>
   )
 }

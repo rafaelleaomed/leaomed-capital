@@ -55,33 +55,33 @@ export function HistoricalOverview({ isDemo = false }: { isDemo?: boolean }) {
   }, [isDemo])
 
   return (
-    <div id="historico-mensal" className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 p-6 shadow-sm scroll-mt-24">
+    <div id="historico-mensal" className="rounded-xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] p-6 shadow-sm scroll-mt-24">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
         <div>
-          <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <History className="h-4 w-4 text-blue-500" />
+          <h3 className="font-display text-base font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] flex items-center gap-2">
+            <History className="h-4 w-4 text-[var(--capital-accent,#927025)]" />
             Série Temporal Financeira & Histórico Mensal (Dezembro/25 a Julho/26)
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-0.5">
             Evolução histórica de receitas brutas, impostos, pró-labore e fluxo líquido PF/PJ.
           </p>
         </div>
-        <div className="flex rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-slate-950/70 p-1 text-xs font-semibold">
+        <div className="flex rounded-xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] p-1 text-xs font-semibold">
           <button 
             onClick={() => setSelectedView('ALL')} 
-            className={`px-3 py-1.5 rounded-lg transition-all ${selectedView === 'ALL' ? 'bg-emerald-500 text-slate-950 font-black shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all ${selectedView === 'ALL' ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-semibold shadow-xs' : 'text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#f6f3e9)]'}`}
           >
             Consolidado
           </button>
           <button 
             onClick={() => setSelectedView('PJ')} 
-            className={`px-3 py-1.5 rounded-lg transition-all ${selectedView === 'PJ' ? 'bg-emerald-500 text-slate-950 font-black shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all ${selectedView === 'PJ' ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-semibold shadow-xs' : 'text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#f6f3e9)]'}`}
           >
             Pessoa Jurídica
           </button>
           <button 
             onClick={() => setSelectedView('PF')} 
-            className={`px-3 py-1.5 rounded-lg transition-all ${selectedView === 'PF' ? 'bg-emerald-500 text-slate-950 font-black shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
+            className={`px-3 py-1.5 rounded-lg transition-all ${selectedView === 'PF' ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-semibold shadow-xs' : 'text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#f6f3e9)]'}`}
           >
             Pessoa Física
           </button>
@@ -90,7 +90,7 @@ export function HistoricalOverview({ isDemo = false }: { isDemo?: boolean }) {
 
       <div className="overflow-x-auto">
         <table className="w-full text-xs text-left">
-          <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-white/5">
+          <thead className="bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] uppercase tracking-wider font-semibold border-b border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
             <tr>
               <th className="py-3 px-3.5">Mês</th>
               {(selectedView === 'ALL' || selectedView === 'PJ') && (
@@ -109,32 +109,32 @@ export function HistoricalOverview({ isDemo = false }: { isDemo?: boolean }) {
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+          <tbody className="divide-y divide-[var(--capital-line,#e4dfd3)] dark:divide-[var(--capital-line,#e4dfd3)]">
             {history.map((row) => (
-              <tr key={row.month} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                <td className="py-3 px-3.5 font-bold text-slate-900 dark:text-white">{row.month}</td>
+              <tr key={row.month} className="hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors">
+                <td className="py-3 px-3.5 font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]">{row.month}</td>
                 {(selectedView === 'ALL' || selectedView === 'PJ') && (
                   <>
-                    <td className="py-3 px-3.5 text-right text-emerald-600 dark:text-emerald-400 font-semibold font-mono tabular-nums">
+                    <td className="py-3 px-3.5 text-right text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] font-semibold font-mono tabular-nums">
                       R$ {row.pjGross.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="py-3 px-3.5 text-right text-rose-600 dark:text-rose-400 font-mono tabular-nums">
+                    <td className="py-3 px-3.5 text-right text-[var(--capital-danger,#ad3333)] dark:text-[var(--capital-danger,#ad3333)] font-mono tabular-nums">
                       - R$ {row.pjTaxes.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="py-3 px-3.5 text-right font-medium text-slate-700 dark:text-slate-300 font-mono tabular-nums">
+                    <td className="py-3 px-3.5 text-right font-medium text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] font-mono tabular-nums">
                       R$ {row.pjProlabore.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                   </>
                 )}
                 {(selectedView === 'ALL' || selectedView === 'PF') && (
                   <>
-                    <td className="py-3 px-3.5 text-right text-emerald-600 dark:text-emerald-400 font-semibold font-mono tabular-nums">
+                    <td className="py-3 px-3.5 text-right text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] font-semibold font-mono tabular-nums">
                       R$ {row.pfIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="py-3 px-3.5 text-right text-rose-600 dark:text-rose-400 font-semibold font-mono tabular-nums">
+                    <td className="py-3 px-3.5 text-right text-[var(--capital-danger,#ad3333)] dark:text-[var(--capital-danger,#ad3333)] font-semibold font-mono tabular-nums">
                       - R$ {row.pfExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className={`py-3 px-3.5 text-right font-black font-mono tabular-nums ${row.balance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                    <td className={`py-3 px-3.5 text-right font-semibold font-mono tabular-nums ${row.balance >= 0 ? 'text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]' : 'text-[var(--capital-danger,#ad3333)] dark:text-[var(--capital-danger,#ad3333)]'}`}>
                       {row.balance >= 0 ? '+' : ''} R$ {row.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                   </>

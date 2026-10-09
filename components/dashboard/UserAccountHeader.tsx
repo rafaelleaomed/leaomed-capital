@@ -71,37 +71,37 @@ export function UserAccountHeader({
 
   return (
     <>
-      <div className="flex items-center gap-2 md:gap-3 pl-2 border-l border-slate-200 dark:border-white/10">
+      <div className="flex items-center gap-2 md:gap-3 pl-2 border-l border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
         {/* Botão Interativo do Perfil */}
         <button
           onClick={() => setIsOpen(true)}
-          className="flex items-center gap-2.5 p-1 sm:px-2.5 sm:py-1.5 rounded-2xl hover:bg-slate-100 dark:hover:bg-white/5 border border-transparent hover:border-slate-200 dark:hover:border-white/10 transition-all cursor-pointer group text-left"
+          className="flex items-center gap-2.5 p-1 sm:px-2.5 sm:py-1.5 rounded-2xl hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] border border-transparent hover:border-[var(--capital-line,#e4dfd3)] dark:hover:border-[var(--capital-line,#e4dfd3)] transition-all cursor-pointer group text-left"
           title="Clique para gerenciar sua conta: alterar nome, atualizar senha, gerenciar contas bancárias"
         >
           <div className="text-right hidden md:block">
             <div className="flex items-center gap-1 justify-end">
-              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+              <span className="text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] group-hover:text-[var(--capital-success,#157449)] dark:group-hover:text-[var(--capital-success,#157449)] transition-colors">
                 {userName}
               </span>
-              <Settings className="w-3 h-3 text-slate-400 group-hover:text-emerald-500 transition-colors opacity-0 group-hover:opacity-100" />
+              <Settings className="w-3 h-3 text-[var(--capital-muted,#242a2e)] group-hover:text-[var(--capital-success,#157449)] transition-colors opacity-0 group-hover:opacity-100" />
             </div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">
+            <span className="text-[10px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block font-medium">
               {isDemo ? 'Demonstração Médica' : 'Perfil Executivo'}
             </span>
           </div>
 
           <div className="relative">
-            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-black text-xs flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform border border-emerald-400/40">
+            <div className="h-9 w-9 rounded-full bg-[var(--capital-soft,#f6f0df)] from-emerald-500 to-teal-700 text-[var(--capital-text,#242a2e)] font-semibold text-xs flex items-center justify-center shadow-md shadow-none group-hover:scale-105 transition-transform border border-[var(--capital-accent,#927025)]">
               {initials}
             </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--capital-button,#c7a354)] border-2 border-white dark:border-[var(--capital-line,#e4dfd3)]" />
           </div>
 
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 hidden sm:block transition-transform group-hover:translate-y-0.5" />
+          <ChevronDown className="w-3.5 h-3.5 text-[var(--capital-muted,#242a2e)] group-hover:text-[var(--capital-muted,#242a2e)] dark:group-hover:text-[var(--capital-text,#f6f3e9)] hidden sm:block transition-transform group-hover:translate-y-0.5" />
         </button>
 
         {/* Botão de Logout */}
-        <LogoutButton className="ml-1 hidden md:flex items-center gap-1.5 text-slate-400 hover:text-red-400 transition-colors text-xs" />
+        <LogoutButton className="ml-1 hidden md:flex items-center gap-1.5 text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-danger,#ad3333)] transition-colors text-xs" />
       </div>
 
       {/* Modal de Gestão da Conta */}
