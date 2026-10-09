@@ -1,23 +1,17 @@
 ﻿'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { DeliveryPayload, DashboardFilter } from '@/utils/dashboardData'
 import { useRouter } from 'next/navigation'
 import { 
-  Search, 
-  BarChart3, 
-  LayoutDashboard, 
-  PieChart, 
-  Receipt, 
   UploadCloud, 
-  TrendingUp,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
-  ListFilter,
   PlusCircle
 } from 'lucide-react'
 import { TieredCockpitView } from './dashboard/TieredCockpitView'
-import { MobileQuickNav } from './dashboard/MobileQuickNav'
+import { resolveDashboardTab } from './dashboard/navigation'
 import { InsightsPanel } from './dashboard/InsightsPanel'
 import { BudgetBreakdown } from './dashboard/BudgetBreakdown'
 import { CashFlowChart } from './dashboard/CashFlowChart'
@@ -32,6 +26,8 @@ import { DocumentUploadModal } from './dashboard/DocumentUploadModal'
 import { GranularExpenseAuditor } from './dashboard/GranularExpenseAuditor'
 import { AppleMobileTabBar } from './dashboard/AppleMobileTabBar'
 import { GlobalQuickFinder } from './dashboard/GlobalQuickFinder'
+import { AnnualConsolidatedView } from './dashboard/AnnualConsolidatedView'
+import { MonthSelectorModal } from './dashboard/MonthSelectorModal'
 
 export type DashboardTab = 'visao-geral' | 'auditoria' | 'orcamento' | 'investimentos' | 'parcelamentos' | 'ingestao' | 'historico'
 
@@ -54,13 +50,23 @@ export default function DashboardUI({
 }) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<DashboardTab>('visao-geral')
+  const [auditCategory, setAuditCategory] = useState<string | undefined>()
+  const [isAnnualOpen, setIsAnnualOpen] = useState(false)
+  const pendingElement = useRef<string | undefined>(undefined)
+  const [navigationRequest, setNavigationRequest] = useState(0)
   const [isWizardOpen, setIsWizardOpen] = useState(false)
   const [isQuickTxOpen, setIsQuickTxOpen] = useState(false)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isQuickFinderOpen, setIsQuickFinderOpen] = useState(false)
+  const [isMonthSelectorOpen, setIsMonthSelectorOpen] = useState(false)
 
   // Período selecionado (formato YYYY-MM)
-  const activePeriod = selectedPeriod || payload.period || '2026-04'
+  const isValidPeriod = (period?: string): period is string => /^\d{4}-(0[1-9]|1[0-2])$/.test(period || '')
+  const activePeriod = isValidPeriod(selectedPeriod)
+    ? selectedPeriod
+    : isValidPeriod(payload.period)
+      ? payload.period
+      : '2026-01'
   const [yearStr, monthStr] = activePeriod.split('-')
   const selectedYear = parseInt(yearStr, 10)
   const selectedMonth = parseInt(monthStr, 10) - 1 // 0-11
@@ -95,199 +101,146 @@ export default function DashboardUI({
   }
 
   const handleFilterChange = (filter: DashboardFilter) => {
-    router.push(`${basePath}?filter=${filter}&period=${activePeriod}`)
+    const hash = typeof window !== 'undefined' ? window.location.hash : ''
+    router.push(`${basePath}?filter=${filter}&period=${activePeriod}${hash}`)
     router.refresh()
   }
 
-  // Sincronização de abas por hash da URL
+  // Navigation remains compatible with existing hashes and quick actions.
   useEffect(() => {
     const handleHash = () => {
       const hash = window.location.hash.replace('#', '')
-      if (hash) {
-        if (hash === 'visao-geral' || hash === 'visao-geral-graficos') setActiveTab('visao-geral')
-        else if (hash === 'auditoria' || hash === 'lancamentos') setActiveTab('auditoria')
-        else if (hash === 'orcamento' || hash === 'categorias-planilha') setActiveTab('orcamento')
-        else if (hash === 'investimentos' || hash === 'balanceamento-investimentos') setActiveTab('investimentos')
-        else if (hash === 'parcelamentos' || hash === 'parcelamentos-dividas') setActiveTab('parcelamentos')
-        else if (hash === 'ingestao' || hash === 'anexar-fatura') setActiveTab('ingestao')
-        else if (hash === 'historico' || hash === 'historico-mensal') setActiveTab('historico')
+      const tab = resolveDashboardTab(hash)
+      if (tab) {
+        setActiveTab(tab)
+        if (hash !== tab) pendingElement.current = hash
+        setNavigationRequest(n => n + 1)
       }
     }
-
-    const handleSwitchTab = (e: any) => {
-      if (e.detail?.tab) {
-        setActiveTab(e.detail.tab)
-        window.location.hash = '#' + e.detail.tab
-      }
+    const handleSwitchTab = (event: Event) => {
+      const detail = (event as CustomEvent<{ tab?: string; elementId?: string; category?: string }>).detail
+      const tab = detail?.tab && resolveDashboardTab(detail.tab)
+      if (!tab) return
+      if (tab === 'auditoria') setAuditCategory(detail.category)
+      pendingElement.current = detail.elementId
+      setActiveTab(tab)
+      if (window.location.hash !== '#' + tab) window.location.hash = '#' + tab
+      setNavigationRequest(n => n + 1)
     }
-
+    const openFinder = () => setIsQuickFinderOpen(true)
+    const openQuickTx = () => setIsQuickTxOpen(true)
+    const openUpload = () => setIsUploadModalOpen(true)
+    const openAnnual = () => setIsAnnualOpen(true)
+    const closeAnnual = () => setIsAnnualOpen(false)
     window.addEventListener('hashchange', handleHash)
     window.addEventListener('leaomed_switch_tab', handleSwitchTab)
-    window.addEventListener('leaomed_open_quick_finder', () => setIsQuickFinderOpen(true))
-    window.addEventListener('leaomed_open_quick_tx', () => setIsQuickTxOpen(true))
-    window.addEventListener('leaomed_open_upload', () => setIsUploadModalOpen(true))
-
+    window.addEventListener('leaomed_open_quick_finder', openFinder)
+    window.addEventListener('leaomed_open_quick_tx', openQuickTx)
+    window.addEventListener('leaomed_open_upload', openUpload)
+    window.addEventListener('leaomed_open_annual_consolidated', openAnnual)
+    window.addEventListener('leaomed_close_annual_consolidated', closeAnnual)
     handleHash()
-
     return () => {
       window.removeEventListener('hashchange', handleHash)
       window.removeEventListener('leaomed_switch_tab', handleSwitchTab)
+      window.removeEventListener('leaomed_open_quick_finder', openFinder)
+      window.removeEventListener('leaomed_open_quick_tx', openQuickTx)
+      window.removeEventListener('leaomed_open_upload', openUpload)
+      window.removeEventListener('leaomed_open_annual_consolidated', openAnnual)
+      window.removeEventListener('leaomed_close_annual_consolidated', closeAnnual)
     }
   }, [])
 
-  const handleTabClick = (tabId: DashboardTab) => {
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('leaomed_tab_changed', { detail: { tab: activeTab } }))
+    const elementId = pendingElement.current
+    if (!elementId) return
+    const frame = requestAnimationFrame(() => {
+      if (elementId === 'reserva-emergencia') {
+        window.dispatchEvent(new CustomEvent('leaomed_open_emergency_reserve'))
+      } else if (elementId === 'consolidado-anual') {
+        window.dispatchEvent(new CustomEvent('leaomed_open_annual_consolidated'))
+      } else {
+        document.getElementById(elementId)?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+      }
+      pendingElement.current = undefined
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [activeTab, navigationRequest])
+
+  const handleTabClick = (tabId: DashboardTab, elementId?: string, category?: string) => {
+    if (tabId === 'auditoria') setAuditCategory(category)
+    setIsAnnualOpen(false)
+    pendingElement.current = elementId
     setActiveTab(tabId)
     window.location.hash = '#' + tabId
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setNavigationRequest(n => n + 1)
+    window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
   }
 
-  // Configuração das abas executivas
-  const executiveTabs: { id: DashboardTab; label: string; icon: any; badge?: string }[] = [
-    { id: 'visao-geral', label: 'Cockpit em Camadas', icon: BarChart3 },
-    { id: 'auditoria', label: 'Auditoria de Lançamentos', icon: ListFilter },
-    { id: 'orcamento', label: 'Orçamento & Categorias', icon: LayoutDashboard },
-    { id: 'investimentos', label: 'Investimentos', icon: PieChart },
-    { id: 'parcelamentos', label: 'Parcelamentos', icon: Receipt },
-    { id: 'ingestao', label: 'Anexar Fatura', icon: UploadCloud },
-    { id: 'historico', label: 'Histórico Anual', icon: TrendingUp },
-  ]
+  const titles: Record<DashboardTab, { title: string; description: string }> = {
+    'visao-geral': { title: 'Seu mês, com clareza.', description: 'Entenda seus gastos e confira o que precisa de atenção.' },
+    auditoria: { title: 'Auditoria de lançamentos', description: 'Confira categorias, documentos e alterações do período.' },
+    orcamento: { title: 'Orçamento & cartões', description: 'Organize despesas, faturas e o planejamento dos próximos meses.' },
+    investimentos: { title: 'Seu patrimônio', description: 'Carteira, rebalanceamento e simuladores em um só lugar.' },
+    parcelamentos: { title: 'Parcelamentos & dívidas', description: 'Acompanhe contratos e compromissos dos próximos meses.' },
+    ingestao: { title: 'Importar documentos', description: 'Adicione extratos e faturas para conferir seus lançamentos.' },
+    historico: { title: 'Histórico mensal', description: 'Consulte a evolução e os detalhes dos meses anteriores.' },
+  }
 
   return (
-    <div className="flex flex-col gap-5 md:gap-7 max-w-7xl mx-auto pb-32 md:pb-24 transition-colors">
-      
-      {/* Mobile Sticky Quick Navigation */}
-      <MobileQuickNav activeTab={activeTab} onSelectTab={(t) => handleTabClick(t as DashboardTab)} />
-
-      {/* ── Top Header Executivo ────────────────────────────────────────── */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1 border-b border-slate-200/80 dark:border-white/5 pb-5">
-        <div className="flex items-center gap-3.5">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl overflow-hidden shadow-md border border-emerald-500/25 bg-slate-900 shrink-0">
-            <img src="/logo.jpg" alt="LeãoMed Capital Logo" className="h-full w-full object-cover" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-                LeãoMed Capital
-              </h1>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                {currentFilter === 'PF' ? 'Pessoa Física' : currentFilter === 'PJ' ? 'Pessoa Jurídica' : 'Consolidado'}
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Gestão Financeira Médica • Visão Inicial PF • Origem PJ em Segundo Plano
-            </p>
-          </div>
+    <div className={isDemo ? 'flex flex-col gap-5 md:gap-7 max-w-7xl mx-auto pb-32 md:pb-24' : 'capital-workspace'}>
+      <header className="capital-page-heading">
+        <div>
+          <h1>{titles[activeTab].title}</h1>
+          <p>{titles[activeTab].description}</p>
         </div>
-
-        {/* Controles de Topo: Busca Global + Filtro PF/PJ + Navegação Temporal */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Botão de Busca Rápida Global (Ctrl+K) */}
-          <button
-            onClick={() => setIsQuickFinderOpen(true)}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 hover:border-emerald-500/40 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all text-xs font-medium cursor-pointer shadow-2xs group"
-            title="Buscar no App (Ctrl+K)"
-          >
-            <Search className="w-3.5 h-3.5 text-emerald-500 group-hover:scale-110 transition-transform" />
-            <span className="hidden sm:inline">Buscar...</span>
-            <kbd className="hidden sm:inline-flex px-1.5 py-0.5 rounded bg-white dark:bg-white/10 text-[10px] font-mono text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-white/10">
-              Ctrl+K
-            </kbd>
+        <div className="capital-heading-actions">
+          <button type="button" className="capital-secondary-button" onClick={() => setIsQuickTxOpen(true)}>
+            <PlusCircle size={17} /><span>Novo lançamento</span>
           </button>
-
-          {/* Seletor Dinâmico de Mês e Ano */}
-          <div className="inline-flex items-center bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200/80 dark:border-white/10 p-1 text-xs">
-            <button
-              onClick={handlePrevMonth}
-              className="p-1.5 rounded-lg hover:bg-slate-200/70 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
-              title="Mês anterior"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-
-            <span className="px-2.5 font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap min-w-[110px] text-center">
-              {monthNames[selectedMonth]} {selectedYear}
-            </span>
-
-            <button
-              onClick={handleNextMonth}
-              className="p-1.5 rounded-lg hover:bg-slate-200/70 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
-              title="Próximo mês"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Alternador Global de Contexto: PF (Padrão) | PJ (Secundário) | Consolidado */}
-          <div className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex rounded-xl shadow-2xs border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-slate-950/90 p-1" role="group">
-            {(['PF', 'PJ', 'CONSOLIDATED'] as DashboardFilter[]).map((f) => (
-              <button
-                key={f}
-                onClick={() => handleFilterChange(f)}
-                className={`px-3 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all cursor-pointer text-center active:scale-95 ${
-                  currentFilter === f 
-                    ? 'bg-emerald-500 text-slate-950 font-black shadow-md shadow-emerald-500/20' 
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5'
-                }`}
-              >
-                {f === 'PF' ? 'Pessoa Física' : f === 'PJ' ? 'Pessoa Jurídica' : 'Consolidado'}
-              </button>
-            ))}
-          </div>
-
-          {/* Botão de Ação Rápida: Anexar Fatura */}
-          <button
-            onClick={() => setIsUploadModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/25 cursor-pointer active:scale-95 shrink-0"
-            title="Anexar Fatura ou Extrato"
-          >
-            <UploadCloud className="w-4 h-4 stroke-[2.5]" />
-            <span>Anexar Fatura</span>
+          <button type="button" className="capital-primary-button" onClick={() => setIsUploadModalOpen(true)}>
+            <UploadCloud size={17} /><span>Importar</span>
           </button>
+        </div>
+      </header>
+      <div className="capital-period-toolbar">
+        <div className="capital-scope-picker" role="group" aria-label="Escopo financeiro">
+          {(['PF', 'PJ', 'CONSOLIDATED'] as DashboardFilter[]).map(filter => (
+            <button type="button" key={filter} aria-pressed={currentFilter === filter} className={currentFilter === filter ? 'active' : ''} onClick={() => handleFilterChange(filter)}>
+              {filter === 'PF' ? 'Pessoa Física' : filter === 'PJ' ? 'Pessoa Jurídica' : 'Consolidado'}
+            </button>
+          ))}
+        </div>
+        <div className="capital-month-picker" aria-label="Período selecionado">
+          <button type="button" className="capital-icon-button" aria-label="Mês anterior" onClick={handlePrevMonth}><ChevronLeft size={18} /></button>
+          <button
+            type="button"
+            className="capital-period-button"
+            onClick={() => setIsMonthSelectorOpen(true)}
+            aria-haspopup="dialog"
+            aria-label={`Selecionar período. Atual: ${monthNames[selectedMonth]} de ${selectedYear}`}
+          >
+            <CalendarDays size={16} aria-hidden="true" />
+            <span>{monthNames[selectedMonth]} {selectedYear}</span>
+          </button>
+          <button type="button" className="capital-icon-button" aria-label="Próximo mês" onClick={handleNextMonth}><ChevronRight size={18} /></button>
         </div>
       </div>
-
-      {/* ── Barra de Abas Executivas (Desktop) ─────────────────────────── */}
-      <nav 
-        aria-label="Módulos da plataforma"
-        className="hidden md:flex items-center gap-1.5 p-1.5 rounded-2xl bg-white/70 dark:bg-slate-950/70 border border-slate-200/80 dark:border-white/10 backdrop-blur-xl sticky top-20 z-20 shadow-xs"
-      >
-        {executiveTabs.map((tab) => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.id
-
-          return (
-            <button
-              key={tab.id}
-              onClick={() => handleTabClick(tab.id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer select-none ${
-                isActive
-                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/25 font-black'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
-              }`}
-            >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-slate-950' : 'text-emerald-500'}`} />
-              <span>{tab.label}</span>
-              {tab.badge && (
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                  isActive ? 'bg-slate-950/20 text-slate-950' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                }`}>
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </nav>
 
       {/* ── CONTEÚDO DA ABA SELECIONADA ─────────────────────────────────── */}
 
       {/* ABA 1: COCKPIT EM CAMADAS (PROPOSTA 2) */}
-      {activeTab === 'visao-geral' && (
+      {activeTab === 'visao-geral' && isAnnualOpen && (
+        <section className="min-w-0">
+          <button type="button" className="capital-secondary-button mb-4" onClick={() => setIsAnnualOpen(false)}><ChevronLeft size={16} />Voltar ao meu mês</button>
+          <AnnualConsolidatedView currentFilter={currentFilter} isDemo={isDemo} />
+        </section>
+      )}
+      {activeTab === 'visao-geral' && !isAnnualOpen && (
         <div key={`visao-geral-${activePeriod}-${currentFilter}`} className="flex flex-col gap-6 animate-in fade-in duration-200">
           {/* Alertas Consultivos Reais */}
-          {payload.alerts && payload.alerts.length > 0 && (
-            <InsightsPanel alerts={payload.alerts} />
-          )}
+
 
           {/* O Cockpit em 3 Camadas */}
           <TieredCockpitView 
@@ -299,7 +252,10 @@ export default function DashboardUI({
             onOpenQuickTx={() => setIsQuickTxOpen(true)}
             onNavigateTab={(tab) => handleTabClick(tab as DashboardTab)}
             onFilterChange={handleFilterChange}
-          />
+          >
+          {payload.alerts && payload.alerts.length > 0 && (
+            <InsightsPanel alerts={payload.alerts} />
+          )}
 
           {/* Gráficos de Fluxo de Caixa e Categorias (apenas quando houver dados) */}
           {hasRealData && (
@@ -309,10 +265,14 @@ export default function DashboardUI({
                 totalExpenses={payload.cash_flow.total_expenses} 
               />
               <CategoryChart 
-                categories={payload.categories} 
+                categories={payload.categories}
+                onCategoryClick={(category) => {
+                  handleTabClick('auditoria', undefined, category)
+                }}
               />
             </div>
           )}
+          </TieredCockpitView>
         </div>
       )}
 
@@ -325,6 +285,7 @@ export default function DashboardUI({
             isDemo={isDemo}
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
+            initialCategory={auditCategory}
           />
         </div>
       )}
@@ -398,14 +359,23 @@ export default function DashboardUI({
       <GlobalQuickFinder 
         isOpen={isQuickFinderOpen}
         onClose={() => setIsQuickFinderOpen(false)}
-        onSelectTab={(tabId) => handleTabClick(tabId as DashboardTab)}
+        onSelectTab={(tabId, elementId) => handleTabClick(tabId as DashboardTab, elementId)}
         onOpenQuickTx={() => setIsQuickTxOpen(true)}
         onOpenWizard={() => setIsWizardOpen(true)}
+        categories={payload.categories}
       />
 
       <OnboardingWizardModal 
         isOpen={isWizardOpen} 
         onClose={() => setIsWizardOpen(false)} 
+      />
+
+      <MonthSelectorModal
+        isOpen={isMonthSelectorOpen}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        onSelect={(month, year) => handlePeriodChange(year, month)}
+        onClose={() => setIsMonthSelectorOpen(false)}
       />
 
       {/* TabBar Nativa para Mobile (Apple HIG) */}
@@ -414,4 +384,3 @@ export default function DashboardUI({
     </div>
   )
 }
-

@@ -63,9 +63,12 @@ Nenhum dado pessoal sensível é transmitido para o Jev:
 
 ```env
 # TypeSafe AI (Jev) - Apenas Server-Side
-TYPESAFE_API_KEY=apikey_224462dee28596dd4c26b8b3d1a1c635f12f_c7674dd6df5eba95f4e05e544266e6f3e698a14b36f239d581126e22bdb52c79
+TYPESAFE_API_KEY=your_typesafe_api_key_here
 TYPESAFE_API_ENDPOINT=https://api.typesafe.ai/v1/systemone
 TYPESAFE_MODEL=jev-latest
+JEV_PLATFORM_OWNER_EMAIL=rafaelleaobh@gmail.com
+JEV_PLATFORM_OWNER_USER_ID=
+JEV_CREDENTIAL_ENCRYPTION_KEY=BASE64_32_BYTE_KEY
 
 # Configurações de Governança
 ENABLE_JEV_CATEGORIZATION=true
@@ -74,9 +77,21 @@ STORE_AI_INPUTS=false
 AI_LOG_RETENTION_DAYS=90
 ```
 
+## 6. Acesso por conta e BYOK
+
+- A chave global da plataforma é resolvida somente no servidor e apenas quando o usuário autenticado corresponde ao e-mail proprietário configurado e, quando informado, ao UUID proprietário.
+- Demais usuários não recebem nem reutilizam a chave global. Eles podem registrar uma chave própria em **Minha Conta → IA / Jev**.
+- Chaves pessoais são validadas com uma chamada sintética, cifradas com AES-256-GCM e AAD vinculado ao `user_id`; a interface recebe somente estado de disponibilidade.
+- Sem uma chave própria válida, o Jev fica desabilitado automaticamente e nenhuma requisição é enviada ao TypeSafe.
+- A rota de leitura de faturas envia somente rótulos estruturais, contagens e marcadores de exclusão de blocos ambíguos. Não envia PDF, texto bruto, nomes, datas, valores, cartões ou senhas.
+
+## 7. Rotação e publicação do código
+
+Nunca versione uma chave real. Use placeholders nos exemplos, mantenha `.env*` fora do Git e rotacione uma credencial caso ela apareça em um commit, log ou documento. Antes de abrir o repositório ao público, purge o segredo do histórico remoto ou publique um repositório novo sem esse histórico.
+
 ---
 
-## 6. Como Executar o Benchmark e Testes
+## 8. Como Executar o Benchmark e Testes
 
 Para rodar a suíte de testes de integridade e o benchmark de 105 transações:
 

@@ -188,29 +188,29 @@ export function OnboardingWizardModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-[var(--capital-card,#f8fafc)] backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl border border-white/10 bg-slate-900 text-slate-100 shadow-2xl overflow-hidden"
+        className="w-full max-w-4xl max-h-[92vh] flex flex-col rounded-xl border border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)] text-[var(--capital-text,#242a2e)] shadow-sm overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby="wizard-title"
       >
         {/* Header Superior do Wizard */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-slate-950/60">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)]">
           <div className="flex items-center gap-3">
-            <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30">
+            <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-[var(--capital-warning-soft,#fcf1dc)] text-[var(--capital-warning,#8b5b15)] border border-[var(--capital-warning,#8b5b15)]">
               <Sliders className="w-4 h-4" />
             </span>
             <div>
-              <h2 id="wizard-title" className="font-display font-bold text-base md:text-lg text-white flex items-center gap-2">
+              <h2 id="wizard-title" className="font-display font-bold text-base md:text-lg text-[var(--capital-text,#242a2e)] flex items-center gap-2">
                 Personalização da Plataforma & Setup Inicial
                 {isDemo && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-success,#157449)] border border-[var(--capital-accent,#927025)]">
                     Modo Portfólio / Teste
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[var(--capital-muted,#242a2e)]">
                 Configure suas contas, método de ingestão, categorias médicas e metas de patrimônio.
               </p>
             </div>
@@ -218,14 +218,14 @@ export function OnboardingWizardModal({
           <button 
             onClick={onClose}
             aria-label="Fechar modal"
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-2 rounded-xl text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] hover:bg-[var(--capital-card,#fff)] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Stepper / Indicador de Etapas */}
-        <div className="grid grid-cols-5 border-b border-white/10 bg-slate-950/40 text-[11px] font-bold">
+        <div className="grid grid-cols-5 border-b border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)] text-[11px] font-bold">
           {[
             { step: 1, label: '1. Contas & Vínculos' },
             { step: 2, label: '2. Ingestão' },
@@ -238,10 +238,10 @@ export function OnboardingWizardModal({
               onClick={() => setCurrentStep(s.step)}
               className={`py-3 px-2 text-center transition-all border-b-2 flex flex-col items-center gap-1 ${
                 currentStep === s.step 
-                  ? 'border-amber-400 text-amber-300 bg-amber-500/5' 
+                  ? 'border-[var(--capital-warning,#8b5b15)] text-[var(--capital-warning,#8b5b15)] bg-[var(--capital-warning-soft,#fcf1dc)]'
                   : currentStep > s.step
-                    ? 'border-emerald-500 text-emerald-400'
-                    : 'border-transparent text-slate-500 hover:text-slate-300'
+                    ? 'border-[var(--capital-accent,#927025)] text-[var(--capital-success,#157449)]'
+                    : 'border-transparent text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)]'
               }`}
             >
               <span>{s.label}</span>
@@ -256,11 +256,11 @@ export function OnboardingWizardModal({
           {currentStep === 1 && (
             <div className="space-y-5 animate-in fade-in duration-150">
               <div>
-                <h3 className="font-display font-bold text-lg text-white flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-amber-400" />
+                <h3 className="font-display font-bold text-lg text-[var(--capital-text,#242a2e)] flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-[var(--capital-warning,#8b5b15)]" />
                   Quais contas e instituições você utiliza?
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-[var(--capital-muted,#242a2e)] mt-1">
                   Defina a segregação entre sua Pessoa Jurídica (receitas médicas, plantões e tributos) e suas contas de Pessoa Física.
                 </p>
               </div>
@@ -269,15 +269,15 @@ export function OnboardingWizardModal({
                 {selectedAccounts.map(acc => (
                   <div 
                     key={acc}
-                    className="flex items-center justify-between p-3.5 rounded-xl border border-white/10 bg-slate-800/60"
+                    className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)]"
                   >
                     <div className="flex items-center gap-2.5">
-                      <CreditCard className="w-4 h-4 text-emerald-400" />
-                      <span className="text-xs font-semibold text-slate-200">{acc}</span>
+                      <CreditCard className="w-4 h-4 text-[var(--capital-success,#157449)]" />
+                      <span className="text-xs font-semibold text-[var(--capital-text,#242a2e)]">{acc}</span>
                     </div>
                     <button
                       onClick={() => handleRemoveAccount(acc)}
-                      className="text-slate-500 hover:text-rose-400 p-1 transition-colors"
+                      className="text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-danger,#ad3333)] p-1 transition-colors"
                       title="Remover conta"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -294,11 +294,11 @@ export function OnboardingWizardModal({
                   value={newAccountName}
                   onChange={e => setNewAccountName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAddAccount()}
-                  className="flex-1 rounded-xl bg-slate-950 border border-white/10 px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="flex-1 rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-4 py-2.5 text-xs text-[var(--capital-text,#242a2e)] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
                 />
                 <button
                   onClick={handleAddAccount}
-                  className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all"
+                  className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-[var(--capital-button-text,#242a2e)] font-bold text-xs flex items-center gap-1.5 transition-all"
                 >
                   <Plus className="w-4 h-4" />
                   Adicionar
@@ -311,11 +311,11 @@ export function OnboardingWizardModal({
           {currentStep === 2 && (
             <div className="space-y-5 animate-in fade-in duration-150">
               <div>
-                <h3 className="font-display font-bold text-lg text-white flex items-center gap-2">
-                  <UploadCloud className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-display font-bold text-lg text-[var(--capital-text,#242a2e)] flex items-center gap-2">
+                  <UploadCloud className="w-5 h-5 text-[var(--capital-success,#157449)]" />
                   Como prefere puxar seus dados para o app?
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-[var(--capital-muted,#242a2e)] mt-1">
                   A plataforma foi construída para atender tanto quem quer 100% de automação quanto quem prefere importar faturas ou fotos.
                 </p>
               </div>
@@ -356,24 +356,24 @@ export function OnboardingWizardModal({
                     onClick={() => setSelectedIngestionMethod(method.id as any)}
                     className={`cursor-pointer p-4 rounded-2xl border transition-all flex flex-col justify-between ${
                       selectedIngestionMethod === method.id
-                        ? 'border-amber-400 bg-amber-500/10 shadow-lg shadow-amber-500/10'
-                        : 'border-white/10 bg-slate-800/40 hover:bg-slate-800/70 hover:border-white/20'
+                        ? 'border-[var(--capital-warning,#8b5b15)] bg-[var(--capital-warning-soft,#fcf1dc)] shadow-sm shadow-none'
+                        : 'border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)] hover:bg-[var(--capital-card,#f8fafc)] hover:border-[var(--capital-line,#e4dfd3)]'
                     }`}
                   >
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <span className={`p-2 rounded-xl ${selectedIngestionMethod === method.id ? 'bg-amber-400 text-slate-950' : 'bg-white/5 text-slate-300'}`}>
+                        <span className={`p-2 rounded-xl ${selectedIngestionMethod === method.id ? 'bg-amber-400 text-[var(--capital-button-text,#242a2e)]' : 'bg-[var(--capital-card,#fff)] text-[var(--capital-text,#242a2e)]'}`}>
                           <method.icon className="w-5 h-5" />
                         </span>
-                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-slate-300">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--capital-card,#fff)] text-[var(--capital-text,#242a2e)]">
                           {method.badge}
                         </span>
                       </div>
-                      <h4 className="font-bold text-sm text-white mb-1">{method.title}</h4>
-                      <p className="text-xs text-slate-400 leading-relaxed">{method.desc}</p>
+                      <h4 className="font-bold text-sm text-[var(--capital-text,#242a2e)] mb-1">{method.title}</h4>
+                      <p className="text-xs text-[var(--capital-muted,#242a2e)] leading-relaxed">{method.desc}</p>
                     </div>
                     {selectedIngestionMethod === method.id && (
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300 mt-3 pt-3 border-t border-amber-400/20">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--capital-warning,#8b5b15)] mt-3 pt-3 border-t border-[var(--capital-warning,#8b5b15)]">
                         <CheckCircle2 className="w-4 h-4" />
                         Método Ativo Selecionado
                       </div>
@@ -388,25 +388,25 @@ export function OnboardingWizardModal({
           {currentStep === 3 && (
             <div className="space-y-5 animate-in fade-in duration-150">
               <div>
-                <h3 className="font-display font-bold text-lg text-white flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-blue-400" />
+                <h3 className="font-display font-bold text-lg text-[var(--capital-text,#242a2e)] flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-[var(--capital-accent,#927025)]" />
                   Categorias Médicas Padrão (Customizáveis)
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-[var(--capital-muted,#242a2e)] mt-1">
                   Inicializado com o blueprint médico padrão da planilha (Hospital 01/02, Convênios, Consultório, Moradia, Transporte, etc.). Personalize os nomes como desejar.
                 </p>
               </div>
 
               {/* Seletor de Categoria Pai */}
-              <div className="flex flex-wrap gap-1.5 pb-2 border-b border-white/10">
+              <div className="flex flex-wrap gap-1.5 pb-2 border-b border-[var(--capital-line,#e4dfd3)]">
                 {categories.map((cat, idx) => (
                   <button
                     key={cat.name}
                     onClick={() => setActiveCategoryIndex(idx)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                       activeCategoryIndex === idx
-                        ? 'bg-blue-500 text-white shadow-xs'
-                        : 'bg-slate-800 text-slate-400 hover:text-white'
+                        ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] shadow-xs'
+                        : 'bg-[var(--capital-card,#f8fafc)] text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-button-text,#211f19)]'
                     }`}
                   >
                     {cat.name} ({cat.subcategories.length})
@@ -417,10 +417,10 @@ export function OnboardingWizardModal({
               {/* Subcategorias da Categoria Selecionada */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-[var(--capital-text,#242a2e)] uppercase tracking-wider">
                     Subcategorias de {categories[activeCategoryIndex]?.name}:
                   </h4>
-                  <span className="text-[11px] text-slate-500">
+                  <span className="text-[11px] text-[var(--capital-muted,#242a2e)]">
                     Escopo: {categories[activeCategoryIndex]?.scope}
                   </span>
                 </div>
@@ -429,15 +429,15 @@ export function OnboardingWizardModal({
                   {categories[activeCategoryIndex]?.subcategories.map((sub, sIdx) => (
                     <div
                       key={sub.name}
-                      className="flex items-center justify-between px-3 py-2 rounded-xl border border-white/10 bg-slate-800/60 text-xs"
+                      className="flex items-center justify-between px-3 py-2 rounded-xl border border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)] text-xs"
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <span className={`w-2 h-2 rounded-full ${sub.isFixed ? 'bg-amber-400' : 'bg-emerald-400'}`} />
-                        <span className="font-medium text-slate-200 truncate">{sub.name}</span>
+                        <span className={`w-2 h-2 rounded-full ${sub.isFixed ? 'bg-amber-400' : 'bg-[var(--capital-button,#c7a354)]'}`} />
+                        <span className="font-medium text-[var(--capital-text,#242a2e)] truncate">{sub.name}</span>
                       </div>
                       <button
                         onClick={() => handleRemoveSubcategory(activeCategoryIndex, sIdx)}
-                        className="text-slate-500 hover:text-rose-400 p-1 transition-colors"
+                        className="text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-danger,#ad3333)] p-1 transition-colors"
                         title="Remover subcategoria"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -454,11 +454,11 @@ export function OnboardingWizardModal({
                     value={newSubcategoryName}
                     onChange={e => setNewSubcategoryName(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleAddSubcategory(activeCategoryIndex)}
-                    className="flex-1 rounded-xl bg-slate-950 border border-white/10 px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="flex-1 rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-4 py-2 text-xs text-[var(--capital-text,#242a2e)] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)]"
                   />
                   <button
                     onClick={() => handleAddSubcategory(activeCategoryIndex)}
-                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1 transition-all"
+                    className="px-4 py-2 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] font-bold text-xs flex items-center gap-1 transition-all"
                   >
                     <Plus className="w-4 h-4" />
                     Adicionar
@@ -472,11 +472,11 @@ export function OnboardingWizardModal({
           {currentStep === 4 && (
             <div className="space-y-5 animate-in fade-in duration-150">
               <div>
-                <h3 className="font-display font-bold text-lg text-white flex items-center gap-2">
-                  <CalendarClock className="w-5 h-5 text-indigo-400" />
+                <h3 className="font-display font-bold text-lg text-[var(--capital-text,#242a2e)] flex items-center gap-2">
+                  <CalendarClock className="w-5 h-5 text-[var(--capital-accent,#927025)]" />
                   Financiamentos, Contratos & Parcelamentos Ativos
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-[var(--capital-muted,#242a2e)] mt-1">
                   Cadastre seus compromissos de longo prazo (veículo, consultório, imóvel, cartões) para que a plataforma calcule o alívio mensal futuro do seu fluxo de caixa.
                 </p>
               </div>
@@ -486,27 +486,27 @@ export function OnboardingWizardModal({
                 {installments.map((item, idx) => (
                   <div
                     key={idx}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl border border-white/10 bg-slate-800/60 gap-2"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl border border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)] gap-2"
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs text-white">{item.name}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-semibold">
+                        <span className="font-bold text-xs text-[var(--capital-text,#242a2e)]">{item.name}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] border border-[var(--capital-accent,#927025)] font-semibold">
                           {item.category}
                         </span>
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">
+                      <div className="text-[11px] text-[var(--capital-muted,#242a2e)] mt-0.5">
                         Término: {item.endMonthYear} • {item.totalInstallments} parcelas contratadas
                       </div>
                     </div>
 
                     <div className="flex items-center gap-4 self-end sm:self-auto">
-                      <span className="font-mono font-bold text-sm text-emerald-400">
+                      <span className="font-mono font-bold text-sm text-[var(--capital-success,#157449)]">
                         {item.monthlyValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                       </span>
                       <button
                         onClick={() => handleRemoveInstallment(idx)}
-                        className="text-slate-500 hover:text-rose-400 p-1 transition-colors"
+                        className="text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-danger,#ad3333)] p-1 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -516,8 +516,8 @@ export function OnboardingWizardModal({
               </div>
 
               {/* Formulário para Adicionar Novo Financiamento */}
-              <div className="p-4 rounded-2xl border border-dashed border-white/20 bg-slate-950/40 space-y-3">
-                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+              <div className="p-4 rounded-2xl border border-dashed border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)] space-y-3">
+                <h4 className="text-xs font-bold text-[var(--capital-text,#242a2e)] uppercase tracking-wider">
                   Adicionar Novo Contrato ou Parcelamento:
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
@@ -526,33 +526,33 @@ export function OnboardingWizardModal({
                     placeholder="Descrição do Financiamento"
                     value={newInstallment.name}
                     onChange={e => setNewInstallment({ ...newInstallment, name: e.target.value })}
-                    className="rounded-xl bg-slate-900 border border-white/10 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    className="rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs text-[var(--capital-text,#242a2e)] placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[var(--capital-accent,#927025)]"
                   />
                   <input
                     type="number"
                     placeholder="Valor Mensal (R$)"
                     value={newInstallment.monthlyValue}
                     onChange={e => setNewInstallment({ ...newInstallment, monthlyValue: e.target.value })}
-                    className="rounded-xl bg-slate-900 border border-white/10 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    className="rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs text-[var(--capital-text,#242a2e)] placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[var(--capital-accent,#927025)]"
                   />
                   <input
                     type="number"
                     placeholder="Total de Parcelas"
                     value={newInstallment.totalInstallments}
                     onChange={e => setNewInstallment({ ...newInstallment, totalInstallments: e.target.value })}
-                    className="rounded-xl bg-slate-900 border border-white/10 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    className="rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs text-[var(--capital-text,#242a2e)] placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[var(--capital-accent,#927025)]"
                   />
                   <input
                     type="month"
                     placeholder="Mês de Término"
                     value={newInstallment.endMonthYear}
                     onChange={e => setNewInstallment({ ...newInstallment, endMonthYear: e.target.value })}
-                    className="rounded-xl bg-slate-900 border border-white/10 px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                    className="rounded-xl bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs text-[var(--capital-text,#242a2e)] placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[var(--capital-accent,#927025)]"
                   />
                 </div>
                 <button
                   onClick={handleAddInstallment}
-                  className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                  className="w-full py-2 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
                 >
                   <Plus className="w-4 h-4" />
                   Incluir Financiamento
@@ -565,11 +565,11 @@ export function OnboardingWizardModal({
           {currentStep === 5 && (
             <div className="space-y-5 animate-in fade-in duration-150">
               <div>
-                <h3 className="font-display font-bold text-lg text-white flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-amber-400" />
+                <h3 className="font-display font-bold text-lg text-[var(--capital-text,#242a2e)] flex items-center gap-2">
+                  <PieChart className="w-5 h-5 text-[var(--capital-warning,#8b5b15)]" />
                   Metas de Balanceamento de Investimentos
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-[var(--capital-muted,#242a2e)] mt-1">
                   Defina a meta percentual ideal para cada classe da sua carteira (da planilha: CDB, Ações, FIIs, Tesouro, Internacional, Cripto).
                 </p>
               </div>
@@ -578,9 +578,9 @@ export function OnboardingWizardModal({
                 {investmentTargets.map((item, idx) => (
                   <div
                     key={item.assetClass}
-                    className="flex items-center justify-between p-3 rounded-xl border border-white/10 bg-slate-800/40"
+                    className="flex items-center justify-between p-3 rounded-xl border border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)]"
                   >
-                    <span className="text-xs font-semibold text-slate-200">{item.assetClass}</span>
+                    <span className="text-xs font-semibold text-[var(--capital-text,#242a2e)]">{item.assetClass}</span>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -588,16 +588,16 @@ export function OnboardingWizardModal({
                         max="100"
                         value={item.targetPercentage}
                         onChange={e => handleTargetChange(idx, parseFloat(e.target.value) || 0)}
-                        className="w-16 rounded-lg bg-slate-950 border border-white/10 px-2 py-1 text-xs text-center font-mono font-bold text-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                        className="w-16 rounded-lg bg-[var(--capital-card,#f8fafc)] border border-[var(--capital-line,#e4dfd3)] px-2 py-1 text-xs text-center font-mono font-bold text-[var(--capital-warning,#8b5b15)] focus:outline-none focus:ring-1 focus:ring-amber-400"
                       />
-                      <span className="text-xs text-slate-400 font-bold">%</span>
+                      <span className="text-xs text-[var(--capital-muted,#242a2e)] font-bold">%</span>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5 text-xs text-emerald-300">
-                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div className="p-3.5 rounded-xl bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] flex items-center gap-2.5 text-xs text-[var(--capital-success,#157449)]">
+                <ShieldCheck className="w-4 h-4 text-[var(--capital-success,#157449)] shrink-0" />
                 <span>
                   Soma atual das metas:{' '}
                   <strong>{investmentTargets.reduce((a, b) => a + b.targetPercentage, 0)}%</strong>. O motor de rebalanceamento usará essas proporções para orientar seus aportes.
@@ -609,11 +609,11 @@ export function OnboardingWizardModal({
         </div>
 
         {/* Rodapé do Wizard com Ações */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-white/10 bg-slate-950/80">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)]">
           {currentStep > 1 ? (
             <button
               onClick={() => setCurrentStep(currentStep - 1)}
-              className="px-4 py-2 rounded-xl border border-white/10 text-xs font-bold text-slate-300 hover:text-white hover:bg-white/5 flex items-center gap-1.5 transition-colors"
+              className="px-4 py-2 rounded-xl border border-[var(--capital-line,#e4dfd3)] text-xs font-bold text-[var(--capital-text,#242a2e)] hover:text-[var(--capital-text,#242a2e)] hover:bg-[var(--capital-card,#fff)] flex items-center gap-1.5 transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
               Anterior
@@ -625,7 +625,7 @@ export function OnboardingWizardModal({
           {currentStep < 5 ? (
             <button
               onClick={() => setCurrentStep(currentStep + 1)}
-              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/20"
+              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-[var(--capital-button-text,#242a2e)] font-semibold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-none"
             >
               Próximo
               <ChevronRight className="w-4 h-4" />
@@ -633,7 +633,7 @@ export function OnboardingWizardModal({
           ) : (
             <button
               onClick={handleSaveAndComplete}
-              className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-500/20"
+              className="px-6 py-2.5 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-semibold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-none"
             >
               <CheckCircle2 className="w-4 h-4" />
               Concluir & Aplicar Personalização

@@ -447,7 +447,7 @@ export function MobillsAnalytics({
           {/* Botão Anterior */}
           <button
             onClick={handlePrevMonth}
-            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-all cursor-pointer"
+            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-[var(--capital-text,#242a2e)] hover:bg-slate-100 dark:hover:bg-white/10 transition-all cursor-pointer"
             title="Mês anterior"
             aria-label="Mês anterior"
           >
@@ -461,7 +461,7 @@ export function MobillsAnalytics({
             title="Clique para escolher qualquer mês ou ano"
           >
             <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
-            <span className="font-display font-black text-sm md:text-base text-slate-900 dark:text-white">
+            <span className="font-display font-black text-sm md:text-base text-slate-900 dark:text-[var(--capital-text,#242a2e)]">
               {MONTH_NAMES[activeMonth]} {activeYear}
             </span>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-500 transition-colors" />
@@ -470,7 +470,7 @@ export function MobillsAnalytics({
           {/* Botão Próximo */}
           <button
             onClick={handleNextMonth}
-            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-all cursor-pointer"
+            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-[var(--capital-text,#242a2e)] hover:bg-slate-100 dark:hover:bg-white/10 transition-all cursor-pointer"
             title="Próximo mês"
             aria-label="Próximo mês"
           >
@@ -490,7 +490,7 @@ export function MobillsAnalytics({
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 viewMode === 'MONTHLY'
                   ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-[var(--capital-text,#242a2e)]'
               }`}
               title="Visualizar movimentações detalhadas do mês selecionado"
             >
@@ -504,7 +504,7 @@ export function MobillsAnalytics({
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 viewMode === 'ANNUAL_CONSOLIDATED'
                   ? 'bg-emerald-500 text-slate-950 font-black shadow-md shadow-emerald-500/20'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-[var(--capital-text,#242a2e)]'
               }`}
               title="Clique para gerar gráficos anuais acumulados até aqui (2026)"
             >
@@ -533,7 +533,7 @@ export function MobillsAnalytics({
               <Wallet className="h-4 w-4" />
             </div>
           </div>
-          <div className={`font-mono text-xl sm:text-2xl font-black tabular-nums tracking-tight ${isSurplus ? 'text-slate-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'}`}>
+          <div className={`font-mono text-xl sm:text-2xl font-black tabular-nums tracking-tight ${isSurplus ? 'text-slate-900 dark:text-[var(--capital-text,#242a2e)]' : 'text-rose-600 dark:text-rose-400'}`}>
             {isSurplus ? '+' : ''} {maskValue(calculatedBalance)}
           </div>
           <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1.5">
@@ -603,7 +603,7 @@ export function MobillsAnalytics({
               <CreditCard className="h-4 w-4" />
             </div>
           </div>
-          <div className="font-mono text-xl sm:text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
+          <div className="font-mono text-xl sm:text-2xl font-black text-slate-900 dark:text-[var(--capital-text,#242a2e)] tabular-nums tracking-tight">
             {maskValue(creditCardTotal)}
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
@@ -617,7 +617,7 @@ export function MobillsAnalytics({
         {/* Donut 1: Despesas por Categoria */}
         <div className="p-5 md:p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <h3 className="font-display text-base font-bold text-slate-900 dark:text-[var(--capital-text,#242a2e)] flex items-center gap-2">
               <PieIcon className="h-4 w-4 text-rose-500" />
               Despesas por categoria (Planilha Oficial)
             </h3>
@@ -640,7 +640,7 @@ export function MobillsAnalytics({
                 {renderDonutSlices(expenseCategories, calculatedTotalExpenses)}
               </svg>
               <div className="absolute text-center">
-                <span className="font-mono text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums block">
+                <span className="font-mono text-sm sm:text-base font-black text-slate-900 dark:text-[var(--capital-text,#242a2e)] tabular-nums block">
                   {maskValue(calculatedTotalExpenses)}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-rose-500 transition-colors">
@@ -658,7 +658,7 @@ export function MobillsAnalytics({
                     <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[130px]">{cat.name}</span>
                   </div>
                   <div className="flex items-center gap-2 font-mono tabular-nums">
-                    <span className="font-bold text-slate-900 dark:text-white">{maskValue(cat.value)}</span>
+                    <span className="font-bold text-slate-900 dark:text-[var(--capital-text,#242a2e)]">{maskValue(cat.value)}</span>
                     <span className="text-[10px] text-slate-400 w-11 text-right font-sans">({cat.percentage.toFixed(1)}%)</span>
                   </div>
                 </div>
@@ -670,7 +670,7 @@ export function MobillsAnalytics({
         {/* Donut 2: Receitas por Categoria */}
         <div className="p-5 md:p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <h3 className="font-display text-base font-bold text-slate-900 dark:text-[var(--capital-text,#242a2e)] flex items-center gap-2">
               <PieIcon className="h-4 w-4 text-emerald-500" />
               Origem das Receitas (Sem Duplicidade)
             </h3>
@@ -693,7 +693,7 @@ export function MobillsAnalytics({
                 {renderDonutSlices(normalizedIncomeCategories, calculatedTotalIncome)}
               </svg>
               <div className="absolute text-center">
-                <span className="font-mono text-sm sm:text-base font-black text-slate-900 dark:text-white tabular-nums block">
+                <span className="font-mono text-sm sm:text-base font-black text-slate-900 dark:text-[var(--capital-text,#242a2e)] tabular-nums block">
                   {maskValue(calculatedTotalIncome)}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-emerald-500 transition-colors">
@@ -711,7 +711,7 @@ export function MobillsAnalytics({
                     <span className="font-semibold text-slate-800 dark:text-slate-200">{cat.name}</span>
                   </div>
                   <div className="font-mono tabular-nums text-right">
-                    <div className="font-black text-slate-900 dark:text-white">R$ {cat.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div className="font-black text-slate-900 dark:text-[var(--capital-text,#242a2e)]">R$ {cat.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold font-sans">{cat.percentage.toFixed(1)}% do faturamento</div>
                   </div>
                 </div>
@@ -727,7 +727,7 @@ export function MobillsAnalytics({
         <div className="p-5 md:p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <h3 className="font-display text-base font-bold text-slate-900 dark:text-[var(--capital-text,#242a2e)] flex items-center gap-2">
                 <BarChart2 className="h-4 w-4 text-indigo-500" />
                 Frequência e Picos de Gastos
               </h3>
@@ -737,13 +737,13 @@ export function MobillsAnalytics({
             <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold">
               <button
                 onClick={() => setTimeRange('7d')}
-                className={`px-2.5 py-1 rounded-lg transition-all ${timeRange === '7d' ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs font-bold' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+                className={`px-2.5 py-1 rounded-lg transition-all ${timeRange === '7d' ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-[var(--capital-text,#242a2e)] shadow-xs font-bold' : 'text-slate-500 hover:text-slate-900 dark:hover:text-[var(--capital-text,#242a2e)]'}`}
               >
                 7 dias
               </button>
               <button
                 onClick={() => setTimeRange('30d')}
-                className={`px-2.5 py-1 rounded-lg transition-all ${timeRange === '30d' ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow-xs font-bold' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+                className={`px-2.5 py-1 rounded-lg transition-all ${timeRange === '30d' ? 'bg-white dark:bg-slate-950 text-slate-900 dark:text-[var(--capital-text,#242a2e)] shadow-xs font-bold' : 'text-slate-500 hover:text-slate-900 dark:hover:text-[var(--capital-text,#242a2e)]'}`}
               >
                 30 dias
               </button>
@@ -781,7 +781,7 @@ export function MobillsAnalytics({
         <div id="cartoes-credito" className="p-5 md:p-6 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm flex flex-col justify-between scroll-mt-24">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <h3 className="font-display text-base font-bold text-slate-900 dark:text-[var(--capital-text,#242a2e)] flex items-center gap-2">
                 <CreditCard className="h-4 w-4 text-emerald-500" />
                 Cartões de Crédito (Compromissos Reais)
               </h3>
@@ -841,7 +841,7 @@ export function MobillsAnalytics({
                           setCardToEdit(card)
                           setIsCardModalOpen(true)
                         }}
-                        className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 hover:bg-indigo-500 hover:text-white text-slate-600 dark:text-slate-300 font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer"
+                        className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 hover:bg-indigo-500 hover:text-[var(--capital-text,#242a2e)] text-slate-600 dark:text-slate-300 font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer"
                         title="Editar limite, adicionais e vencimento deste cartão"
                       >
                         <Edit3 className="w-3 h-3" />
@@ -852,7 +852,7 @@ export function MobillsAnalytics({
 
                   <div className="flex flex-wrap items-center justify-between text-xs font-mono gap-y-1">
                     <div className="text-slate-500 dark:text-slate-400 text-[11px]">
-                      Fatura: <span className="font-bold text-slate-900 dark:text-white">R$ {card.spent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      Fatura: <span className="font-bold text-slate-900 dark:text-[var(--capital-text,#242a2e)]">R$ {card.spent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div className="text-slate-500 dark:text-slate-400 text-[11px]">
                       Disponível: <span className="font-semibold text-emerald-600 dark:text-emerald-400">R$ {card.availableLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>

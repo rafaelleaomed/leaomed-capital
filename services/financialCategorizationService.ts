@@ -4,10 +4,11 @@ import { CATEGORIZATION_CONFIG, isSensitiveCategory } from '@/config/categorizat
 import { 
   IFinancialCategorizationProvider, 
   JevCategorizationProvider, 
-  MockCategorizationProvider,
+  DisabledCategorizationProvider,
   SanitizedTransactionInput,
   CategorizationDecision
 } from './financialCategorizationProvider'
+import { getJevAccessForUser } from './userJevAccess'
 
 export interface CategorizeTransactionRequest {
   id?: string
@@ -50,10 +51,8 @@ export class FinancialCategorizationService {
   constructor(provider?: IFinancialCategorizationProvider) {
     if (provider) {
       this.provider = provider
-    } else if (process.env.TYPESAFE_API_KEY && CATEGORIZATION_CONFIG.ENABLE_JEV) {
-      this.provider = new JevCategorizationProvider()
     } else {
-      this.provider = new MockCategorizationProvider()
+      this.provider = new DisabledCategorizationProvider()
     }
   }
 
@@ -72,6 +71,8 @@ export class FinancialCategorizationService {
     
     // Remove tokens de autorização longos hex/alfanuméricos
     clean = clean.replace(/\b[0-9a-fA-F]{24,64}\b/g, '')
+    clean = clean.replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '[EMAIL_OCULTADO]')
+    clean = clean.replace(/\b(?:\+?55\s*)?(?:\(?\d{2}\)?\s*)?9?\d{4}[-\s]?\d{4}\b/g, '[TELEFONE_OCULTADO]')
 
     // Remove múltiplos espaços
     clean = clean.replace(/\s+/g, ' ').trim()
@@ -230,13 +231,15 @@ export class FinancialCategorizationService {
     const jevDecision = await this.provider.classify(sanitizedInput)
 
     // Auditoria assíncrona no PostgreSQL
-    this.logAiAuditAsync({
-      user_id: req.user_id,
-      transaction_id: req.id,
-      input_hash: inputHash,
-      sanitized_input: CATEGORIZATION_CONFIG.PRIVACY.storeAiInputs ? sanitizedInput : null,
-      decision: jevDecision
-    })
+    if (jevDecision.provider !== 'disabled') {
+      this.logAiAuditAsync({
+        user_id: req.user_id,
+        transaction_id: req.id,
+        input_hash: inputHash,
+        sanitized_input: CATEGORIZATION_CONFIG.PRIVACY.storeAiInputs ? sanitizedInput : null,
+        decision: jevDecision
+      })
+    }
 
     const isSensitive = isSensitiveCategory(jevDecision.category, jevDecision.subcategory)
     const reviewRequired = jevDecision.review_required || isSensitive || (jevDecision.choice_confidence !== null && jevDecision.choice_confidence < CATEGORIZATION_CONFIG.THRESHOLDS.lowConfidence)
@@ -259,7 +262,7 @@ export class FinancialCategorizationService {
       is_fixed: jevDecision.is_fixed,
       review_required: reviewRequired,
       categorization_status: reviewRequired ? 'needs_review' : 'suggested',
-      source: 'jev',
+      source: jevDecision.provider === 'jev' ? 'jev' : 'unknown',
       provider: jevDecision.provider,
       latency_ms: jevDecision.latency_ms,
       error_message: jevDecision.error_message
@@ -384,7 +387,11 @@ export class FinancialCategorizationService {
           ${params.decision.provider},
           ${params.decision.model},
           ${params.decision.question_version},
-          ${JSON.stringify(params.decision.raw_response || {})},
+          ${JSON.stringify({
+            certainty_label: params.decision.certainty_label,
+            choice_confidence: params.decision.choice_confidence,
+            review_required: params.decision.review_required
+          })},
           ${params.decision.category},
           ${params.decision.subcategory},
           ${params.decision.choice_confidence},
@@ -398,4 +405,13 @@ export class FinancialCategorizationService {
       console.warn('[FinancialCategorizationService] Falha ao registrar log de auditoria no Postgres:', logErr)
     }
   }
+}
+
+export async function createCategorizationServiceForUser(user: { id: string, email?: string | null }): Promise<FinancialCategorizationService> {
+  const access = await getJevAccessForUser(user)
+  return new FinancialCategorizationService(
+    access.enabled && access.apiKey
+      ? new JevCategorizationProvider(access.apiKey)
+      : new DisabledCategorizationProvider()
+  )
 }

@@ -33,6 +33,14 @@ export interface ProcessedBatch {
   period: string
   totalAmount: number
   transactionCount: number
+  diagnostics?: {
+    profile_label?: string
+    confidence?: 'high' | 'medium' | 'low'
+    requiresReview?: boolean
+    requires_review?: boolean
+    delta?: number
+    rejected?: Array<{ reason: string, count: number }>
+  }
   transactions: {
     desc: string
     val: number
@@ -45,6 +53,9 @@ export interface ProcessedBatch {
     isCardBillPayment?: boolean
     installmentCurrent?: number | null
     installmentTotal?: number | null
+    entryType?: IncomingTransaction['entryType']
+    signedAmount?: number
+    direction?: IncomingTransaction['direction']
   }[]
 }
 
@@ -175,16 +186,24 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
 
         setProcessedBatches(prev => [...newBatches, ...prev])
         setIsProcessing(false)
-        setFeedback(`✅ ${newBatches.length} arquivo(s) importado(s) com sucesso! Total de ${totalTxs} lançamentos reais identificados.`)
+        const requiresReview = newBatches.some(batch => batch.diagnostics?.requiresReview || batch.diagnostics?.requires_review)
+        setFeedback(requiresReview
+          ? `⚠️ ${newBatches.length} arquivo(s) lido(s). Confirme os lançamentos na revisão antes de salvar.`
+          : `✅ ${newBatches.length} arquivo(s) importado(s) com sucesso! Total de ${totalTxs} lançamentos reais identificados.`)
 
         // Transações reais para o modal de categorização inteligente
-        const extractedTxs: IncomingTransaction[] = newBatches.flatMap(b => b.transactions.map(t => ({
+        const extractedTxs: IncomingTransaction[] = newBatches.flatMap(b => b.transactions
+          .filter(t => t.entryType !== 'bill_payment' && !t.isCardBillPayment)
+          .map(t => ({
           date: t.date,
           description: t.desc,
-          amount: t.val,
+          amount: t.signedAmount ?? t.val,
           accountOrCard: t.accountOrCard || b.institution,
           category: t.cat,
           subcategory: t.subcategory,
+          entryType: t.entryType,
+          signedAmount: t.signedAmount,
+          direction: t.direction,
           entityType: (b.institution.toLowerCase().includes('jurídica') || b.institution.toLowerCase().includes('pj')) ? 'PJ' : 'PF'
         })))
 
@@ -320,21 +339,21 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
     : processedBatches.find(b => b.id === selectedBatchId)?.transactions || []
 
   return (
-    <div id="central-ingestao" className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 p-5 md:p-6 shadow-sm scroll-mt-24">
+    <div id="central-ingestao" className="rounded-2xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] p-5 md:p-6 shadow-sm scroll-mt-24">
       {/* Header do Módulo */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
         <div>
-          <h3 className="font-display text-base md:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <UploadCloud className="h-5 w-5 text-emerald-500" />
+          <h3 className="font-display text-base md:text-lg font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] flex items-center gap-2">
+            <UploadCloud className="h-5 w-5 text-[var(--capital-success,#157449)]" />
             Central de Alimentação de Dados & Ingestão
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-0.5">
             Arraste faturas (PDF/CSV) de vários meses ou cartões simultaneamente, tire foto de extratos ou conecte via Open Finance.
           </p>
         </div>
 
         {/* Abas dos 4 Canais de Ingestão */}
-        <div className="flex flex-wrap rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-slate-950 p-1 text-xs font-semibold">
+        <div className="flex flex-wrap rounded-xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] p-1 text-xs font-semibold">
           {[
             { id: 'INVOICE', label: 'Fatura (PDF/CSV)', icon: FileText },
             { id: 'PRINT', label: 'Foto / Print (OCR)', icon: Camera },
@@ -346,8 +365,8 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
               onClick={() => { setActiveTab(tab.id as any); setFeedback(null) }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
                 activeTab === tab.id
-                  ? 'bg-emerald-500 text-slate-950 font-black shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-semibold shadow-xs'
+                  : 'text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#f6f3e9)]'
               }`}
             >
               <tab.icon className="w-3.5 h-3.5" />
@@ -384,48 +403,48 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
               onClick={() => fileInputRef.current?.click()}
               className={`border-2 border-dashed rounded-2xl p-7 text-center transition-all cursor-pointer select-none ${
                 isDragging
-                  ? 'border-emerald-500 bg-emerald-500/10 scale-[1.01] shadow-lg shadow-emerald-500/10'
-                  : 'border-slate-300 dark:border-white/15 bg-slate-50 dark:bg-slate-950/40 hover:border-emerald-500/50 hover:bg-slate-100/60 dark:hover:bg-slate-950/60'
+                  ? 'border-[var(--capital-accent,#927025)] bg-[var(--capital-soft,#f6f0df)] scale-[1.01] shadow-sm shadow-none'
+                  : 'border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] hover:border-[var(--capital-accent,#927025)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#232a2e)]'
               }`}
             >
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-success,#157449)] flex items-center justify-center mx-auto mb-3">
                 <UploadCloud className={`w-6 h-6 ${isDragging ? 'animate-bounce' : ''}`} />
               </div>
-              <h4 className="font-bold text-sm md:text-base text-slate-800 dark:text-slate-200">
+              <h4 className="font-bold text-sm md:text-base text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]">
                 {isDragging ? 'Solte os arquivos aqui para importar!' : 'Arraste múltiplos arquivos de faturas ou extratos'}
               </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+              <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-1 max-w-md mx-auto">
                 Suporta vários arquivos de uma só vez (PDF, CSV ou OFX de múltiplos cartões ou meses). Ou clique para selecionar do computador.
               </p>
 
-              <div className="inline-flex items-center gap-2 mt-4 px-3.5 py-1.5 rounded-full bg-slate-200/60 dark:bg-white/10 text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                <FileCheck2 className="w-3.5 h-3.5 text-emerald-500" />
+              <div className="inline-flex items-center gap-2 mt-4 px-3.5 py-1.5 rounded-full bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] text-[11px] font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
+                <FileCheck2 className="w-3.5 h-3.5 text-[var(--capital-success,#157449)]" />
                 <span>Multi-arquivo ativo: Extratos PJ, Faturas de Cartão e Comprovantes</span>
               </div>
             </div>
 
             {/* Atalhos Rápidos para Simulação de Demonstração e Aprendizado */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
-              <span className="text-slate-500 dark:text-slate-400 font-medium">Ou teste com faturas simuladas:</span>
+              <span className="text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] font-medium">Ou teste com faturas simuladas:</span>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => handleSimulatedInvoiceUpload('C6 Carbon Black')}
                   disabled={isProcessing}
-                  className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-white/10"
+                  className="px-3 py-1.5 rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] font-bold hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#232a2e)] transition-all border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]"
                 >
                   + Fatura C6 Black
                 </button>
                 <button
                   onClick={() => handleSimulatedInvoiceUpload('Nubank')}
                   disabled={isProcessing}
-                  className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-white/10"
+                  className="px-3 py-1.5 rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] font-bold hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#232a2e)] transition-all border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]"
                 >
                   + Fatura Nubank
                 </button>
                 <button
                   onClick={() => handleSimulatedInvoiceUpload('Pessoa Jurídica')}
                   disabled={isProcessing}
-                  className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-white/10"
+                  className="px-3 py-1.5 rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] font-bold hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#232a2e)] transition-all border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]"
                 >
                   + Extrato Pessoa Jurídica
                 </button>
@@ -440,7 +459,7 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
                     setPendingReviewTransactions(sampleTxs)
                     setIsSmartCatModalOpen(true)
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold transition-all border border-indigo-500/30 flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-xl bg-[var(--capital-soft,#f6f0df)] hover:bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] font-bold transition-all border border-[var(--capital-accent,#927025)] flex items-center gap-1.5"
                   title="Abrir tela de categorização inteligente para definir regras personalizadas"
                 >
                   <BrainCircuit className="w-3.5 h-3.5" />
@@ -471,15 +490,15 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => imageInputRef.current?.click()}
-              className="border-2 border-dashed border-indigo-500/30 rounded-2xl p-7 text-center bg-indigo-500/5 dark:bg-slate-950/40 cursor-pointer hover:border-indigo-500 transition-all"
+              className="border-2 border-dashed border-[var(--capital-accent,#927025)] rounded-2xl p-7 text-center bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-card,#232a2e)] cursor-pointer hover:border-[var(--capital-accent,#927025)] transition-all"
             >
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] flex items-center justify-center mx-auto mb-3">
                 <Camera className="w-6 h-6" />
               </div>
-              <h4 className="font-bold text-sm md:text-base text-slate-800 dark:text-slate-200">
+              <h4 className="font-bold text-sm md:text-base text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]">
                 Arraste prints ou fotos de comprovantes e extratos (OCR Inteligente)
               </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+              <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-1 max-w-md mx-auto">
                 Tirou print da tela do banco ou foto de recibo? A IA reconhece os dados automaticamente.
               </p>
 
@@ -490,7 +509,7 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
                   handleSimulatedPrintUpload()
                 }}
                 disabled={isProcessing}
-                className="mt-4 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/20"
+                className="mt-4 px-4 py-2 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] text-xs font-bold transition-all shadow-md shadow-none"
               >
                 Simular Leitura de Print com IA
               </button>
@@ -500,39 +519,39 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
 
         {/* 3. LANÇAMENTO MANUAL RÁPIDO */}
         {activeTab === 'MANUAL' && (
-          <form onSubmit={handleManualSubmit} className="space-y-4 animate-in fade-in duration-150 bg-slate-50 dark:bg-slate-950/40 p-4 md:p-5 rounded-2xl border border-slate-200 dark:border-white/10">
+          <form onSubmit={handleManualSubmit} className="space-y-4 animate-in fade-in duration-150 bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] p-4 md:p-5 rounded-2xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
               <div className="sm:col-span-2">
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">Descrição</label>
+                <label className="block text-[11px] font-bold text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mb-1">Descrição</label>
                 <input
                   type="text"
                   placeholder="Ex: Plantão Hospital Mater Dei, Combustível..."
                   value={manualForm.description}
                   onChange={e => setManualForm({ ...manualForm, description: e.target.value })}
-                  className="w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  className="w-full rounded-xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:ring-1 focus:ring-[var(--capital-accent,#927025)]"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">Valor (R$)</label>
+                <label className="block text-[11px] font-bold text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mb-1">Valor (R$)</label>
                 <input
                   type="number"
                   step="0.01"
                   placeholder="0,00"
                   value={manualForm.amount}
                   onChange={e => setManualForm({ ...manualForm, amount: e.target.value })}
-                  className="w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 px-3 py-2 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  className="w-full rounded-xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] font-mono focus:outline-none focus:ring-1 focus:ring-[var(--capital-accent,#927025)]"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">Tipo</label>
+                <label className="block text-[11px] font-bold text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mb-1">Tipo</label>
                 <select
                   value={manualForm.type}
                   onChange={e => setManualForm({ ...manualForm, type: e.target.value as any })}
-                  className="w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  className="w-full rounded-xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:ring-1 focus:ring-[var(--capital-accent,#927025)]"
                 >
                   <option value="DEBIT">Despesa (-)</option>
                   <option value="CREDIT">Receita (+)</option>
@@ -540,12 +559,12 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">Data</label>
+                <label className="block text-[11px] font-bold text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mb-1">Data</label>
                 <input
                   type="date"
                   value={manualForm.date}
                   onChange={e => setManualForm({ ...manualForm, date: e.target.value })}
-                  className="w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  className="w-full rounded-xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] px-3 py-2 text-xs text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:ring-1 focus:ring-[var(--capital-accent,#927025)]"
                   required
                 />
               </div>
@@ -554,7 +573,7 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
             <button
               type="submit"
               disabled={isProcessing}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition-all shadow-md shadow-emerald-500/20"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-bold text-xs transition-all shadow-md shadow-none"
             >
               Adicionar Lançamento Manual
             </button>
@@ -563,19 +582,19 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
 
         {/* 4. OPEN FINANCE */}
         {activeTab === 'OPEN_FINANCE' && (
-          <div className="space-y-4 animate-in fade-in duration-150 p-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5">
+          <div className="space-y-4 animate-in fade-in duration-150 p-5 rounded-2xl border border-[var(--capital-accent,#927025)] bg-[var(--capital-soft,#f6f0df)]">
             <div className="flex items-start gap-3">
-              <span className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0">
+              <span className="p-2.5 rounded-xl bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] shrink-0">
                 <Zap className="w-5 h-5" />
               </span>
               <div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                <h4 className="font-bold text-sm text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]">
                   Conexão Automática Open Finance (Banco Central do Brasil)
                 </h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-1 leading-relaxed">
                   Conecte com segurança suas contas PJ e PF (Bancos e Cartões). O sistema atualiza saldos, faturas e investimentos continuamente sem intervenção manual.
                 </p>
-                <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]">
                   <ShieldCheck className="w-4 h-4" />
                   Criptografia de ponta a ponta em modo somente leitura (read-only).
                 </div>
@@ -586,22 +605,22 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
 
         {/* Feedback de Status do Processamento */}
         {isProcessing && (
-          <div className="flex items-center gap-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs font-semibold text-amber-700 dark:text-amber-300 animate-pulse">
-            <Loader2 className="w-4 h-4 animate-spin shrink-0 text-amber-500" />
+          <div className="flex items-center gap-3 p-3.5 rounded-xl bg-[var(--capital-warning-soft,#fcf1dc)] border border-[var(--capital-warning,#8b5b15)] text-xs font-semibold text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)] animate-pulse">
+            <Loader2 className="w-4 h-4 animate-spin shrink-0 text-[var(--capital-warning,#8b5b15)]" />
             <span>{feedback}</span>
           </div>
         )}
 
         {feedback && !isProcessing && (
-          <div className="flex items-center justify-between p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+          <div className="flex items-center justify-between p-3.5 rounded-xl bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] text-xs font-semibold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-[var(--capital-success,#157449)] shrink-0" />
               <span>{feedback}</span>
             </div>
             {processedBatches.length > 0 && (
               <button 
                 onClick={() => { setProcessedBatches([]); setFeedback(null) }}
-                className="text-[11px] text-slate-400 hover:text-rose-500 flex items-center gap-1 transition-colors"
+                className="text-[11px] text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-danger,#ad3333)] flex items-center gap-1 transition-colors"
                 title="Limpar lote importado"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -615,8 +634,8 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
         {processedBatches.length > 0 && (
           <div className="space-y-3 pt-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-[var(--capital-success,#157449)]" />
                 Faturas e Extratos no Lote ({processedBatches.length})
               </span>
 
@@ -626,8 +645,8 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
                   onClick={() => setSelectedBatchId('ALL')}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
                     selectedBatchId === 'ALL'
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                      ? 'bg-[var(--capital-card,#f8fafc)] text-[var(--capital-text,#242a2e)] dark:bg-[var(--capital-card,#fff)] dark:text-[var(--capital-text,#f6f3e9)]'
+                      : 'bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                   }`}
                 >
                   Todos ({processedBatches.flatMap(b => b.transactions).length})
@@ -638,8 +657,8 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
                     onClick={() => setSelectedBatchId(b.id)}
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all truncate max-w-[140px] ${
                       selectedBatchId === b.id
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                        ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)]'
+                        : 'bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                     }`}
                   >
                     {b.fileName.replace(/\.[^/.]+$/, '')}
@@ -656,50 +675,50 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
                   onClick={() => setSelectedBatchId(batch.id)}
                   className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
                     selectedBatchId === batch.id
-                      ? 'border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10 shadow-xs'
-                      : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950/40 hover:border-slate-300'
+                      ? 'border-[var(--capital-accent,#927025)] bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] shadow-xs'
+                      : 'border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] hover:border-[var(--capital-line,#e4dfd3)]'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs text-slate-900 dark:text-white truncate max-w-[180px]">
+                    <span className="font-bold text-xs text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] truncate max-w-[180px]">
                       {batch.institution}
                     </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-200/60 dark:bg-white/10 font-bold text-slate-600 dark:text-slate-300">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] font-bold text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
                       {batch.period}
                     </span>
                   </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                  <div className="text-[11px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] truncate">
                     {batch.fileName} • {batch.fileSize}
                   </div>
-                  <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/60 dark:border-white/5 text-xs font-mono tabular-nums">
-                    <span className="text-[10px] font-sans text-slate-500">{batch.transactionCount} lançamentos</span>
-                    <span className="font-bold text-slate-900 dark:text-white">R$ {batch.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-xs font-mono tabular-nums">
+                    <span className="text-[10px] font-sans text-[var(--capital-muted,#242a2e)]">{batch.transactionCount} lançamentos</span>
+                    <span className="font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]">R$ {batch.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Tabela de Lançamentos do Arquivo ou Lote */}
-            <div className="border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden bg-white dark:bg-slate-950/60 p-3 space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-2">
+            <div className="border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] rounded-2xl overflow-hidden bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] p-3 space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-bold text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] uppercase tracking-wider px-2">
                 <span>Lançamentos Extraídos ({displayedTransactions.length})</span>
                 <span>Valor Total: R$ {displayedTransactions.reduce((acc, t) => acc + Math.abs(t.val), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
               </div>
 
-              <div className="divide-y divide-slate-100 dark:divide-white/5 max-h-72 overflow-y-auto pr-1">
+              <div className="divide-y divide-[var(--capital-line,#e4dfd3)] dark:divide-[var(--capital-line,#e4dfd3)] max-h-72 overflow-y-auto pr-1">
                 {displayedTransactions.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between py-2 px-2 text-xs hover:bg-slate-50 dark:hover:bg-white/5 rounded-lg transition-colors">
+                  <div key={idx} className="flex items-center justify-between py-2 px-2 text-xs hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] rounded-lg transition-colors">
                     <div>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">{item.desc}</span>
-                      <span className="text-[10px] ml-2 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400">
+                      <span className="font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]">{item.desc}</span>
+                      <span className="text-[10px] ml-2 px-2 py-0.5 rounded-md bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
                         {item.cat}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className={`font-mono font-bold tabular-nums block ${item.val < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                      <span className={`font-mono font-bold tabular-nums block ${item.val < 0 ? 'text-[var(--capital-danger,#ad3333)] dark:text-[var(--capital-danger,#ad3333)]' : 'text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]'}`}>
                         {item.val < 0 ? '-' : '+'} R$ {Math.abs(item.val).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-sans">{item.date}</span>
+                      <span className="text-[10px] text-[var(--capital-muted,#242a2e)] font-sans">{item.date}</span>
                     </div>
                   </div>
                 ))}

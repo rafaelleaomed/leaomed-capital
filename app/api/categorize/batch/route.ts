@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuthenticatedUserId } from '@/utils/auth-helpers'
-import { FinancialCategorizationService, CategorizeTransactionRequest } from '@/services/financialCategorizationService'
+import { createCategorizationServiceForUser, CategorizeTransactionRequest } from '@/services/financialCategorizationService'
 import { CATEGORIZATION_CONFIG } from '@/config/categorizationConfig'
 
 export const dynamic = 'force-dynamic'
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
  * Processa lotes de transações através de fila concorrente com falha isolada e retry.
  */
 export async function POST(req: Request) {
-  const { userId, errorResponse } = await getAuthenticatedUserId()
+  const { userId, user, errorResponse } = await getAuthenticatedUserId()
   if (errorResponse || !userId) {
     return errorResponse || NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
   }
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     const MAX_BATCH_SIZE = 50
     const limitedItems = items.slice(0, MAX_BATCH_SIZE)
 
-    const service = new FinancialCategorizationService()
+    const service = await createCategorizationServiceForUser({ id: userId, email: user?.email })
 
     const preparedRequests: CategorizeTransactionRequest[] = limitedItems.map(item => ({
       id: item.id,
@@ -69,10 +69,10 @@ export async function POST(req: Request) {
       summary,
       results
     })
-  } catch (error: any) {
-    console.error('Erro na rota /api/categorize/batch:', error)
+  } catch (error: unknown) {
+    console.error('Erro na rota /api/categorize/batch:', error instanceof Error ? error.name : 'unknown_error')
     return NextResponse.json(
-      { success: false, error: error?.message || 'Falha interna ao processar lote.' },
+      { success: false, error: 'Falha interna ao processar lote.' },
       { status: 500 }
     )
   }

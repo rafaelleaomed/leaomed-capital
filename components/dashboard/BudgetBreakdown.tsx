@@ -267,245 +267,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
       [name]: !prev[name]
     }))
   }
-
-  // 1. DATASETS REAIS AUDITADOS DO DR. RAFAEL LEÃO (media_1790214901206.xlsx)
-  const realExpensePFCategories: CategoryGroup[] = useMemo(() => [
-    {
-      name: 'Transporte',
-      icon: Car,
-      total: 13163.55,
-      color: 'from-blue-500 to-indigo-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Parcela T-Cross Cartão', value: 6837.22, is_fixed: true },
-        { name: 'Parcela T-Cross Financiamento Safra', value: 3336.28, is_fixed: true },
-        { name: 'Combustível', value: 708.32, is_fixed: false },
-        { name: 'Estacionamentos', value: 663.75, is_fixed: false },
-        { name: 'Portas WRV', value: 500.00, is_fixed: true },
-        { name: 'Seguro Automotivo', value: 336.83, is_fixed: true },
-        { name: 'Táxi / Uber', value: 81.15, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Casa',
-      icon: Home,
-      total: 5662.63,
-      color: 'from-emerald-500 to-teal-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Supermercado Familiar', value: 1690.80, is_fixed: false },
-        { name: 'Condomínio Residencial', value: 1451.79, is_fixed: true },
-        { name: 'Aluguel', value: 500.00, is_fixed: true },
-        { name: 'IPTU', value: 359.73, is_fixed: true },
-        { name: 'Lava e Seca', value: 355.00, is_fixed: true },
-        { name: 'TV TCL', value: 250.92, is_fixed: true },
-        { name: 'Conta de Luz (CEMIG)', value: 216.00, is_fixed: true },
-        { name: 'Sofá', value: 197.00, is_fixed: true },
-        { name: 'IPTV', value: 147.00, is_fixed: true },
-        { name: 'Celular', value: 139.99, is_fixed: true },
-        { name: 'Tela Janelas', value: 130.00, is_fixed: true },
-        { name: 'Internet Fibra', value: 89.90, is_fixed: true },
-        { name: 'Lixeira - Utensílios', value: 51.03, is_fixed: true },
-        { name: 'Adega Climatizada', value: 42.67, is_fixed: true },
-        { name: 'AirFryer', value: 40.80, is_fixed: true }
-      ]
-    },
-    {
-      name: 'Financiamento',
-      icon: CreditCard,
-      total: 2302.90,
-      color: 'from-amber-500 to-orange-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Parcela Gramados Parks', value: 1925.41, is_fixed: true },
-        { name: 'Condomínio Buona Vitta', value: 377.49, is_fixed: true }
-      ]
-    },
-    {
-      name: 'Saúde',
-      icon: HeartPulse,
-      total: 1278.01,
-      color: 'from-rose-500 to-pink-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Plano de Saúde', value: 509.00, is_fixed: true },
-        { name: 'Seguro AZOS', value: 353.76, is_fixed: true },
-        { name: 'Academia', value: 299.98, is_fixed: true },
-        { name: 'Remédios & Farmácia', value: 115.27, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Alimentação',
-      icon: UtensilsCrossed,
-      total: 793.09,
-      color: 'from-yellow-500 to-amber-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Almoço & Lanches Rotina', value: 793.09, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Pets',
-      icon: Dog,
-      total: 220.04,
-      color: 'from-teal-500 to-emerald-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Areia, Ração e Cuidados Pets', value: 220.04, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Impostos e Taxas PF',
-      icon: Receipt,
-      total: 189.60,
-      color: 'from-slate-500 to-zinc-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Anuidade CRM', value: 189.60, is_fixed: true }
-      ]
-    },
-    {
-      name: 'Compras',
-      icon: ShoppingBag,
-      total: 2773.75,
-      color: 'from-purple-500 to-violet-600',
-      is_obligatory: false,
-      subcategories: [
-        { name: 'Presentes Familiares', value: 950.78, is_fixed: false },
-        { name: 'Suplementos', value: 480.56, is_fixed: false },
-        { name: 'Aliança Solitário', value: 382.37, is_fixed: true },
-        { name: 'BoateBus', value: 310.00, is_fixed: true },
-        { name: 'S26 Ultra', value: 274.66, is_fixed: true },
-        { name: 'Aliexpress / Shopee', value: 151.78, is_fixed: false },
-        { name: 'Doações', value: 102.00, is_fixed: false },
-        { name: 'Tela S23 Ultra', value: 90.20, is_fixed: true },
-        { name: 'Vestuário & Roupas', value: 31.40, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Lazer',
-      icon: Film,
-      total: 803.90,
-      color: 'from-pink-500 to-rose-600',
-      is_obligatory: false,
-      subcategories: [
-        { name: 'Ingressos & Jogos Mineirão', value: 492.10, is_fixed: false },
-        { name: 'Resenhas & Aniversários', value: 173.80, is_fixed: false },
-        { name: 'Bares & Baladas', value: 60.00, is_fixed: false },
-        { name: 'Futebol & Esportes', value: 60.00, is_fixed: false },
-        { name: 'Apostas & Jogos', value: 18.00, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Viagem',
-      icon: Plane,
-      total: 780.94,
-      color: 'from-sky-500 to-indigo-500',
-      is_obligatory: false,
-      subcategories: [
-        { name: 'Hospedagem', value: 267.24, is_fixed: false },
-        { name: 'Combustível Viagem', value: 224.00, is_fixed: false },
-        { name: 'Compras Viagem', value: 222.70, is_fixed: false },
-        { name: 'Alimentação / Supermercado Viagem', value: 67.00, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Restaurantes & Delivery',
-      icon: Coffee,
-      total: 506.71,
-      color: 'from-orange-500 to-amber-500',
-      is_obligatory: false,
-      subcategories: [
-        { name: 'Almoço / Jantar GRI', value: 204.30, is_fixed: false },
-        { name: 'Ifood Delivery', value: 204.26, is_fixed: false },
-        { name: 'Sorvetes & Sobremesas', value: 98.15, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Serviços de Assinaturas',
-      icon: Sparkles,
-      total: 254.53,
-      color: 'from-indigo-500 to-blue-600',
-      is_obligatory: false,
-      subcategories: [
-        { name: 'Empiricus SOROS', value: 123.90, is_fixed: true },
-        { name: 'Curso IA Danilo', value: 56.48, is_fixed: true },
-        { name: 'Myprofit Gestão', value: 29.90, is_fixed: true },
-        { name: 'Mobilis Finanças', value: 29.80, is_fixed: true },
-        { name: 'Ifood Club', value: 7.95, is_fixed: true },
-        { name: 'CapCut Pro', value: 6.50, is_fixed: true }
-      ]
-    }
-  ], [])
-
-  const realExpensePJCategories: CategoryGroup[] = useMemo(() => [
-    {
-      name: 'Tributos Simples Nacional & Federais',
-      icon: Receipt,
-      total: 2764.77,
-      color: 'from-cyan-500 to-blue-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'INSS Patronal / Pró-labore', value: 961.21, is_fixed: true },
-        { name: 'ISS Municipal', value: 708.73, is_fixed: true },
-        { name: 'DARF Tributário', value: 550.00, is_fixed: true },
-        { name: 'COFINS', value: 311.17, is_fixed: true },
-        { name: 'IRPJ PJ', value: 88.59, is_fixed: true },
-        { name: 'CSLL', value: 77.52, is_fixed: true },
-        { name: 'PIS', value: 67.55, is_fixed: true }
-      ]
-    },
-    {
-      name: 'Serviços Contábeis & Administrativos',
-      icon: Building2,
-      total: 491.21,
-      color: 'from-emerald-500 to-teal-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Mensalidade Contabilidade PJ', value: 491.21, is_fixed: true },
-        { name: 'Tarifas Bancárias Pessoa Jurídica', value: 0.00, is_fixed: true },
-        { name: 'Taxas & Certidões PJ', value: 0.00, is_fixed: false }
-      ]
-    }
-  ], [])
-
-  const realIncomePJCategories: CategoryGroup[] = useMemo(() => [
-    {
-      name: 'Faturamento Bruto PJ',
-      icon: Stethoscope,
-      total: 26500.00,
-      color: 'from-cyan-500 to-teal-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Camarinha BRUTO (Faturamento PJ)', value: 26500.00, is_fixed: true },
-        { name: 'UPAs Contagem', value: 0.00, is_fixed: true },
-        { name: 'Sabarás', value: 0.00, is_fixed: true },
-        { name: 'Cruzeiro', value: 0.00, is_fixed: true }
-      ]
-    }
-  ], [])
-
-  const realIncomePFCategories: CategoryGroup[] = useMemo(() => {
-    const subs = [
-      { name: 'Camarinha (Pró-labore da PJ)', value: 23000.00, is_fixed: true },
-      { name: 'Reembolsos Médicos', value: 2650.00, is_fixed: false },
-      { name: 'Rendimento de Investimentos', value: 329.99, is_fixed: false },
-      { name: 'Presentes / Prêmios', value: 40.00, is_fixed: false }
-    ]
-    const totalSum = Number(subs.reduce((acc, s) => acc + s.value, 0).toFixed(2))
-    return [
-      {
-        name: 'Pró-Labore & Entradas PF',
-        icon: Briefcase,
-        total: totalSum,
-        color: 'from-purple-500 to-indigo-600',
-        is_obligatory: true,
-        subcategories: subs
-      }
-    ]
-  }, [])
-
-  // 2. DATASETS GENÉRICOS DEMONSTRATIVOS (apenas para /demo)
+  // 1. DATASETS GENÉRICOS DEMONSTRATIVOS (apenas para /demo)
   const demoExpensePFCategories: CategoryGroup[] = useMemo(() => [
     {
       name: 'Transporte',
@@ -718,16 +480,12 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
     }
   ], [])
 
-  // Selecionar fontes ativas: se for demo ou se o usuário autenticado for o Dr. Rafael Leão
-  const isOwnerUser = typeof window !== 'undefined' && Boolean(
-    localStorage.getItem('leaomed_current_user_email')?.toLowerCase().includes('rafael') ||
-    localStorage.getItem('leaomed_current_user_email')?.toLowerCase() === 'rafaelleaobh@gmail.com'
-  )
-
-  const baseExpensePFCategories = isDemo ? demoExpensePFCategories : isOwnerUser ? realExpensePFCategories : emptyExpensePFCategories
-  const baseExpensePJCategories = isDemo ? demoExpensePJCategories : isOwnerUser ? realExpensePJCategories : emptyExpensePJCategories
-  const baseIncomePJCategories = isDemo ? demoIncomePJCategories : isOwnerUser ? realIncomePJCategories : emptyIncomePJCategories
-  const baseIncomePFCategories = isDemo ? demoIncomePFCategories : isOwnerUser ? realIncomePFCategories : emptyIncomePFCategories
+  // Dados reais entram somente pela API autenticada. O navegador nunca toma uma
+  // decisão de acesso baseada em e-mail gravado no localStorage.
+  const baseExpensePFCategories = isDemo ? demoExpensePFCategories : emptyExpensePFCategories
+  const baseExpensePJCategories = isDemo ? demoExpensePJCategories : emptyExpensePJCategories
+  const baseIncomePJCategories = isDemo ? demoIncomePJCategories : emptyIncomePJCategories
+  const baseIncomePFCategories = isDemo ? demoIncomePFCategories : emptyIncomePFCategories
 
   // Estados locais para permitir edição e exclusão persistidas
   const [expensePFCats, setExpensePFCats] = useState<CategoryGroup[]>(baseExpensePFCategories)
@@ -786,14 +544,6 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
   // Carregar edições e exclusões locais salvas no localStorage isolado por usuário
   useEffect(() => {
     try {
-      const userEmail = localStorage.getItem('leaomed_current_user_email') || ''
-      const isOwner = userEmail.toLowerCase().includes('rafael') || userEmail.toLowerCase() === 'rafaelleaobh@gmail.com'
-      if (!isDemo && !isOwner) {
-        // Novo usuário: histórico de PJ inicia zerado
-        setPjTaxHistory([])
-        return
-      }
-
       const storedDeleted = localStorage.getItem('leaomed_deleted_budget_items')
       const deletedKeys: string[] = storedDeleted ? JSON.parse(storedDeleted) : []
 
@@ -1334,27 +1084,27 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
   return (
     <section id="categorias-planilha" className="scroll-mt-24">
-      <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 p-4 md:p-6 shadow-sm relative overflow-hidden transition-all">
+      <div className="rounded-xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] p-4 md:p-6 shadow-sm relative overflow-hidden transition-all">
         {/* Glow de fundo */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--capital-soft,#f6f0df)] rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-[var(--capital-soft,#f6f0df)] rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
 
         {/* Top Header do Módulo */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 relative z-10">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="flex h-3 w-3 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--capital-button,#c7a354)] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-[var(--capital-button,#c7a354)]"></span>
               </span>
-              <h2 className="font-display text-xl md:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <h2 className="font-display text-xl md:text-2xl font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] tracking-tight">
                 Planilha Orçamentária Oficial
               </h2>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] border border-[var(--capital-accent,#927025)]">
                 <ShieldCheck className="h-3 w-3" /> Rigorosamente Segregada (PF vs PJ)
               </span>
             </div>
-            <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
+            <p className="text-xs md:text-sm text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-1 max-w-2xl">
               Dados organizados em abas independentes para Pessoa Física e Jurídica. Clique sobre qualquer valor para editar diretamente na planilha.
             </p>
           </div>
@@ -1363,20 +1113,20 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
           <div className="flex items-center gap-2 self-start lg:self-auto flex-wrap">
             <button
               onClick={() => setIsAddTransactionOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] shadow-xs transition-all cursor-pointer"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>+ Novo Lançamento</span>
             </button>
             <button
               onClick={expandAll}
-              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 transition-all cursor-pointer"
+              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-all cursor-pointer"
             >
               Expandir Todos
             </button>
             <button
               onClick={collapseAll}
-              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 transition-all cursor-pointer"
+              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-all cursor-pointer"
             >
               Recolher
             </button>
@@ -1386,21 +1136,21 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
         {/* ========================================================================= */}
         {/* SELETOR DE ABAS PRINCIPAIS: SEGREGAÇÃO ESTRITA ENTRE PF E PJ */}
         {/* ========================================================================= */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-2 rounded-2xl bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-white/10 shadow-inner relative z-10">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6 p-2 rounded-2xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] shadow-inner relative z-10">
           <div className="flex flex-wrap items-center gap-2">
             {/* Aba 1: Despesas PF */}
             <button
               onClick={() => setActiveScopeTab('EXPENSE_PF')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all cursor-pointer ${
                 activeScopeTab === 'EXPENSE_PF'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30 scale-[1.02]'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
+                  ? 'bg-rose-600 text-white shadow-md shadow-none scale-[1.02]'
+                  : 'text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)] hover:bg-[var(--capital-card,#fff)] dark:hover:bg-[var(--capital-card,#fff)]'
               }`}
             >
-              <TrendingDown className="w-4 h-4 text-white" />
+              <TrendingDown className="w-4 h-4 text-[var(--capital-text,#242a2e)]" />
               <span>Despesas PF (Pessoa Física)</span>
               <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ${
-                activeScopeTab === 'EXPENSE_PF' ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300'
+                activeScopeTab === 'EXPENSE_PF' ? 'bg-[var(--capital-card,#fff)] text-[var(--capital-text,#242a2e)] font-bold' : 'bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
               }`}>
                 R$ {totalExpensePF.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
@@ -1409,16 +1159,16 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
             {/* Aba 2: Despesas PJ */}
             <button
               onClick={() => setActiveScopeTab('EXPENSE_PJ')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all cursor-pointer ${
                 activeScopeTab === 'EXPENSE_PJ'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 scale-[1.02]'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
+                  ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] shadow-md shadow-none scale-[1.02]'
+                  : 'text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#f6f3e9)] hover:bg-[var(--capital-card,#fff)] dark:hover:bg-[var(--capital-card,#fff)]'
               }`}
             >
-              <Building2 className="w-4 h-4 text-white" />
+              <Building2 className="w-4 h-4 text-[var(--capital-text,#242a2e)]" />
               <span>Empresa PJ (Impostos & Contabilidade)</span>
               <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ${
-                activeScopeTab === 'EXPENSE_PJ' ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300'
+                activeScopeTab === 'EXPENSE_PJ' ? 'bg-[var(--capital-card,#fff)] text-[var(--capital-text,#242a2e)] font-bold' : 'bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
               }`}>
                 R$ {totalExpensePJ.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
@@ -1427,16 +1177,16 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
             {/* Aba 3: Receitas PJ */}
             <button
               onClick={() => setActiveScopeTab('INCOME_PJ')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all cursor-pointer ${
                 activeScopeTab === 'INCOME_PJ'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 scale-[1.02]'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
+                  ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] shadow-md shadow-none scale-[1.02]'
+                  : 'text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#f6f3e9)] hover:bg-[var(--capital-card,#fff)] dark:hover:bg-[var(--capital-card,#fff)]'
               }`}
             >
-              <TrendingUp className="w-4 h-4 text-white" />
+              <TrendingUp className="w-4 h-4 text-[var(--capital-text,#242a2e)]" />
               <span>Receitas PJ (Faturamento Camarinha)</span>
               <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ${
-                activeScopeTab === 'INCOME_PJ' ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300'
+                activeScopeTab === 'INCOME_PJ' ? 'bg-[var(--capital-card,#fff)] text-[var(--capital-text,#242a2e)] font-bold' : 'bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
               }`}>
                 R$ {totalIncomePJ.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
@@ -1445,16 +1195,16 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
             {/* Aba 4: Receitas PF */}
             <button
               onClick={() => setActiveScopeTab('INCOME_PF')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all cursor-pointer ${
                 activeScopeTab === 'INCOME_PF'
-                  ? 'bg-teal-600 text-white shadow-md shadow-teal-600/30 scale-[1.02]'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
+                  ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] shadow-md shadow-none scale-[1.02]'
+                  : 'text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#f6f3e9)] hover:bg-[var(--capital-card,#fff)] dark:hover:bg-[var(--capital-card,#fff)]'
               }`}
             >
-              <Coins className="w-4 h-4 text-white" />
+              <Coins className="w-4 h-4 text-[var(--capital-text,#242a2e)]" />
               <span>Receitas PF (Pró-labore & Entradas)</span>
               <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ${
-                activeScopeTab === 'INCOME_PF' ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300'
+                activeScopeTab === 'INCOME_PF' ? 'bg-[var(--capital-card,#fff)] text-[var(--capital-text,#242a2e)] font-bold' : 'bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
               }`}>
                 R$ {totalIncomePF.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
@@ -1463,22 +1213,22 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
             {/* Aba 5: Extrato Item a Item & Auditoria */}
             <button
               onClick={() => setActiveScopeTab('GRANULAR_AUDIT')}
-              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-black transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-semibold transition-all cursor-pointer ${
                 activeScopeTab === 'GRANULAR_AUDIT'
-                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30 scale-[1.02]'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5'
+                  ? 'bg-amber-500 text-[var(--capital-button-text,#242a2e)] shadow-md shadow-none scale-[1.02]'
+                  : 'text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)] hover:bg-[var(--capital-card,#fff)] dark:hover:bg-[var(--capital-card,#fff)]'
               }`}
               title="Auditar despesa por despesa individualmente e prevenir duplicidade com cartões"
             >
-              <Receipt className={`w-4 h-4 ${activeScopeTab === 'GRANULAR_AUDIT' ? 'text-slate-950' : 'text-amber-500'}`} />
+              <Receipt className={`w-4 h-4 ${activeScopeTab === 'GRANULAR_AUDIT' ? 'text-[var(--capital-button-text,#242a2e)]' : 'text-[var(--capital-warning,#8b5b15)]'}`} />
               <span>Extrato Item a Item & Auditoria</span>
               {uncategorizedCount > 0 ? (
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-600 text-white animate-pulse shadow-xs">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-600 text-[var(--capital-text,#242a2e)] animate-pulse shadow-xs">
                   ⚠️ {uncategorizedCount} pendente{uncategorizedCount > 1 ? 's' : ''}
                 </span>
               ) : (
                 <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
-                  activeScopeTab === 'GRANULAR_AUDIT' ? 'bg-black/20 text-slate-950 font-black' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                  activeScopeTab === 'GRANULAR_AUDIT' ? 'bg-black/20 text-[var(--capital-button-text,#242a2e)] font-semibold' : 'bg-[var(--capital-warning-soft,#fcf1dc)] text-[var(--capital-warning,#8b5b15)] border border-[var(--capital-warning,#8b5b15)]'
                 }`}>
                   Anti-Duplicidade
                 </span>
@@ -1486,8 +1236,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
             </button>
           </div>
 
-          <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 px-2 flex items-center gap-1.5">
-            <Edit2 className="w-3.5 h-3.5 text-emerald-500" />
+          <div className="text-[11px] font-medium text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] px-2 flex items-center gap-1.5">
+            <Edit2 className="w-3.5 h-3.5 text-[var(--capital-success,#157449)]" />
             <span>Valores editáveis ao clicar</span>
           </div>
         </div>
@@ -1505,58 +1255,58 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
         ) : (
           <>
         {activeScopeTab === 'EXPENSE_PF' && (
-          <div className="mb-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-950/80 p-4 md:p-5 relative z-10 shadow-xs">
+          <div className="mb-6 rounded-2xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] p-4 md:p-5 relative z-10 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs mb-3">
-              <div className="flex items-center gap-2.5 bg-blue-500/10 border border-blue-500/20 px-3 py-2 rounded-xl">
-                <span className="h-3 w-3 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50" />
+              <div className="flex items-center gap-2.5 bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] px-3 py-2 rounded-xl">
+                <span className="h-3 w-3 rounded-full bg-[var(--capital-button,#c7a354)] shadow-sm shadow-none" />
                 <div>
-                  <span className="text-slate-500 dark:text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Despesas Obrigatórias (Fixas)</span>
+                  <span className="text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block text-[10px] font-bold uppercase tracking-wider">Despesas Obrigatórias (Fixas)</span>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="font-mono text-sm md:text-base font-black text-slate-900 dark:text-white tabular-nums">
+                    <span className="font-mono text-sm md:text-base font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] tabular-nums">
                       R$ {totalObligatoryPF.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
-                    <span className="text-blue-600 dark:text-blue-400 font-bold text-xs">
+                    <span className="text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] font-bold text-xs">
                       ({totalExpensePF > 0 ? ((totalObligatoryPF / totalExpensePF) * 100).toFixed(1) : 0}%)
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 bg-purple-500/10 border border-purple-500/20 px-3 py-2 rounded-xl">
-                <span className="h-3 w-3 rounded-full bg-purple-500 shadow-sm shadow-purple-500/50" />
+              <div className="flex items-center gap-2.5 bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] px-3 py-2 rounded-xl">
+                <span className="h-3 w-3 rounded-full bg-[var(--capital-button,#c7a354)] shadow-sm shadow-none" />
                 <div>
-                  <span className="text-slate-500 dark:text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Despesas Não Obrigatórias (Variáveis)</span>
+                  <span className="text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block text-[10px] font-bold uppercase tracking-wider">Despesas Não Obrigatórias (Variáveis)</span>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="font-mono text-sm md:text-base font-black text-slate-900 dark:text-white tabular-nums">
+                    <span className="font-mono text-sm md:text-base font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] tabular-nums">
                       R$ {(totalExpensePF - totalObligatoryPF).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
-                    <span className="text-purple-600 dark:text-purple-400 font-bold text-xs">
+                    <span className="text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] font-bold text-xs">
                       ({totalExpensePF > 0 ? (((totalExpensePF - totalObligatoryPF) / totalExpensePF) * 100).toFixed(1) : 0}%)
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="text-right sm:border-l sm:border-slate-200 dark:sm:border-white/10 sm:pl-4">
-                <span className="text-slate-500 dark:text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Total Despesas PF</span>
-                <span className="font-mono text-base md:text-lg font-black text-slate-900 dark:text-white tabular-nums">
+              <div className="text-right sm:border-l sm:border-[var(--capital-line,#e4dfd3)] dark:sm:border-[var(--capital-line,#e4dfd3)] sm:pl-4">
+                <span className="text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block text-[10px] font-bold uppercase tracking-wider">Total Despesas PF</span>
+                <span className="font-mono text-base md:text-lg font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] tabular-nums">
                   R$ {totalExpensePF.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
 
             {/* Barra de Progresso Bicolor */}
-            <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-3 overflow-hidden flex shadow-inner">
+            <div className="w-full bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] rounded-full h-3 overflow-hidden flex shadow-inner">
               <div 
-                className="bg-gradient-to-r from-blue-500 to-indigo-600 h-full transition-all duration-700 shadow-sm"
+                className="bg-[var(--capital-soft,#f6f0df)] from-blue-500 to-indigo-600 h-full transition-all duration-700 shadow-sm"
                 style={{ width: `${totalExpensePF > 0 ? (totalObligatoryPF / totalExpensePF) * 100 : 0}%` }}
               />
               <div 
-                className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-700 shadow-sm"
+                className="bg-[var(--capital-soft,#f6f0df)] from-purple-500 to-pink-500 h-full transition-all duration-700 shadow-sm"
                 style={{ width: `${totalExpensePF > 0 ? ((totalExpensePF - totalObligatoryPF) / totalExpensePF) * 100 : 0}%` }}
               />
             </div>
-            <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-slate-400 mt-2 px-1">
+            <div className="flex justify-between items-center text-[10px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-2 px-1">
               <span>Fixas/Essenciais: Transporte, Casa, Financiamento, Saúde...</span>
               <span>Flexíveis: Compras, Lazer, Viagens, Restaurantes...</span>
             </div>
@@ -1566,36 +1316,36 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
         {activeScopeTab === 'EXPENSE_PJ' && (
           <div className="space-y-6 mb-8 relative z-10">
             {/* 1. Header & Alíquota Efetiva PJ com Seletor */}
-            <div className="rounded-3xl border border-indigo-500/20 bg-gradient-to-br from-indigo-50/50 via-white to-blue-50/30 dark:from-indigo-950/30 dark:via-slate-900/80 dark:to-slate-950 p-5 md:p-6 shadow-xs">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-indigo-100 dark:border-white/10">
+            <div className="rounded-xl border border-[var(--capital-accent,#927025)] bg-[var(--capital-soft,#f6f0df)] from-indigo-50/50 via-white to-blue-50/30 dark:from-indigo-950/30 dark:via-slate-900/80 dark:to-slate-950 p-5 md:p-6 shadow-xs">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-[var(--capital-accent,#927025)] dark:border-[var(--capital-line,#e4dfd3)]">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="p-2 rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-600/30">
+                    <span className="p-2 rounded-xl bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] shadow-md shadow-none">
                       <Building2 className="w-5 h-5" />
                     </span>
-                    <h3 className="font-display text-lg md:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                    <h3 className="font-display text-lg md:text-xl font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] tracking-tight">
                       Controle Tributário & Operacional da Empresa PJ
                     </h3>
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] border border-[var(--capital-accent,#927025)]">
                       Pessoa Jurídica • 100% Débito em Conta
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-3xl leading-relaxed">
+                  <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-1 max-w-3xl leading-relaxed">
                     Fluxo médico: o faturamento hospitalar (Camarinha) entra na conta da PJ, são pagos os impostos federais/municipais e a contabilidade, e o saldo líquido é transferido para a Pessoa Física como pró-labore.
                   </p>
                 </div>
 
                 {/* Seletor de Competência da PJ */}
-                <div className="flex items-center gap-2 self-start lg:self-auto bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-indigo-200 dark:border-white/10 shadow-xs">
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 pl-2">Competência:</span>
+                <div className="flex items-center gap-2 self-start lg:self-auto bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] p-1.5 rounded-2xl border border-[var(--capital-accent,#927025)] dark:border-[var(--capital-line,#e4dfd3)] shadow-xs">
+                  <span className="text-[11px] font-bold text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] pl-2">Competência:</span>
                   <select
                     value={selectedPjMonthKey}
                     onChange={(e) => setSelectedPjMonthKey(e.target.value)}
                     aria-label="Selecionar competência da PJ"
-                    className="text-xs font-black text-indigo-600 dark:text-indigo-400 bg-transparent py-1 px-2.5 rounded-xl border border-indigo-300 dark:border-white/20 focus:outline-none cursor-pointer"
+                    className="text-xs font-semibold text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] bg-transparent py-1 px-2.5 rounded-xl border border-[var(--capital-accent,#927025)] dark:border-[var(--capital-line,#e4dfd3)] focus:outline-none cursor-pointer"
                   >
                     {pjTaxHistory.map((m) => (
-                      <option key={m.month} value={m.month} className="text-slate-900 dark:text-white bg-white dark:bg-slate-900">
+                      <option key={m.month} value={m.month} className="text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)]">
                         {m.label} ({m.month.toUpperCase()})
                       </option>
                     ))}
@@ -1606,54 +1356,54 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
               {/* Grid de Cards de Carga Tributária e Pró-Labore */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-5">
                 {/* Card 1: Faturamento Bruto */}
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-white/5 shadow-xs">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">
+                <div className="p-3.5 rounded-2xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block mb-1">
                     Faturamento Bruto PJ (Camarinha)
                   </span>
-                  <div className="font-mono text-lg md:text-xl font-black text-cyan-600 dark:text-cyan-400 tabular-nums">
+                  <div className="font-mono text-lg md:text-xl font-semibold text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] tabular-nums">
                     R$ {currentPjMonthData.faturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </div>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block">
+                  <span className="text-[10px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-1 block">
                     100% Contratos Hospitalares
                   </span>
                 </div>
 
                 {/* Card 2: Total Impostos (Simples/Federais) */}
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-white/5 shadow-xs">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">
+                <div className="p-3.5 rounded-2xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block mb-1">
                     Impostos Federais & Municipais
                   </span>
-                  <div className="font-mono text-lg md:text-xl font-black text-rose-600 dark:text-rose-400 tabular-nums">
+                  <div className="font-mono text-lg md:text-xl font-semibold text-[var(--capital-danger,#ad3333)] dark:text-[var(--capital-danger,#ad3333)] tabular-nums">
                     R$ {pjMonthMetrics.tributosPuros.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </div>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block">
+                  <span className="text-[10px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-1 block">
                     DARF, INSS, ISS, COFINS, IRPJ, CSLL, PIS
                   </span>
                 </div>
 
                 {/* Card 3: Mensalidade Contabilidade */}
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200/80 dark:border-white/5 shadow-xs">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">
+                <div className="p-3.5 rounded-2xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block mb-1">
                     Mensalidade Contabilidade
                   </span>
-                  <div className="font-mono text-lg md:text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                  <div className="font-mono text-lg md:text-xl font-semibold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] tabular-nums">
                     R$ {currentPjMonthData.contabilidade.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </div>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block">
+                  <span className="text-[10px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-1 block">
                     Honorários Contábeis Especializados
                   </span>
                 </div>
 
                 {/* Card 4: Alíquota e Seletor de Carga */}
-                <div className="p-3.5 rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-600/20 flex flex-col justify-between">
+                <div className="p-3.5 rounded-2xl bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] shadow-md shadow-none flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between gap-1 mb-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-200">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-accent,#927025)]">
                         {taxRateViewMode === 'SEM_CONTABILIDADE' ? 'Alíquota Pura de Impostos' : 'Carga Operacional Total'}
                       </span>
-                      <Percent className="w-3.5 h-3.5 text-indigo-200" />
+                      <Percent className="w-3.5 h-3.5 text-[var(--capital-accent,#927025)]" />
                     </div>
-                    <div className="font-mono text-2xl font-black tabular-nums tracking-tight">
+                    <div className="font-mono text-2xl font-semibold tabular-nums tracking-tight">
                       {taxRateViewMode === 'SEM_CONTABILIDADE' 
                         ? `${pjMonthMetrics.pctTributosPuros.toFixed(1)}%` 
                         : `${pjMonthMetrics.pctCargaTotal.toFixed(1)}%`}
@@ -1662,14 +1412,14 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
                   {/* Alternador / Toggle de Alíquota */}
                   <div className="pt-2">
-                    <div className="inline-flex w-full rounded-xl bg-indigo-950/60 p-0.5 text-[9px] font-bold">
+                    <div className="inline-flex w-full rounded-xl bg-[var(--capital-soft,#f6f0df)] p-0.5 text-[9px] font-bold">
                       <button
                         type="button"
                         onClick={() => setTaxRateViewMode('SEM_CONTABILIDADE')}
                         className={`flex-1 py-1 rounded-lg transition-all cursor-pointer text-center ${
                           taxRateViewMode === 'SEM_CONTABILIDADE'
-                            ? 'bg-white text-indigo-900 font-black shadow-xs'
-                            : 'text-indigo-200 hover:text-white'
+                            ? 'bg-[var(--capital-card,#fff)] text-[var(--capital-accent,#927025)] font-semibold shadow-xs'
+                            : 'text-[var(--capital-accent,#927025)] hover:text-[var(--capital-text,#242a2e)]'
                         }`}
                       >
                         Sem Contador ({pjMonthMetrics.pctTributosPuros.toFixed(1)}%)
@@ -1679,8 +1429,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                         onClick={() => setTaxRateViewMode('COM_CONTABILIDADE')}
                         className={`flex-1 py-1 rounded-lg transition-all cursor-pointer text-center ${
                           taxRateViewMode === 'COM_CONTABILIDADE'
-                            ? 'bg-white text-indigo-900 font-black shadow-xs'
-                            : 'text-indigo-200 hover:text-white'
+                            ? 'bg-[var(--capital-card,#fff)] text-[var(--capital-accent,#927025)] font-semibold shadow-xs'
+                            : 'text-[var(--capital-accent,#927025)] hover:text-[var(--capital-text,#242a2e)]'
                         }`}
                       >
                         Com Contador ({pjMonthMetrics.pctCargaTotal.toFixed(1)}%)
@@ -1691,33 +1441,33 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
               </div>
 
               {/* Informação do Pró-labore repassado */}
-              <div className="mt-3.5 p-3 rounded-2xl bg-indigo-50 dark:bg-white/5 border border-indigo-100 dark:border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+              <div className="mt-3.5 p-3 rounded-2xl bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-card,#fff)] border border-[var(--capital-accent,#927025)] dark:border-[var(--capital-line,#e4dfd3)] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                 <div className="flex items-center gap-2">
-                  <UserCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                  <span className="text-slate-700 dark:text-slate-300">
+                  <UserCheck className="w-4 h-4 text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] shrink-0" />
+                  <span className="text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
                     <strong>Pró-Labore Transferido para PF:</strong> R$ 23.000,00 (origem do "Salário Pró-Labore Camarinha" na PF).
                   </span>
                 </div>
-                <div className="text-right text-[11px] text-slate-500 dark:text-slate-400">
-                  Saldo de caixa retido na PJ: <strong className="text-slate-900 dark:text-white font-mono">R$ {pjMonthMetrics.sobraCaixaPj.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                <div className="text-right text-[11px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
+                  Saldo de caixa retido na PJ: <strong className="text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] font-mono">R$ {pjMonthMetrics.sobraCaixaPj.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
                 </div>
               </div>
             </div>
 
             {/* 2. Central de Ingestão de Boletos e Guias PJ ("Jogar Boletos PJ no Sistema") */}
-            <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 p-5 md:p-6 shadow-xs space-y-4">
+            <div className="rounded-xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] p-5 md:p-6 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h4 className="font-display font-bold text-sm md:text-base text-slate-900 dark:text-white flex items-center gap-2">
-                    <UploadCloud className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <h4 className="font-display font-bold text-sm md:text-base text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] flex items-center gap-2">
+                    <UploadCloud className="w-4 h-4 text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]" />
                     Central de Conciliação Automática de Boletos PJ
                   </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
                     Jogue aqui seus boletos bancários da PJ (DAS, DARF, INSS, ISS, Mensalidade Contábil) para conciliação automática mês a mês.
                   </p>
                 </div>
                 {uploadedBoletos.length > 0 && (
-                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-xl border border-emerald-500/20 self-start sm:self-auto">
+                  <span className="text-[11px] font-bold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] px-2.5 py-1 rounded-xl border border-[var(--capital-accent,#927025)] self-start sm:self-auto">
                     {uploadedBoletos.length} boleto(s) auditado(s)
                   </span>
                 )}
@@ -1734,8 +1484,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                 }}
                 className={`relative border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer ${
                   isDraggingBoleto 
-                    ? 'border-indigo-500 bg-indigo-500/10 scale-[1.01]' 
-                    : 'border-slate-300 dark:border-white/20 hover:border-indigo-500 hover:bg-slate-50 dark:hover:bg-white/5'
+                    ? 'border-[var(--capital-accent,#927025)] bg-[var(--capital-soft,#f6f0df)] scale-[1.01]'
+                    : 'border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] hover:border-[var(--capital-accent,#927025)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)]'
                 }`}
                 onClick={() => document.getElementById('pj-boleto-file-input')?.click()}
               >
@@ -1749,29 +1499,29 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                 />
 
                 <div className="flex flex-col items-center gap-2">
-                  <div className="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
+                  <div className="p-3 rounded-2xl bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]">
                     <FileText className="w-6 h-6" />
                   </div>
                   <div>
-                    <span className="text-xs md:text-sm font-black text-slate-900 dark:text-white block">
+                    <span className="text-xs md:text-sm font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] block">
                       Arraste seus boletos e guias PJ aqui (ou clique para selecionar)
                     </span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 block">
+                    <span className="text-[11px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-0.5 block">
                       Suporta múltiplos arquivos PDF (DARF, DAS Simples, GPS INSS, ISS e Boleto do Contador)
                     </span>
                   </div>
                   <button
                     type="button"
-                    className="mt-2 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all pointer-events-none"
+                    className="mt-2 px-4 py-2 rounded-xl text-xs font-bold bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] shadow-xs transition-all pointer-events-none"
                   >
                     + Selecionar Boletos do Computador
                   </button>
                 </div>
 
                 {isUploadingBoleto && (
-                  <div className="absolute inset-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xs rounded-2xl flex flex-col items-center justify-center gap-2 z-20">
-                    <div className="h-6 w-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 animate-pulse">
+                  <div className="absolute inset-0 bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] backdrop-blur-xs rounded-2xl flex flex-col items-center justify-center gap-2 z-20">
+                    <div className="h-6 w-6 border-2 border-[var(--capital-accent,#927025)] border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs font-bold text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] animate-pulse">
                       Lendo código de barras, OCR e conciliando com a competência {currentPjMonthData.label}...
                     </span>
                   </div>
@@ -1780,8 +1530,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
               {/* Mensagem Toast de Sucesso */}
               {boletoSuccessMsg && (
-                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                <div className="p-3.5 rounded-xl bg-[var(--capital-soft,#f6f0df)] border border-[var(--capital-accent,#927025)] text-xs font-bold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                  <CheckCircle2 className="w-4 h-4 text-[var(--capital-success,#157449)] shrink-0" />
                   <span>{boletoSuccessMsg}</span>
                 </div>
               )}
@@ -1789,21 +1539,21 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
               {/* Lista de Boletos Recentes Conciliados */}
               {uploadedBoletos.length > 0 && (
                 <div className="space-y-2 pt-2">
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                  <span className="text-[11px] font-bold text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block">
                     Últimos Boletos Conciliados Automaticamente:
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                     {uploadedBoletos.slice(0, 6).map((b) => (
-                      <div key={b.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 flex items-center justify-between text-xs">
+                      <div key={b.id} className="p-2.5 rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] flex items-center justify-between text-xs">
                         <div className="min-w-0 pr-2">
-                          <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">
+                          <span className="font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] truncate block">
                             {b.taxType}
                           </span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate">
+                          <span className="text-[10px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block truncate">
                             {b.name} • {b.month}
                           </span>
                         </div>
-                        <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                        <span className="font-mono font-semibold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] whitespace-nowrap">
                           R$ {b.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </span>
                       </div>
@@ -1814,29 +1564,29 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
             </div>
 
             {/* 3. Tabela Oficial Idêntica à Planilha (Imagem 4 - "Empresa - Despesas Fixas") */}
-            <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 p-5 md:p-6 shadow-xs space-y-4">
+            <div className="rounded-xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] p-5 md:p-6 shadow-xs space-y-4">
               {/* Cabeçalho da Tabela e Ações */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/10">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                 <div>
-                  <h4 className="font-display font-extrabold text-base md:text-lg text-slate-900 dark:text-white flex items-center gap-2">
-                    <Receipt className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  <h4 className="font-display font-semibold text-base md:text-lg text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]" />
                     Empresa - Despesas Fixas (Tabela Oficial da Planilha)
                   </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-0.5">
                     Histórico consolidado dos últimos 2 anos (Set/24 a Set/26). Clique sobre qualquer valor para editar diretamente.
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
                   {/* Filtro por Ano */}
-                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-xl border border-slate-200 dark:border-white/10">
+                  <div className="flex items-center gap-1 bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] p-1 rounded-xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                     <button
                       type="button"
                       onClick={() => setPjYearFilter('ALL')}
                       className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
                         pjYearFilter === 'ALL'
-                          ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                          ? 'bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] shadow-xs'
+                          : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)]'
                       }`}
                     >
                       Todos (24M)
@@ -1846,8 +1596,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       onClick={() => setPjYearFilter('2026')}
                       className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
                         pjYearFilter === '2026'
-                          ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                          ? 'bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] shadow-xs'
+                          : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)]'
                       }`}
                     >
                       2026
@@ -1857,8 +1607,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       onClick={() => setPjYearFilter('2025')}
                       className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
                         pjYearFilter === '2025'
-                          ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                          ? 'bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] shadow-xs'
+                          : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)]'
                       }`}
                     >
                       2025
@@ -1868,8 +1618,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       onClick={() => setPjYearFilter('2024')}
                       className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
                         pjYearFilter === '2024'
-                          ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs'
-                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                          ? 'bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] shadow-xs'
+                          : 'text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)]'
                       }`}
                     >
                       2024
@@ -1879,7 +1629,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                   <button
                     type="button"
                     onClick={handleResetPjHistory}
-                    className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
                     title="Restaurar valores de fábrica da planilha oficial"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -1889,18 +1639,18 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
               </div>
 
               {/* Tabela Responsiva Estilo Planilha Excel */}
-              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-white/10">
+              <div className="overflow-x-auto rounded-2xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-800 text-white font-bold text-[11px] uppercase tracking-wider">
-                      <th className="p-3 border-r border-slate-700 whitespace-nowrap min-w-[200px]">
+                    <tr className="bg-[var(--capital-card,#f8fafc)] text-[var(--capital-text,#242a2e)] font-bold text-[11px] uppercase tracking-wider">
+                      <th className="p-3 border-r border-[var(--capital-line,#e4dfd3)] whitespace-nowrap min-w-[200px]">
                         Tributo / Custo Fixo PJ
                       </th>
                       {filteredPjHistory.map((col) => (
                         <th 
                           key={col.month} 
-                          className={`p-3 text-right border-r border-slate-700 min-w-[95px] whitespace-nowrap ${
-                            col.month === selectedPjMonthKey ? 'bg-indigo-700 text-white font-black' : ''
+                          className={`p-3 text-right border-r border-[var(--capital-line,#e4dfd3)] min-w-[95px] whitespace-nowrap ${
+                            col.month === selectedPjMonthKey ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] font-semibold' : ''
                           }`}
                         >
                           {col.label}
@@ -1908,10 +1658,10 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-white/5 font-mono">
+                  <tbody className="divide-y divide-[var(--capital-line,#e4dfd3)] dark:divide-[var(--capital-line,#e4dfd3)] font-mono">
                     {/* Linha 0: Simples Nacional (Guia Única quando não destrinchado) */}
-                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                    <tr className="hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                         Simples Nacional (Guia Única)
                       </td>
                       {filteredPjHistory.map((col) => (
@@ -1921,8 +1671,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                             setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'simples' as any, fieldLabel: 'Simples Nacional (Guia Única)', value: col.simples || 0 })
                             setEditPjValueInput((col.simples || 0).toString())
                           }}
-                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
-                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          className={`p-2.5 text-right cursor-pointer hover:bg-[var(--capital-soft,#f6f0df)] dark:hover:bg-[var(--capital-soft,#f6f0df)] transition-colors border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]' : 'text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                           }`}
                           title="Clique para editar"
                         >
@@ -1932,8 +1682,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                     </tr>
 
                     {/* Linha 1: IRPJ */}
-                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                    <tr className="hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                         IRPJ
                       </td>
                       {filteredPjHistory.map((col) => (
@@ -1943,8 +1693,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                             setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'irpj', fieldLabel: 'IRPJ da PJ', value: col.irpj })
                             setEditPjValueInput(col.irpj.toString())
                           }}
-                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
-                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          className={`p-2.5 text-right cursor-pointer hover:bg-[var(--capital-soft,#f6f0df)] dark:hover:bg-[var(--capital-soft,#f6f0df)] transition-colors border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]' : 'text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                           }`}
                           title="Clique para editar"
                         >
@@ -1954,8 +1704,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                     </tr>
 
                     {/* Linha 2: CSLL */}
-                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                    <tr className="hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                         CSLL
                       </td>
                       {filteredPjHistory.map((col) => (
@@ -1965,8 +1715,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                             setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'csll', fieldLabel: 'CSLL da PJ', value: col.csll })
                             setEditPjValueInput(col.csll.toString())
                           }}
-                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
-                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          className={`p-2.5 text-right cursor-pointer hover:bg-[var(--capital-soft,#f6f0df)] dark:hover:bg-[var(--capital-soft,#f6f0df)] transition-colors border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]' : 'text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                           }`}
                           title="Clique para editar"
                         >
@@ -1976,8 +1726,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                     </tr>
 
                     {/* Linha 3: COFINS */}
-                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                    <tr className="hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                         COFINS
                       </td>
                       {filteredPjHistory.map((col) => (
@@ -1987,8 +1737,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                             setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'cofins', fieldLabel: 'COFINS da PJ', value: col.cofins })
                             setEditPjValueInput(col.cofins.toString())
                           }}
-                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
-                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          className={`p-2.5 text-right cursor-pointer hover:bg-[var(--capital-soft,#f6f0df)] dark:hover:bg-[var(--capital-soft,#f6f0df)] transition-colors border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]' : 'text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                           }`}
                           title="Clique para editar"
                         >
@@ -1998,8 +1748,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                     </tr>
 
                     {/* Linha 4: PIS */}
-                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                    <tr className="hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                         PIS
                       </td>
                       {filteredPjHistory.map((col) => (
@@ -2009,8 +1759,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                             setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'pis', fieldLabel: 'PIS da PJ', value: col.pis })
                             setEditPjValueInput(col.pis.toString())
                           }}
-                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
-                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          className={`p-2.5 text-right cursor-pointer hover:bg-[var(--capital-soft,#f6f0df)] dark:hover:bg-[var(--capital-soft,#f6f0df)] transition-colors border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]' : 'text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                           }`}
                           title="Clique para editar"
                         >
@@ -2020,8 +1770,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                     </tr>
 
                     {/* Linha 5: INSS */}
-                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                    <tr className="hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                         INSS
                       </td>
                       {filteredPjHistory.map((col) => (
@@ -2031,8 +1781,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                             setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'inss', fieldLabel: 'INSS Patronal / Pró-labore', value: col.inss })
                             setEditPjValueInput(col.inss.toString())
                           }}
-                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
-                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          className={`p-2.5 text-right cursor-pointer hover:bg-[var(--capital-soft,#f6f0df)] dark:hover:bg-[var(--capital-soft,#f6f0df)] transition-colors border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]' : 'text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                           }`}
                           title="Clique para editar"
                         >
@@ -2042,8 +1792,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                     </tr>
 
                     {/* Linha 6: ISS */}
-                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                    <tr className="hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                         ISS
                       </td>
                       {filteredPjHistory.map((col) => (
@@ -2053,8 +1803,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                             setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'iss', fieldLabel: 'ISS Municipal', value: col.iss })
                             setEditPjValueInput(col.iss.toString())
                           }}
-                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
-                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          className={`p-2.5 text-right cursor-pointer hover:bg-[var(--capital-soft,#f6f0df)] dark:hover:bg-[var(--capital-soft,#f6f0df)] transition-colors border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]' : 'text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                           }`}
                           title="Clique para editar"
                         >
@@ -2064,8 +1814,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                     </tr>
 
                     {/* Linha 7: DARF */}
-                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                    <tr className="hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                         DARF
                       </td>
                       {filteredPjHistory.map((col) => (
@@ -2075,8 +1825,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                             setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'darf', fieldLabel: 'DARF Tributário Federal', value: col.darf })
                             setEditPjValueInput(col.darf.toString())
                           }}
-                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
-                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          className={`p-2.5 text-right cursor-pointer hover:bg-[var(--capital-soft,#f6f0df)] dark:hover:bg-[var(--capital-soft,#f6f0df)] transition-colors border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]' : 'text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                           }`}
                           title="Clique para editar"
                         >
@@ -2086,8 +1836,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                     </tr>
 
                     {/* Linha 8: Outras taxas */}
-                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                    <tr className="hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                         Outras taxas
                       </td>
                       {filteredPjHistory.map((col) => (
@@ -2097,8 +1847,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                             setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'outras', fieldLabel: 'Outras Taxas da PJ', value: col.outras })
                             setEditPjValueInput(col.outras.toString())
                           }}
-                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
-                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          className={`p-2.5 text-right cursor-pointer hover:bg-[var(--capital-soft,#f6f0df)] dark:hover:bg-[var(--capital-soft,#f6f0df)] transition-colors border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]' : 'text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                           }`}
                           title="Clique para editar"
                         >
@@ -2108,8 +1858,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                     </tr>
 
                     {/* Linha 9: Mensalidade Contabilidade */}
-                    <tr className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                      <td className="p-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-white/5">
+                    <tr className="hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors">
+                      <td className="p-2.5 font-sans font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                         Mensalidade Contabilidade
                       </td>
                       {filteredPjHistory.map((col) => (
@@ -2119,8 +1869,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                             setEditingPjCell({ month: col.month, monthLabel: col.label, field: 'contabilidade', fieldLabel: 'Mensalidade Contabilidade', value: col.contabilidade })
                             setEditPjValueInput(col.contabilidade.toString())
                           }}
-                          className={`p-2.5 text-right cursor-pointer hover:bg-indigo-50/80 dark:hover:bg-indigo-950/40 transition-colors border-r border-slate-100 dark:border-white/5 ${
-                            col.month === selectedPjMonthKey ? 'font-bold bg-indigo-50/40 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
+                          className={`p-2.5 text-right cursor-pointer hover:bg-[var(--capital-soft,#f6f0df)] dark:hover:bg-[var(--capital-soft,#f6f0df)] transition-colors border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] ${
+                            col.month === selectedPjMonthKey ? 'font-bold bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]' : 'text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
                           }`}
                           title="Clique para editar"
                         >
@@ -2130,8 +1880,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                     </tr>
 
                     {/* LINHA DE TOTAL: EMPRESA - DESPESAS FIXAS */}
-                    <tr className="bg-rose-50/60 dark:bg-rose-950/30 font-black text-rose-700 dark:text-rose-400 border-t-2 border-slate-300 dark:border-white/20">
-                      <td className="p-3 font-sans uppercase tracking-wider border-r border-slate-200 dark:border-white/10">
+                    <tr className="bg-[var(--capital-danger-soft,#fcecec)] dark:bg-[var(--capital-danger-soft,#fcecec)] font-semibold text-[var(--capital-danger,#ad3333)] dark:text-[var(--capital-danger,#ad3333)] border-t-2 border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
+                      <td className="p-3 font-sans uppercase tracking-wider border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                         Empresa - Despesas Fixas (Total)
                       </td>
                       {filteredPjHistory.map((col) => {
@@ -2140,7 +1890,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                         const tributos = dasTotal + col.darf + col.outras
                         const totalCol = tributos + col.contabilidade
                         return (
-                          <td key={col.month} className="p-3 text-right border-r border-slate-200 dark:border-white/10">
+                          <td key={col.month} className="p-3 text-right border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                             {totalCol.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </td>
                         )
@@ -2150,10 +1900,10 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                     {/* LINHA: PERCENTUAL DE IMPOSTO (SEM CONTABILIDADE) */}
                     <tr className={`transition-colors ${
                       taxRateViewMode === 'SEM_CONTABILIDADE' 
-                        ? 'bg-indigo-50 dark:bg-indigo-950/40 font-black text-indigo-700 dark:text-indigo-300' 
-                        : 'text-slate-600 dark:text-slate-400 font-semibold'
+                        ? 'bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] font-semibold text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]'
+                        : 'text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] font-semibold'
                     }`}>
-                      <td className="p-2.5 font-sans border-r border-slate-100 dark:border-white/5">
+                      <td className="p-2.5 font-sans border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                         % Impostos (Sem Contabilidade)
                       </td>
                       {filteredPjHistory.map((col) => {
@@ -2162,7 +1912,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                         const tributos = dasTotal + col.darf + col.outras
                         const pct = col.faturamento > 0 ? ((tributos / col.faturamento) * 100).toFixed(1) : '0.0'
                         return (
-                          <td key={col.month} className="p-2.5 text-right border-r border-slate-100 dark:border-white/5">
+                          <td key={col.month} className="p-2.5 text-right border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                             {pct}%
                           </td>
                         )
@@ -2170,12 +1920,12 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                     </tr>
 
                     {/* LINHA: PERCENTUAL DE IMPOSTO (COM CONTABILIDADE - PLANILHA OFICIAL) */}
-                    <tr className={`border-b-2 border-slate-300 dark:border-white/20 transition-colors ${
+                    <tr className={`border-b-2 border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] transition-colors ${
                       taxRateViewMode === 'COM_CONTABILIDADE' 
-                        ? 'bg-indigo-600 text-white font-black' 
-                        : 'bg-indigo-50/40 dark:bg-indigo-950/20 text-slate-800 dark:text-slate-200 font-bold'
+                        ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] font-semibold'
+                        : 'bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] font-bold'
                     }`}>
-                      <td className="p-3 font-sans uppercase tracking-wider border-r border-slate-200 dark:border-white/10">
+                      <td className="p-3 font-sans uppercase tracking-wider border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                         Percentual de imposto (Com Contador - Planilha)
                       </td>
                       {filteredPjHistory.map((col) => {
@@ -2185,7 +1935,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                         const totalCol = tributos + col.contabilidade
                         const pct = col.faturamento > 0 ? Math.round((totalCol / col.faturamento) * 100) : 0
                         return (
-                          <td key={col.month} className="p-3 text-right border-r border-slate-200 dark:border-white/10">
+                          <td key={col.month} className="p-3 text-right border-r border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                             {pct}%
                           </td>
                         )
@@ -2200,20 +1950,20 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
         )}
 
         {activeScopeTab === 'INCOME_PJ' && (
-          <div className="mb-6 rounded-2xl border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 md:p-5 relative z-10 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="mb-6 rounded-2xl border border-[var(--capital-accent,#927025)] bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] p-4 md:p-5 relative z-10 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 block">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] block">
                 Faturamento Bruto da Empresa PJ
               </span>
-              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+              <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-0.5">
                 {isDemo 
                   ? 'Faturamento gerado por plantões hospitalares e contratos de convênios médicos.' 
                   : 'Faturamento bruto da PJ (Camarinha BRUTO) auditado na planilha oficial.'}
               </p>
             </div>
             <div className="text-right">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Faturamento Bruto</span>
-              <span className="font-mono text-base md:text-lg font-black text-emerald-700 dark:text-emerald-300 tabular-nums">
+              <span className="text-[10px] uppercase font-bold text-[var(--capital-muted,#242a2e)] block">Faturamento Bruto</span>
+              <span className="font-mono text-base md:text-lg font-semibold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] tabular-nums">
                 R$ {totalIncomePJ.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
             </div>
@@ -2221,20 +1971,20 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
         )}
 
         {activeScopeTab === 'INCOME_PF' && (
-          <div className="mb-6 rounded-2xl border border-teal-500/20 bg-teal-50/40 dark:bg-teal-950/20 p-4 md:p-5 relative z-10 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="mb-6 rounded-2xl border border-[var(--capital-accent,#927025)] bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] p-4 md:p-5 relative z-10 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-300 block">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] block">
                 Renda Pessoa Física (Pró-labore & Entradas)
               </span>
-              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+              <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-0.5">
                 {isDemo 
                   ? 'Retiradas de pró-labore da clínica médica, consultas particulares e proventos de investimentos.' 
                   : 'Pró-labore retirado da PJ (Camarinha), reembolsos médicos e rendimentos de investimentos da PF.'}
               </p>
             </div>
             <div className="text-right">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Receitas PF</span>
-              <span className="font-mono text-base md:text-lg font-black text-teal-700 dark:text-teal-300 tabular-nums">
+              <span className="text-[10px] uppercase font-bold text-[var(--capital-muted,#242a2e)] block">Total Receitas PF</span>
+              <span className="font-mono text-base md:text-lg font-semibold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)] tabular-nums">
                 R$ {totalIncomePF.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
             </div>
@@ -2247,13 +1997,13 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6 relative z-10">
           {/* Sub-filtro para despesas PF */}
           {activeScopeTab === 'EXPENSE_PF' ? (
-            <div className="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-xs font-semibold shadow-xs">
+            <div className="inline-flex rounded-xl p-1 bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-xs font-semibold shadow-xs">
               <button
                 onClick={() => setExpenseFilterTab('ALL')}
                 className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg active:scale-[0.98] transition-all cursor-pointer ${
                   expenseFilterTab === 'ALL'
-                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-black shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-[var(--capital-card,#f8fafc)] text-[var(--capital-text,#242a2e)] dark:bg-[var(--capital-card,#fff)] dark:text-[var(--capital-text,#f6f3e9)] font-semibold shadow-xs'
+                    : 'text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)]'
                 }`}
               >
                 Todas ({expensePFCats.length})
@@ -2262,8 +2012,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                 onClick={() => setExpenseFilterTab('OBRIGATORIAS')}
                 className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg active:scale-[0.98] transition-all cursor-pointer ${
                   expenseFilterTab === 'OBRIGATORIAS'
-                    ? 'bg-blue-600 text-white font-black shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] font-semibold shadow-xs'
+                    : 'text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#f6f3e9)]'
                 }`}
               >
                 Obrigatórias ({expensePFCats.filter(c => c.is_obligatory).length})
@@ -2272,34 +2022,35 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                 onClick={() => setExpenseFilterTab('NAO_OBRIGATORIAS')}
                 className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg active:scale-[0.98] transition-all cursor-pointer ${
                   expenseFilterTab === 'NAO_OBRIGATORIAS'
-                    ? 'bg-purple-600 text-white font-black shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] font-semibold shadow-xs'
+                    : 'text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#f6f3e9)]'
                 }`}
               >
                 Não Obrigatórias ({expensePFCats.filter(c => !c.is_obligatory).length})
               </button>
             </div>
           ) : (
-            <div className="text-xs font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-              <Database className="w-3.5 h-3.5 text-emerald-500" />
+            <div className="text-xs font-bold text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] flex items-center gap-1.5">
+              <Database className="w-3.5 h-3.5 text-[var(--capital-success,#157449)]" />
               <span>{filteredCategories.length} categorias listadas no escopo</span>
             </div>
           )}
 
           {/* Campo de Busca Rápida */}
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--capital-muted,#242a2e)]" />
             <input
               type="text"
               placeholder="Buscar item ou subcategoria na planilha..."
+              aria-label="Buscar item ou subcategoria na planilha"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500/50 transition-all"
+              className="w-full bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] rounded-xl pl-9 pr-4 py-2 text-xs text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] placeholder-slate-400 focus:outline-none focus:border-[var(--capital-accent,#927025)] transition-all"
             />
             {searchTerm && (
               <button 
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)] cursor-pointer"
               >
                 Limpar
               </button>
@@ -2328,8 +2079,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                 key={cat.name}
                 className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
                   isExpanded
-                    ? 'border-slate-300 dark:border-white/20 bg-slate-50 dark:bg-slate-950/90 shadow-sm dark:shadow-lg'
-                    : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/50 hover:border-slate-300 dark:hover:border-white/20 hover:bg-slate-50 dark:hover:bg-slate-950/70'
+                    ? 'border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] shadow-sm dark:shadow-sm'
+                    : 'border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] hover:border-[var(--capital-line,#e4dfd3)] dark:hover:border-[var(--capital-line,#e4dfd3)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#232a2e)]'
                 }`}
               >
                 {/* Header Clicável da Categoria */}
@@ -2339,44 +2090,44 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                   className="w-full text-left p-4 flex items-center justify-between gap-3 focus:outline-none active:scale-[0.99] transition-all cursor-pointer"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={`p-2.5 rounded-xl bg-gradient-to-tr ${cat.color} text-white shadow-md flex-shrink-0`}>
+                    <div className={`p-2.5 rounded-xl bg-[var(--capital-soft,#f6f0df)] ${cat.color} text-[var(--capital-text,#242a2e)] shadow-md flex-shrink-0`}>
                       <Icon className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-display text-sm md:text-base font-bold text-slate-900 dark:text-white tracking-tight truncate">
+                        <span className="font-display text-sm md:text-base font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] tracking-tight truncate">
                           {cat.name}
                         </span>
                         {activeScopeTab === 'EXPENSE_PF' && (
                           <span
                             className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
                               cat.is_obligatory
-                                ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30'
-                                : 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30'
+                                ? 'bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] border-[var(--capital-accent,#927025)]'
+                                : 'bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] border-[var(--capital-accent,#927025)]'
                             }`}
                           >
                             {cat.is_obligatory ? 'Obrigatória' : 'Não Obrigatória'}
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      <div className="flex items-center gap-2 text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-0.5">
                         <span>{cat.subcategories.length} itens</span>
                         <span>•</span>
-                        <span className="text-slate-700 dark:text-slate-300 font-semibold">{catPct.toFixed(1)}% do escopo</span>
+                        <span className="text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] font-semibold">{catPct.toFixed(1)}% do escopo</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <div className="text-right">
-                      <span className={`font-mono text-sm md:text-base font-extrabold tabular-nums block ${
-                        activeScopeTab.startsWith('INCOME') ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
+                      <span className={`font-mono text-sm md:text-base font-semibold tabular-nums block ${
+                        activeScopeTab.startsWith('INCOME') ? 'text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]' : 'text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]'
                       }`}>
                         R$ {cat.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </span>
                     </div>
-                    <div className={`p-1 rounded-lg bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 transition-transform duration-200 ${
-                      isExpanded ? 'rotate-180 text-emerald-600 dark:text-emerald-400' : ''
+                    <div className={`p-1 rounded-lg bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] transition-transform duration-200 ${
+                      isExpanded ? 'rotate-180 text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]' : ''
                     }`}>
                       <ChevronDown className="h-4 w-4" />
                     </div>
@@ -2385,9 +2136,9 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
                 {/* Barra de Progresso interna da categoria */}
                 <div className="px-4 pb-2">
-                  <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div className="w-full bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] rounded-full h-1.5 overflow-hidden">
                     <div 
-                      className={`h-full bg-gradient-to-r ${cat.color} rounded-full transition-all duration-500`}
+                      className={`h-full bg-[var(--capital-soft,#f6f0df)] ${cat.color} rounded-full transition-all duration-500`}
                       style={{ width: `${Math.min(100, Math.max(2, catPct * 1.5))}%` }}
                     />
                   </div>
@@ -2395,8 +2146,8 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
                 {/* Subcategorias Expandidas (Com clique direto para edição) */}
                 {isExpanded && (
-                  <div className="border-t border-slate-200 dark:border-white/5 bg-slate-100/60 dark:bg-slate-900/60 p-3.5 space-y-2">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1 flex justify-between">
+                  <div className="border-t border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] p-3.5 space-y-2">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] px-1 flex justify-between">
                       <span>Item / Subcategoria</span>
                       <span>Valor Alocado (Clique p/ Editar)</span>
                     </div>
@@ -2406,20 +2157,20 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       return (
                         <div
                           key={idx}
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-200/50 dark:hover:bg-white/10 transition-colors text-xs border border-slate-200/50 dark:border-transparent group"
+                          className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#fff)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-colors text-xs border border-[var(--capital-line,#e4dfd3)] dark:border-transparent group"
                         >
                           <div className="min-w-0 pr-2">
                             <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                              <span className="font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] truncate">
                                 {sub.name}
                               </span>
                               {sub.is_fixed && (
-                                <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-slate-200 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-white/10 flex-shrink-0">
+                                <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] flex-shrink-0">
                                   Fixo
                                 </span>
                               )}
                             </div>
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                            <div className="text-[10px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
                               {subPct.toFixed(1)}% de {cat.name}
                             </div>
                           </div>
@@ -2442,15 +2193,15 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                                 setEditIsFixedInput(!!sub.is_fixed)
                                 setIsConfirmingDelete(false)
                               }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 border border-transparent hover:border-emerald-500/30 transition-all cursor-pointer group/val"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-[var(--capital-soft,#f6f0df)] dark:hover:bg-[var(--capital-soft,#f6f0df)] border border-transparent hover:border-[var(--capital-accent,#927025)] transition-all cursor-pointer group/val"
                               title="Clique para editar este valor na planilha"
                             >
-                              <span className={`font-mono font-bold tabular-nums group-hover/val:text-emerald-600 dark:group-hover/val:text-emerald-400 ${
-                                activeScopeTab.startsWith('INCOME') ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
+                              <span className={`font-mono font-bold tabular-nums group-hover/val:text-[var(--capital-success,#157449)] dark:group-hover/val:text-[var(--capital-success,#157449)] ${
+                                activeScopeTab.startsWith('INCOME') ? 'text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]' : 'text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]'
                               }`}>
                                 R$ {sub.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                               </span>
-                              <Edit2 className="w-3 h-3 text-slate-400 group-hover/val:text-emerald-500 transition-colors opacity-60 group-hover/val:opacity-100" />
+                              <Edit2 className="w-3 h-3 text-[var(--capital-muted,#242a2e)] group-hover/val:text-[var(--capital-success,#157449)] transition-colors opacity-60 group-hover/val:opacity-100" />
                             </button>
                             <button
                               type="button"
@@ -2468,7 +2219,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                                 setEditIsFixedInput(!!sub.is_fixed)
                                 setIsConfirmingDelete(true)
                               }}
-                              className="p-1 rounded-md text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                              className="p-1 rounded-md text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:text-[var(--capital-danger,#ad3333)] dark:hover:text-[var(--capital-danger,#ad3333)] hover:bg-[var(--capital-danger-soft,#fcecec)] dark:hover:bg-[var(--capital-danger-soft,#fcecec)] transition-colors cursor-pointer"
                               title="Excluir este item da planilha"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -2491,30 +2242,30 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
       {/* MODAL DE EDIÇÃO DIRETA DE VALOR DE SUBCATEGORIA */}
       {/* ========================================================================= */}
       {editingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--capital-card,#f8fafc)] backdrop-blur-sm animate-in fade-in duration-150">
           <div 
-            className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 transition-all scale-100"
+            className="w-full max-w-sm rounded-xl overflow-hidden shadow-sm border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] transition-all scale-100"
             role="dialog"
             aria-modal="true"
           >
             {/* Header */}
-            <div className="p-4 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-slate-50 dark:bg-slate-950/60">
+            <div className="p-4 border-b border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] flex items-center justify-between bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)]">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
+                <div className="p-2 rounded-xl bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-success,#157449)]">
                   <Edit2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-display font-black text-sm text-slate-900 dark:text-white">
+                  <h3 className="font-display font-semibold text-sm text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]">
                     Editar Item da Planilha
                   </h3>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                  <p className="text-[10px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
                     {editingItem.categoryName} ({editingItem.scope.replace('_', ' ')})
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setEditingItem(null)}
-                className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                className="p-1.5 rounded-full hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -2523,34 +2274,36 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
             {/* Formulário de Edição */}
             <form onSubmit={handleSaveEdit} className="p-5 space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block mb-1">
                   Nome do Item / Subcategoria
                 </label>
                 <input
                   type="text"
                   value={editNameInput}
+                  aria-label="Descrição do item de orçamento"
                   onChange={(e) => setEditNameInput(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] font-medium focus:outline-none focus:border-[var(--capital-accent,#927025)]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                <label className="text-xs font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block mb-1">
                   Valor Alocado (R$)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">R$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--capital-muted,#242a2e)]">R$</span>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
                     required
                     value={editValueInput}
+                    aria-label="Valor alocado no orçamento em reais"
                     onChange={(e) => setEditValueInput(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2 rounded-xl text-sm font-mono font-black bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 tabular-nums"
+                    className="w-full pl-9 pr-3.5 py-2 rounded-xl text-sm font-mono font-semibold bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:border-[var(--capital-accent,#927025)] tabular-nums"
                   />
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">
+                <p className="text-[10px] text-[var(--capital-muted,#242a2e)] mt-1">
                   O somatório da categoria e os cálculos gerais serão atualizados automaticamente.
                 </p>
               </div>
@@ -2562,30 +2315,30 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                       type="checkbox"
                       checked={editIsFixedInput}
                       onChange={(e) => setEditIsFixedInput(e.target.checked)}
-                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                      className="rounded text-[var(--capital-success,#157449)] focus:ring-[var(--capital-accent,#927025)] w-4 h-4 cursor-pointer"
                     />
-                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    <span className="text-xs font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
                       Despesa Fixa / Obrigatória (Entra no cálculo da reserva)
                     </span>
                   </label>
                 </div>
               )}
 
-              <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex items-center justify-between gap-2">
+              <div className="pt-3 border-t border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] flex items-center justify-between gap-2">
                 {isConfirmingDelete ? (
-                  <div className="flex items-center gap-1.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-500/30 px-2.5 py-1.5 rounded-xl">
-                    <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400">Excluir item?</span>
+                  <div className="flex items-center gap-1.5 bg-[var(--capital-danger-soft,#fcecec)] dark:bg-[var(--capital-danger-soft,#fcecec)] border border-[var(--capital-danger,#ad3333)] px-2.5 py-1.5 rounded-xl">
+                    <span className="text-[11px] font-bold text-[var(--capital-danger,#ad3333)] dark:text-[var(--capital-danger,#ad3333)]">Excluir item?</span>
                     <button
                       type="button"
                       onClick={handleDeleteItem}
-                      className="px-2.5 py-1 rounded-lg text-[10px] font-black bg-rose-600 hover:bg-rose-700 text-white cursor-pointer shadow-xs"
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-rose-600 hover:bg-rose-700 text-white cursor-pointer shadow-xs"
                     >
                       Sim, Excluir
                     </button>
                     <button
                       type="button"
                       onClick={() => setIsConfirmingDelete(false)}
-                      className="px-2 py-1 rounded-lg text-[10px] font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white cursor-pointer"
+                      className="px-2 py-1 rounded-lg text-[10px] font-bold text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-text,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)] cursor-pointer"
                     >
                       Não
                     </button>
@@ -2594,7 +2347,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                   <button
                     type="button"
                     onClick={() => setIsConfirmingDelete(true)}
-                    className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="p-2 rounded-xl text-[var(--capital-danger,#ad3333)] hover:bg-[var(--capital-danger-soft,#fcecec)] dark:hover:bg-[var(--capital-danger-soft,#fcecec)] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
                     title="Excluir este item da planilha"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -2606,13 +2359,13 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                   <button
                     type="button"
                     onClick={() => setEditingItem(null)}
-                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] cursor-pointer"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] shadow-md shadow-none transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     <Save className="w-3.5 h-3.5" />
                     <span>Salvar Alteração</span>
@@ -2626,25 +2379,25 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
       {/* Modal de Edição de Célula da Planilha PJ */}
       {editingPjCell && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl p-5 md:p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--capital-card,#f8fafc)] backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] shadow-sm p-5 md:p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                <div className="p-2 rounded-xl bg-[var(--capital-soft,#f6f0df)] dark:bg-[var(--capital-soft,#f6f0df)] text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)]">
                   <Building2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-display font-bold text-sm md:text-base text-slate-900 dark:text-white">
+                  <h3 className="font-display font-bold text-sm md:text-base text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]">
                     Editar Custo PJ • {editingPjCell.monthLabel}
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
                     {editingPjCell.fieldLabel}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setEditingPjCell(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+                className="p-1 rounded-lg text-[var(--capital-muted,#242a2e)] hover:text-[var(--capital-muted,#242a2e)] dark:hover:text-[var(--capital-text,#242a2e)] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -2652,36 +2405,37 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
             <form onSubmit={handleSavePjCell} className="space-y-4 pt-1">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mb-1">
                   Valor Pago (R$)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">R$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[var(--capital-muted,#242a2e)]">R$</span>
                   <input
                     type="text"
                     value={editPjValueInput}
+                    aria-label="Valor pago pela pessoa jurídica em reais"
                     onChange={(e) => setEditPjValueInput(e.target.value)}
                     placeholder="0,00"
                     autoFocus
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 font-mono text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] font-mono text-sm font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] focus:outline-none focus:ring-2 focus:ring-[var(--capital-accent,#927025)]"
                   />
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                <p className="text-[11px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-1">
                   Valor anterior na planilha: R$ {editingPjCell.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-white/5">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
                 <button
                   type="button"
                   onClick={() => setEditingPjCell(null)}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl text-xs font-black bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#211f19)] shadow-md shadow-none transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>Salvar na Planilha</span>

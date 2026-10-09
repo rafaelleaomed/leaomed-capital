@@ -1,69 +1,32 @@
-import React from 'react'
-import { Activity, ArrowDownRight, ArrowUpRight } from 'lucide-react'
+'use client'
 
-interface CashFlowChartProps {
-  totalIncome: number;
-  totalExpenses: number;
-}
+import React from 'react'
+import { ArrowDownLeft, ArrowUpRight } from 'lucide-react'
+import { usePrivacy } from '@/context/PrivacyContext'
+
+interface CashFlowChartProps { totalIncome: number; totalExpenses: number }
 
 export function CashFlowChart({ totalIncome, totalExpenses }: CashFlowChartProps) {
+  const { maskValue } = usePrivacy()
   const maxVal = Math.max(totalIncome, totalExpenses, 1)
   const incomeHeight = `${Math.min(100, Math.max(15, (totalIncome / maxVal) * 100))}%`
   const expensesHeight = `${Math.min(100, Math.max(15, (totalExpenses / maxVal) * 100))}%`
   const netResult = totalIncome - totalExpenses
-
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 p-6 shadow-sm flex flex-col justify-between">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="font-display text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Activity className="h-4 w-4 text-emerald-500" />
-            Fluxo de Caixa Mensal (Pessoa Jurídica & PF)
-          </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Comparativo volumétrico de entradas vs saídas</p>
-        </div>
-        <div className={`px-2.5 py-1 rounded-full text-xs font-bold ${netResult >= 0 ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20'}`}>
-          {netResult >= 0 ? 'Superávit' : 'Déficit'} de R$ {Math.abs(netResult).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-        </div>
+    <section className="capital-panel min-w-0 flex flex-col">
+      <div className="panel-heading"><div><span className="eyebrow">COMPARATIVO DO PERÍODO</span><h2>Receitas e despesas</h2></div></div>
+      <p className="small-note">{netResult >= 0 ? 'Superávit' : 'Déficit'} de {maskValue(Math.abs(netResult))}</p>
+      <div role="img" aria-label={`Receitas ${maskValue(totalIncome)} e despesas ${maskValue(totalExpenses)}`} className="flex items-end justify-center gap-8 sm:gap-12 h-64 pt-5 pb-3 border-b border-[var(--capital-line)]">
+        {[
+          { label: 'Entradas', value: totalIncome, height: incomeHeight, color: 'var(--capital-success)', Icon: ArrowDownLeft },
+          { label: 'Saídas', value: totalExpenses, height: expensesHeight, color: 'var(--capital-accent)', Icon: ArrowUpRight }
+        ].map(({ label, value, height, color, Icon }) => <div key={label} className="flex flex-col items-center gap-2 w-24 h-full justify-end min-w-0">
+          <strong className="text-xs tabular-nums whitespace-nowrap">{maskValue(value)}</strong>
+          <div className="w-16 sm:w-20 rounded-t-lg" style={{ height, background: color }} />
+          <span className="text-xs text-[var(--capital-muted)] flex items-center gap-1"><Icon size={14} />{label}</span>
+        </div>)}
       </div>
-
-      {/* Visual Bars Container */}
-      <div className="flex-1 flex items-end justify-center gap-12 h-52 pt-4 pb-2 border-b border-slate-100 dark:border-white/5">
-        {/* Barra de Receitas */}
-        <div className="flex flex-col items-center gap-2 group w-24">
-          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 transition-transform group-hover:-translate-y-1">
-            R$ {totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </span>
-          <div 
-            className="w-full bg-gradient-to-t from-emerald-600 to-teal-400 rounded-t-xl transition-all duration-700 shadow-md group-hover:brightness-110"
-            style={{ height: incomeHeight }}
-          />
-          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-            <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" />
-            Entradas
-          </span>
-        </div>
-
-        {/* Barra de Despesas */}
-        <div className="flex flex-col items-center gap-2 group w-24">
-          <span className="text-xs font-bold text-rose-600 dark:text-rose-400 transition-transform group-hover:-translate-y-1">
-            R$ {totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </span>
-          <div 
-            className="w-full bg-gradient-to-t from-rose-600 to-pink-500 rounded-t-xl transition-all duration-700 shadow-md group-hover:brightness-110"
-            style={{ height: expensesHeight }}
-          />
-          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-            <ArrowDownRight className="h-3.5 w-3.5 text-rose-500" />
-            Saídas
-          </span>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-3">
-        <span>Faturamento PJ + Pró-labore</span>
-        <span>Faturas de Cartões & Tributos</span>
-      </div>
-    </div>
+      <p className="small-note mt-3">Valores registrados no período e escopo selecionados</p>
+    </section>
   )
 }
