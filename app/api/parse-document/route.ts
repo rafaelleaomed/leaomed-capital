@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
           try {
             // Limite de segurança de 8 segundos para evitar estourar os 15s da Vercel
             const ocrTimeout = new Promise<string>((_, reject) =>
-              setTimeout(() => reject(new Error('TIMEOUT_OCR')), 8000)
+              setTimeout(() => reject(new Error('TIMEOUT_OCR')), 35000)
             )
 
             const ocrProcess = (async () => {
