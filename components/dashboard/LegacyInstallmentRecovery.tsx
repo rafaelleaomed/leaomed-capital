@@ -5,15 +5,14 @@ import { getFinancialScopeVersion, getFinancialUserScope } from '@/utils/userSco
 import { financialStorage } from '@/utils/userScopedStorage'
 import { getVerifiedOwnerLegacyTransactions, hasVerifiedLegacyOwner, recoverVerifiedOwnerCaches } from '@/utils/legacyFinancialRecovery'
 import type { ReactNode } from 'react'
-import type { OwnerRecoveryCapability } from '@/utils/legacyFinancialRecovery'
 
 // Server capability is checked before reading the unscoped legacy cache. It is
 // never claimed by whichever account happens to log in on a shared browser.
 export function LegacyFinancialRecovery({ children }: { children?: ReactNode }) {
   const [message, setMessage] = useState('')
   const [checked, setChecked] = useState(false)
-  const [ownerCapability, setOwnerCapability] = useState<OwnerRecoveryCapability | null>(null)
   const [restoringBackup, setRestoringBackup] = useState(false)
+  const [backupOwnershipConfirmed, setBackupOwnershipConfirmed] = useState(false)
   useEffect(() => {
     let active = true
     const version = getFinancialScopeVersion()
@@ -22,7 +21,6 @@ export function LegacyFinancialRecovery({ children }: { children?: ReactNode }) 
       try {
         const capability = await fetch('/api/installments/recovery', { cache: 'no-store', signal: AbortSignal.timeout(15000) }).then(r => r.json())
         if (!stillCurrent() || !capability.eligible || capability.userId !== getFinancialUserScope()) return
-        setOwnerCapability(capability)
         if (!hasVerifiedLegacyOwner(capability)) return
         const settingsCount = recoverVerifiedOwnerCaches(capability)
         const transactions = getVerifiedOwnerLegacyTransactions(capability)
@@ -61,7 +59,8 @@ export function LegacyFinancialRecovery({ children }: { children?: ReactNode }) 
     return () => { active = false }
   }, [])
   const restoreBackup = async (file?: File) => {
-    if (!file || !ownerCapability || ownerCapability.userId !== getFinancialUserScope()) return
+    const userId = getFinancialUserScope()
+    if (!file || !backupOwnershipConfirmed || !userId) return
     const version = getFinancialScopeVersion()
     setRestoringBackup(true)
     try {
@@ -69,9 +68,9 @@ export function LegacyFinancialRecovery({ children }: { children?: ReactNode }) 
       const parsed = JSON.parse(await file.text())
       const legacy: InstallmentItem[] = Array.isArray(parsed) ? parsed : parsed.installments
       if (!Array.isArray(legacy) || !legacy.length || version !== getFinancialScopeVersion()) throw new Error('invalid_backup')
-      const response = await fetch('/api/installments/recovery', {
+      const response = await fetch('/api/installments/import', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(60000),
-        body: JSON.stringify({ installments: legacy, expectedUserId: ownerCapability.userId }),
+        body: JSON.stringify({ installments: legacy, expectedUserId: userId, ownershipConfirmed: true }),
       })
       const result = await response.json()
       if (version !== getFinancialScopeVersion()) return
@@ -88,11 +87,12 @@ export function LegacyFinancialRecovery({ children }: { children?: ReactNode }) 
   if (!checked) return <p role="status" className="p-6">Verificando os dados da sua conta…</p>
   return <>
     {message && <p role="status" className="text-sm text-[var(--capital-muted)]">{message}</p>}
-    {ownerCapability && <details className="m-4 text-sm">
+    <details className="m-4 text-sm">
       <summary className="cursor-pointer">Recuperar dados anteriores</summary>
       <p className="my-2">Se o navegador antigo não estiver disponível, escolha seu backup de parcelamentos. A recuperação fica vinculada somente à sua conta.</p>
-      <label>Backup de parcelamentos <input aria-label="Backup de parcelamentos" type="file" accept=".json,application/json" disabled={restoringBackup} onChange={event => { void restoreBackup(event.target.files?.[0]); event.target.value = '' }} /></label>
-    </details>}
+      <label className="block my-2"><input type="checkbox" checked={backupOwnershipConfirmed} onChange={event => setBackupOwnershipConfirmed(event.target.checked)} /> Confirmo que este arquivo contém apenas meus parcelamentos.</label>
+      <label>Backup de parcelamentos <input aria-label="Backup de parcelamentos" type="file" accept=".json,application/json" disabled={restoringBackup || !backupOwnershipConfirmed} onChange={event => { void restoreBackup(event.target.files?.[0]); event.target.value = '' }} /></label>
+    </details>
     {children}
   </>
 }
