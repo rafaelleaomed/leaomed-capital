@@ -23,7 +23,7 @@ const COLOR_OPTIONS = [
 ]
 
 const BADGE_PRESETS = [
-  'Principal (PF) - Veículo & Pessoal',
+  '',
   'Casa & Eletro (PF)',
   'Tecnologia & Família (PF)',
   'Supermercado & Alimentação',
@@ -60,15 +60,15 @@ export default function CreditCardModal({
   }, [])
 
   const [name, setName] = useState('')
-  const [institution, setInstitution] = useState('C6 Bank')
-  const [limit, setLimit] = useState(20000)
+  const [institution, setInstitution] = useState('')
+  const [limit, setLimit] = useState(0)
   const [spent, setSpent] = useState(0)
-  const [closingDay, setClosingDay] = useState(20)
-  const [dueDay, setDueDay] = useState(28)
+  const [closingDay, setClosingDay] = useState(1)
+  const [dueDay, setDueDay] = useState(1)
   const [additionalCards, setAdditionalCards] = useState('Nenhum')
   const [cardholder, setCardholder] = useState('Titular do cartão')
-  const [lastDigits, setLastDigits] = useState('4821')
-  const [badge, setBadge] = useState('Principal (PF) - Veículo & Pessoal')
+  const [lastDigits, setLastDigits] = useState('')
+  const [badge, setBadge] = useState('')
   const [color, setColor] = useState('bg-[var(--capital-card,#f8fafc)]')
   const [entityType, setEntityType] = useState<'PF' | 'PJ'>('PF')
   const [notes, setNotes] = useState('')
@@ -77,29 +77,29 @@ export default function CreditCardModal({
   useEffect(() => {
     if (cardToEdit) {
       setName(cardToEdit.name)
-      setInstitution(cardToEdit.institution || 'C6 Bank')
+      setInstitution(cardToEdit.institution || '')
       setLimit(cardToEdit.limit || 0)
       setSpent(cardToEdit.spent || 0)
-      setClosingDay(cardToEdit.closingDay || 20)
-      setDueDay(cardToEdit.dueDay || 28)
+      setClosingDay(cardToEdit.closingDay || 1)
+      setDueDay(cardToEdit.dueDay || 1)
       setAdditionalCards(cardToEdit.additionalCards || 'Nenhum')
       setCardholder(cardToEdit.cardholder || 'Titular do cartão')
-      setLastDigits(cardToEdit.lastDigits || '4821')
-      setBadge(cardToEdit.badge || 'Principal (PF)')
+      setLastDigits(cardToEdit.lastDigits || '')
+      setBadge(cardToEdit.badge || '')
       setColor(cardToEdit.color || 'bg-[var(--capital-card,#f8fafc)]')
       setEntityType(cardToEdit.entityType || 'PF')
       setNotes(cardToEdit.notes || '')
     } else {
       setName('')
-      setInstitution('C6 Bank')
-      setLimit(15000)
+      setInstitution('')
+      setLimit(0)
       setSpent(0)
-      setClosingDay(15)
-      setDueDay(22)
+      setClosingDay(1)
+      setDueDay(1)
       setAdditionalCards('Nenhum')
       setCardholder('Titular do cartão')
-      setLastDigits('1234')
-      setBadge('Principal (PF)')
+      setLastDigits('')
+      setBadge('')
       setColor('bg-[var(--capital-card,#f8fafc)]')
       setEntityType('PF')
       setNotes('')

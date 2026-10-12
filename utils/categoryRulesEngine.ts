@@ -113,11 +113,11 @@ const buildTaxonomyHeuristics = (): Array<{
     { pattern: 'super nosso', category: 'Casa', subcategory: 'Supermercado' },
 
     // Saúde & Farmácia
-    { pattern: 'araujo loja', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
-    { pattern: 'drogaria araujo', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
-    { pattern: 'raia', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
-    { pattern: 'drogasil', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
-    { pattern: 'pacheco', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
+    { pattern: 'araujo loja', category: 'Saúde', subcategory: 'Remédios' },
+    { pattern: 'drogaria araujo', category: 'Saúde', subcategory: 'Remédios' },
+    { pattern: 'raia', category: 'Saúde', subcategory: 'Remédios' },
+    { pattern: 'drogasil', category: 'Saúde', subcategory: 'Remédios' },
+    { pattern: 'pacheco', category: 'Saúde', subcategory: 'Remédios' },
 
     // Softwares & Assinaturas
     { pattern: 'google one', category: 'Serviços de Assinaturas', subcategory: 'Streaming & Assinaturas' },

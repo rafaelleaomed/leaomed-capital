@@ -69,6 +69,7 @@ async function sql(strings, ...values) {
   }
   if (query.includes('FROM public.categories')) {
     assert.match(query, /t\.user_id = \?/)
+    assert.ok(!query.includes('LEFT JOIN public.transactions'), 'Empty accounts must not receive private global category labels')
     return []
   }
   if (query.startsWith('AND') || query === '') return { fragment: query }

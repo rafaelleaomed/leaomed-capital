@@ -42,12 +42,7 @@ export function OnboardingWizardModal({
   const [currentStep, setCurrentStep] = useState(1)
 
   // Etapa 1: Contas e Vínculos
-  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([
-    'Pessoa Jurídica',
-    'Itaú Personnalité PF',
-    'Nubank PF',
-    'Cartão C6 Carbon Black PF'
-  ])
+  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
   const [newAccountName, setNewAccountName] = useState('')
 
   // Etapa 2: Método de Ingestão de Dados
@@ -61,24 +56,7 @@ export function OnboardingWizardModal({
   const [newSubcategoryName, setNewSubcategoryName] = useState('')
 
   // Etapa 4: Financiamentos e Parcelamentos
-  const [installments, setInstallments] = useState([
-    {
-      name: 'Financiamento Veicular (CDC)',
-      category: 'Transporte',
-      monthlyValue: 3336.28,
-      currentInstallment: 1,
-      totalInstallments: 36,
-      endMonthYear: '2028-04'
-    },
-    {
-      name: 'Fração Imobiliária / Cota Turística',
-      category: 'Imóvel / Resort',
-      monthlyValue: 1865.33,
-      currentInstallment: 1,
-      totalInstallments: 70,
-      endMonthYear: '2032-02'
-    }
-  ])
+  const [installments, setInstallments] = useState<Array<{ name: string; category: string; monthlyValue: number; currentInstallment: number; totalInstallments: number; endMonthYear: string }>>([])
   const [newInstallment, setNewInstallment] = useState({
     name: '',
     category: 'Transporte',

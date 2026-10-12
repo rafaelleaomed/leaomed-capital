@@ -244,123 +244,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
       [name]: !prev[name]
     }))
   }
-  // 1. DATASETS GENÉRICOS DEMONSTRATIVOS (apenas para /demo)
-  const demoExpensePFCategories: CategoryGroup[] = useMemo(() => [
-    {
-      name: 'Transporte',
-      icon: Car,
-      total: 13163.55,
-      color: 'from-blue-500 to-indigo-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Parcela Veicular Safra', value: 3336.00, is_fixed: true },
-        { name: 'Cartão Combustível & Parcelas', value: 6837.55, is_fixed: true },
-        { name: 'Combustível Mensal', value: 1450.00, is_fixed: false },
-        { name: 'IPVA Proporcional', value: 580.00, is_fixed: true },
-        { name: 'Seguro Automotivo', value: 480.00, is_fixed: true },
-        { name: 'Pedágios & Estacionamentos', value: 480.00, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Casa & Moradia',
-      icon: Home,
-      total: 5528.13,
-      color: 'from-emerald-500 to-teal-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Condomínio Residencial', value: 1850.00, is_fixed: true },
-        { name: 'Supermercado Familiar', value: 1450.00, is_fixed: false },
-        { name: 'Empregada / Diarista', value: 1100.00, is_fixed: true },
-        { name: 'Energia Elétrica & Gás', value: 480.13, is_fixed: true },
-        { name: 'IPTU Proporcional', value: 320.00, is_fixed: true },
-        { name: 'Internet Banda Larga', value: 179.00, is_fixed: true },
-        { name: 'Streaming & Assinaturas', value: 149.00, is_fixed: true }
-      ]
-    },
-    {
-      name: 'Compras & Pessoal',
-      icon: ShoppingBag,
-      total: 2398.37,
-      color: 'from-purple-500 to-violet-600',
-      is_obligatory: false,
-      subcategories: [
-        { name: 'Vestuário & Cuidados', value: 1250.00, is_fixed: false },
-        { name: 'Eletrônicos & Gadgets', value: 820.00, is_fixed: false },
-        { name: 'Farmácia & Beleza', value: 328.37, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Saúde & Cuidados',
-      icon: HeartPulse,
-      total: 1278.01,
-      color: 'from-rose-500 to-pink-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Plano de Saúde Familiar', value: 890.00, is_fixed: true },
-        { name: 'Academia & Terapias', value: 250.00, is_fixed: false },
-        { name: 'Medicamentos Contínuos', value: 138.01, is_fixed: false }
-      ]
-    },
-    {
-      name: 'Lazer & Restaurantes',
-      icon: Film,
-      total: 900.66,
-      color: 'from-pink-500 to-rose-600',
-      is_obligatory: false,
-      subcategories: [
-        { name: 'Restaurantes & Gastronomia', value: 580.00, is_fixed: false },
-        { name: 'Passeios & Cinema', value: 200.00, is_fixed: false },
-        { name: 'Assinaturas de Lazer', value: 120.66, is_fixed: true }
-      ]
-    }
-  ], [])
-
-  const demoExpensePJCategories: CategoryGroup[] = useMemo(() => [
-    {
-      name: 'Empresa Médica PJ - Tributos & Fixas',
-      icon: Layers,
-      total: 6200.00,
-      color: 'from-cyan-500 to-blue-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Tributos DAS Simples Nacional', value: 3800.00, is_fixed: true },
-        { name: 'Mensalidade Contador Especializado', value: 1200.00, is_fixed: true },
-        { name: 'ISS & Taxas de Funcionamento', value: 600.00, is_fixed: true },
-        { name: 'Insumos Médicos & Softwares PJ', value: 600.00, is_fixed: false }
-      ]
-    }
-  ], [])
-
-  const demoIncomePJCategories: CategoryGroup[] = useMemo(() => [
-    {
-      name: 'Faturamento Hospitalar & PJ',
-      icon: Stethoscope,
-      total: 38500.00,
-      color: 'from-cyan-500 to-teal-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Hospital 01 - Plantões Médicos', value: 24000.00, is_fixed: true },
-        { name: 'Convênios Médicos 01 e 02', value: 9500.00, is_fixed: true },
-        { name: 'Honorários Procedimentos Cirúrgicos', value: 5000.00, is_fixed: false }
-      ]
-    }
-  ], [])
-
-  const demoIncomePFCategories: CategoryGroup[] = useMemo(() => [
-    {
-      name: 'Retiradas PJ & Consultório PF',
-      icon: Briefcase,
-      total: 31200.00,
-      color: 'from-purple-500 to-indigo-600',
-      is_obligatory: true,
-      subcategories: [
-        { name: 'Retirada de Pró-Labore da Clínica', value: 22000.00, is_fixed: true },
-        { name: 'Consultório Particular Presencial', value: 6200.00, is_fixed: false },
-      ]
-    }
-  ], [])
-
-  // Categorias Zeradas para Novos Usuários
+  // Empty generic templates for accounts without imported records.
   const emptyExpensePFCategories: CategoryGroup[] = useMemo(() => [
     {
       name: 'Transporte',
@@ -456,6 +340,16 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
       ]
     }
   ], [])
+
+  // Synthetic examples are generated from generic templates, never private records.
+  const withSyntheticAmounts = (groups: CategoryGroup[], base: number): CategoryGroup[] => groups.map((group, groupIndex) => {
+    const subcategories = group.subcategories.map((item, index) => ({ ...item, value: base + groupIndex * 100 + index * 50 }))
+    return { ...group, subcategories, total: subcategories.reduce((sum, item) => sum + item.value, 0) }
+  })
+  const demoExpensePFCategories = useMemo(() => withSyntheticAmounts(emptyExpensePFCategories, 250), [emptyExpensePFCategories])
+  const demoExpensePJCategories = useMemo(() => withSyntheticAmounts(emptyExpensePJCategories, 400), [emptyExpensePJCategories])
+  const demoIncomePFCategories = useMemo(() => withSyntheticAmounts(emptyIncomePFCategories, 4000), [emptyIncomePFCategories])
+  const demoIncomePJCategories = useMemo(() => withSyntheticAmounts(emptyIncomePJCategories, 8000), [emptyIncomePJCategories])
 
   // Dados reais entram somente pela API autenticada. O navegador nunca toma uma
   // decisão de acesso baseada em e-mail gravado no financialStorage.

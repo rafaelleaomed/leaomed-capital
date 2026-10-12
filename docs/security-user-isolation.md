@@ -37,4 +37,19 @@ A sessão é validada no servidor com `getUser()` e novamente antes de montar o 
 
 O upsert usa `WHERE accounts.user_id = EXCLUDED.user_id AND accounts.pluggy_item_id = EXCLUDED.pluggy_item_id` e verifica o proprietário retornado. O teste sintético extrai somente esse helper via AST: não importa o worker, não carrega `.env`, não lê credenciais e não conecta a serviços.
 
+As correções do cliente também substituem a taxonomia pessoal por modelos genéricos, zeram cadastros novos e limitam simulações à demonstração. Valores demonstrativos do orçamento são gerados a partir de modelos genéricos. A API de orçamento não devolve categorias globais sem transações próprias. As categorias usadas pelas regras existentes foram preservadas; as suites de taxonomia e categorização passaram.
+
+Validações sintéticas executadas:
+
+- `node tests/api_user_isolation.test.cjs`: leituras A/B, recursos estrangeiros, lote misto, conflitos de hash, proprietário da sessão e webhook.
+- `node tests/auth_session_security.test.cjs`: identidade da sessão, rejeição anônima, falha de autenticação e cache privado.
+- `node tests/financial_session_boundary.test.cjs`: montagem após validação, logout imediato e resposta antiga de autenticação.
+- `node --test scripts/client-financial-isolation.test.cjs`: cache A/B e A/B/A, legados, dados vazios e ausência de sentinelas pessoais nos módulos e no JavaScript transpilado.
+- `python tests/sync_worker_isolation_test.py`: três cenários de propriedade das contas.
+- `node tests/document_upload_runtime.test.cjs`: PDF, XLS e XLSX com documentos sintéticos.
+- `node -r ./scripts/register-typescript-tests.cjs tests/taxonomy_alignment.test.ts` e `tests/categorization.test.ts`: compatibilidade das categorias e regras.
+- TypeScript e compilação de produção com webpack. O build padrão Turbopack encontrou bloqueio de junction no sandbox Windows; webpack foi validado fora do sandbox.
+
+O teste HTTP da API financeira na prévia não foi executado: a revisão automática rejeitou a ferramenta de fetch porque ela pode gerar um bypass de autenticação da Vercel. Os testes de autorização usam sessões e banco simulados; não comprovam as políticas, privilégios ou dados do banco real. O PR permanece separado da produção.
+
 Executar `python tests/sync_worker_isolation_test.py`. O teste verifica o fluxo e a recusa de proprietários diferentes com um cursor simulado. As políticas, privilégios e restrições em produção não foram executados nem verificados por este teste.

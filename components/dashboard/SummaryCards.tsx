@@ -28,7 +28,7 @@ export function SummaryCards({
   availableToInvest,
   currentFilter,
   periodLabel,
-  fixedExpenses = 25528.57,
+  fixedExpenses = 0.57,
   daysInMonth = 30,
   daysLeft = 30,
   investmentTargetPct = 10,

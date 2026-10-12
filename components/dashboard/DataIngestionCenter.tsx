@@ -255,11 +255,13 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
   }
 
   const handleSimulatedInvoiceUpload = (bankName: string) => {
+    if (!isDemo || getFinancialScopeVersion() !== financialScopeVersion) return
     const fakeFile = new File(['conteudo simulado'], `Fatura_${bankName.replace(/\s+/g, '_')}_Junho2026.pdf`, { type: 'application/pdf' })
     processFiles([fakeFile])
   }
 
   const handleSimulatedPrintUpload = () => {
+    if (!isDemo || getFinancialScopeVersion() !== financialScopeVersion) return
     setIsProcessing(true)
     setFeedback('Analisando imagem com OCR Inteligente... Identificando faturas e extratos de plantões...')
 

@@ -187,7 +187,7 @@ export class FinancialCategorizationService {
         }
       }
     } catch (dbErr) {
-      console.warn('[FinancialCategorizationService] Aviso ao consultar category_rules no Postgres:', dbErr)
+      console.warn('[FinancialCategorizationService] Aviso ao consultar category_rules no Postgres:', dbErr instanceof Error ? dbErr.name : 'unknown_error')
     }
 
     // -------------------------------------------------------------
@@ -231,7 +231,7 @@ export class FinancialCategorizationService {
         };
       }
     } catch (dbErr) {
-       console.warn('[FinancialCategorizationService] Aviso ao consultar hit histórico:', dbErr);
+       console.warn('[FinancialCategorizationService] Aviso ao consultar hit histórico:', dbErr instanceof Error ? dbErr.name : 'unknown_error');
     }
 
     // -------------------------------------------------------------
@@ -447,7 +447,7 @@ export class FinancialCategorizationService {
         )
       `
     } catch (logErr) {
-      console.warn('[FinancialCategorizationService] Falha ao registrar log de auditoria no Postgres:', logErr)
+      console.warn('[FinancialCategorizationService] Falha ao registrar log de auditoria no Postgres:', logErr instanceof Error ? logErr.name : 'unknown_error')
     }
   }
 }

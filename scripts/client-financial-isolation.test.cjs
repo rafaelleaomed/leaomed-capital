@@ -42,7 +42,8 @@ test('each user starts empty; legacy caches are never attributed to another user
   InvestmentPortfolioStore.saveAssets([{ name: 'asset-A' }])
   InvestmentPortfolioStore.logMovement({ id: 'movement-A' })
   GranularTransactionStore.addTransaction({ description: 'Synthetic A', amount: -10, accountOrCard: 'Teste', category: 'Teste', subcategory: 'Teste', date: '2026-01-01', entityType: 'PF', isFixed: false, isIgnored: false, source: 'MANUAL' })
-  financialStorage.setItem('leaomed_categorization_rules', JSON.stringify([{ id: 'rule-A' }]))
+  financialStorage.setItem('leaomed_categorization_rules', JSON.stringify([{ id: 'rule-A', pattern: 'synthetic-owner-rule', category: 'Categoria particular A', subcategory: 'Teste A' }]))
+  assert.equal(CategoryRulesEngine.predict('synthetic-owner-rule', 'PF').category, 'Categoria particular A')
   financialStorage.setItem('profile', 'profile-A')
   setFinancialUserScope('synthetic-B')
   assert.deepEqual(InstallmentStore.getInstallments(), [])
@@ -51,6 +52,7 @@ test('each user starts empty; legacy caches are never attributed to another user
   assert.deepEqual(InvestmentPortfolioStore.getMovements(), [])
   assert.deepEqual(GranularTransactionStore.getAll(), [])
   assert.deepEqual(CategoryRulesEngine.getCustomRules(), [])
+  assert.notEqual(CategoryRulesEngine.predict('synthetic-owner-rule', 'PF').source, 'USER_RULE')
   assert.equal(financialStorage.getItem('profile'), null)
   InstallmentStore.addInstallment({ name: 'Synthetic B', monthlyValue: 20, category: 'Teste', currentInstallment: 1, totalInstallments: 3, endMonthYear: 'Teste', paymentMethod: 'Teste' })
   assert.equal(InstallmentStore.getInstallments()[0].name, 'Synthetic B')
@@ -61,6 +63,7 @@ test('each user starts empty; legacy caches are never attributed to another user
   assert.equal(InvestmentPortfolioStore.getAssets()[0].name, 'asset-A')
   assert.equal(GranularTransactionStore.getAll()[0].description, 'Synthetic A')
   assert.equal(CategoryRulesEngine.getCustomRules()[0].id, 'rule-A')
+  assert.equal(CategoryRulesEngine.predict('synthetic-owner-rule', 'PF').category, 'Categoria particular A')
   financialStorage.removeItem('leaomed_categorization_rules')
   InstallmentStore.saveInstallments([])
   CreditCardStore.saveCards([])
@@ -92,4 +95,18 @@ test('a delayed response from user A cannot enter user B cache or survive A-B-A'
   release({ ok: true, json: async () => ({ rules: [{ id: 'stale-A' }] }) })
   assert.deepEqual(await pendingRules, [])
   assert.deepEqual(CategoryRulesEngine.getCustomRules(), [])
+})
+
+test('client modules and their compiled output contain no private seed sentinels, including onboarding', () => {
+  const blocked = ['3336.28', '1865.33', '6837.22', '377.49', '274.66', '382.37', '493464', 'GVI126924', 'Dr. Rafael Leão', '9482']
+  for (const directory of ['components', 'utils']) {
+    const root = path.resolve(__dirname, '..', directory)
+    for (const relative of fs.readdirSync(root, { recursive: true }).filter(file => /\.(tsx|ts)$/.test(file))) {
+      const source = fs.readFileSync(path.join(root, relative), 'utf8')
+      const compiled = ts.transpileModule(source, {
+        compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX }
+      }).outputText
+      assert.equal(blocked.some(value => source.includes(value) || compiled.includes(value)), false, `${directory}/${relative} must contain no private seed`)
+    }
+  }
 })
