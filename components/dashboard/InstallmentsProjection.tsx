@@ -1,5 +1,7 @@
 'use client'
 
+import { getFinancialScopeVersion } from '@/utils/userScopedStorage'
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { 
   CalendarCheck2, 
@@ -137,6 +139,7 @@ export function InstallmentsProjection({
   selectedYear,
   onBack 
 }: InstallmentsProjectionProps) {
+  const financialScopeVersion = React.useRef(getFinancialScopeVersion()).current
   // Mês de referência no formato YYYY-MM
   const initialMonth = useMemo(() => {
     if (selectedYear !== undefined && selectedMonth !== undefined) {
@@ -234,6 +237,7 @@ export function InstallmentsProjection({
       fetch('/api/installments')
         .then(res => res.json())
         .then(data => {
+          if (getFinancialScopeVersion() !== financialScopeVersion) return
           if (!isMounted) return
           if (data.success && Array.isArray(data.installments) && data.installments.length > 0) {
             const dbMapped: InstallmentItem[] = data.installments.map((row: any) => ({
@@ -326,6 +330,7 @@ export function InstallmentsProjection({
   }
 
   const handleSaveEdit = () => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     if (!editingItem) return
 
     const monthlyVal = parseFloat(editForm.monthlyValue) || 0
@@ -345,6 +350,7 @@ export function InstallmentsProjection({
       endMonthYear: editForm.isPerpetual ? 'Mensal Contínuo' : formatEndMonthYear(currInst, totInst)
     }
 
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     InstallmentStore.updateInstallment(editingItem.id, updatedData)
 
     if (!isDemo) {
@@ -369,6 +375,7 @@ export function InstallmentsProjection({
 
   // Handlers de Adição
   const handleSaveNew = (e: React.FormEvent) => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     e.preventDefault()
     if (!newForm.name || !newForm.monthlyValue) return
 
@@ -424,7 +431,9 @@ export function InstallmentsProjection({
 
   // Handler de Exclusão
   const handleDelete = (id: string) => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     if (!confirm('Deseja realmente remover este parcelamento?')) return
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     InstallmentStore.deleteInstallment(id)
 
     if (!isDemo) {

@@ -53,7 +53,7 @@ export async function createSupabaseServerClient() {
       }
     );
   } catch (err) {
-    console.error('[Supabase Server] Falha ao inicializar cliente:', err);
+    console.error('[Supabase Server] Falha ao inicializar cliente:', err instanceof Error ? err.name : 'unknown_error');
     return null;
   }
 }
@@ -72,7 +72,7 @@ export async function getAuthenticatedUser() {
     
     return user;
   } catch (err) {
-    console.error('[Supabase Server] Erro ao recuperar sessão do usuário:', err);
+    console.error('[Supabase Server] Erro ao recuperar sessão do usuário:', err instanceof Error ? err.name : 'unknown_error');
     return null;
   }
 }

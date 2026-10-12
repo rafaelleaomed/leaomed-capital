@@ -1,5 +1,7 @@
 'use client'
 
+import { financialStorage } from '@/utils/userScopedStorage'
+
 import React, { useState } from 'react'
 import { 
   Sparkles, 
@@ -91,7 +93,7 @@ export function OnboardingWizardModal({
   // Carregar dados prévios do localStorage ao inicializar
   React.useEffect(() => {
     try {
-      const stored = localStorage.getItem('leaomed_user_custom_setup')
+      const stored = financialStorage.getItem('leaomed_user_custom_setup')
       if (stored) {
         const parsed = JSON.parse(stored)
         if (parsed.accounts && Array.isArray(parsed.accounts)) setSelectedAccounts(parsed.accounts)
@@ -177,7 +179,7 @@ export function OnboardingWizardModal({
     }
     // Salva no localStorage para persistência imediata
     try {
-      localStorage.setItem('leaomed_user_custom_setup', JSON.stringify(config))
+      financialStorage.setItem('leaomed_user_custom_setup', JSON.stringify(config))
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('leaomed_setup_updated', { detail: config }))
       }

@@ -1,5 +1,7 @@
 'use client'
 
+import { financialStorage } from '@/utils/userScopedStorage'
+
 import React, { useState, useEffect } from 'react'
 import { User, Settings, ChevronDown } from 'lucide-react'
 import { AccountSettingsModal } from './AccountSettingsModal'
@@ -21,17 +23,17 @@ export function UserAccountHeader({
 
   useEffect(() => {
     if (typeof window !== 'undefined' && initialEmail) {
-      const prevEmail = localStorage.getItem('leaomed_current_user_email')
+      const prevEmail = financialStorage.getItem('leaomed_current_user_email')
       if (prevEmail && prevEmail !== initialEmail) {
         // Novo usuário logado: isolar sessão
         window.dispatchEvent(new CustomEvent('leaomed_transactions_updated'))
       }
-      localStorage.setItem('leaomed_current_user_email', initialEmail)
+      financialStorage.setItem('leaomed_current_user_email', initialEmail)
     }
 
     // Carregar nome customizado salvo no perfil
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(`leaomed_user_profile_${initialEmail}`) || localStorage.getItem('leaomed_user_profile')
+      const saved = financialStorage.getItem('leaomed_user_profile')
       if (saved) {
         try {
           const parsed = JSON.parse(saved)

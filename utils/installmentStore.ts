@@ -1,4 +1,6 @@
-import { CreditCardStore } from './creditCardStore'
+
+import { financialStorage, getFinancialUserScope } from './userScopedStorage'
+
 
 export interface InstallmentItem {
   id: string
@@ -18,126 +20,7 @@ export interface InstallmentItem {
 
 const STORAGE_KEY = 'leaomed_installment_store_v2'
 
-export const DEFAULT_INSTALLMENTS: InstallmentItem[] = [
-  {
-    id: 'inst_tcross_card',
-    name: 'Parcela Entrada T-Cross Cartão',
-    category: 'Transporte',
-    subcategory: 'Parcela T-Cross Cartão',
-    monthlyValue: 6837.22,
-    currentInstallment: 6,
-    totalInstallments: 16,
-    endMonthYear: 'Abril/2027',
-    contractNotes: 'Localiza Frotas • Entrada do veículo parcelada no cartão',
-    paymentMethod: 'Cartão C6 Carbon Black PF',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_tcross_financing',
-    name: 'Financiamento T-Cross (Banco VW/Safra)',
-    category: 'Transporte',
-    subcategory: 'Parcela T-Cross Financiamento',
-    monthlyValue: 3336.28,
-    currentInstallment: 14,
-    totalInstallments: 36,
-    endMonthYear: 'Abril/2028',
-    contractNotes: 'Contrato CCB 493464 • 36 parcelas fixas',
-    paymentMethod: 'Débito em Conta (Banco Safra)',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_gramado_parks',
-    name: 'Parcela Gramado Parks (Buona Vitta GVI126924)',
-    category: 'Financiamento',
-    subcategory: 'Parcela Gramado Parks',
-    monthlyValue: 1865.33,
-    currentInstallment: 5,
-    totalInstallments: 70,
-    endMonthYear: 'Fevereiro/2032',
-    contractNotes: 'Contrato de multipropriedade GVI126924 • Reajustado pelo IPCA',
-    paymentMethod: 'Boleto Gramado Parks',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_condo_buona_vitta',
-    name: 'Condomínio Buona Vitta Resort',
-    category: 'Financiamento',
-    subcategory: 'Condomínio Buona Vitta',
-    monthlyValue: 377.49,
-    currentInstallment: 5,
-    totalInstallments: 999,
-    endMonthYear: 'Mensal Contínuo',
-    contractNotes: 'Condomínio mensal recorrente • Taxa de manutenção',
-    isPerpetual: true,
-    paymentMethod: 'Boleto Condomínio',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_s26_ultra',
-    name: 'Samsung S26 Ultra',
-    category: 'Compras',
-    subcategory: 'Eletrônicos',
-    monthlyValue: 274.66,
-    currentInstallment: 4,
-    totalInstallments: 21,
-    endMonthYear: 'Novembro/2027',
-    contractNotes: 'Aquisição smartphone em 21x',
-    paymentMethod: 'Cartão C6 Carbon Black PF',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_vivara',
-    name: 'Aliança Solitário Vivara',
-    category: 'Compras',
-    subcategory: 'Joias & Presentes',
-    monthlyValue: 382.37,
-    currentInstallment: 7,
-    totalInstallments: 10,
-    endMonthYear: 'Outubro/2026',
-    contractNotes: 'Término em Outubro/2026',
-    paymentMethod: 'Cartão C6 Carbon Black PF',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_lava_seca',
-    name: 'Lava e Seca Midea',
-    category: 'Casa',
-    subcategory: 'Eletrodomésticos',
-    monthlyValue: 355.00,
-    currentInstallment: 7,
-    totalInstallments: 10,
-    endMonthYear: 'Outubro/2026',
-    contractNotes: 'Término em Outubro/2026 • Fatura Itaú',
-    paymentMethod: 'Cartão Itaú PF',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_tv_tcl',
-    name: 'TV TCL 55"',
-    category: 'Casa',
-    subcategory: 'Eletrônicos',
-    monthlyValue: 250.92,
-    currentInstallment: 7,
-    totalInstallments: 10,
-    endMonthYear: 'Outubro/2026',
-    contractNotes: 'Término em Outubro/2026 • Fatura Nubank',
-    paymentMethod: 'Cartão Nubank PF',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_sofa',
-    name: 'Sofá Retrátil Sala',
-    category: 'Casa',
-    subcategory: 'Móveis',
-    monthlyValue: 197.00,
-    currentInstallment: 4,
-    totalInstallments: 10,
-    endMonthYear: 'Dezembro/2026',
-    contractNotes: 'Mobiliário residencial em 10x',
-    paymentMethod: 'Cartão C6 Carbon Black PF',
-    entityType: 'PF'
-  }
-]
+export const DEFAULT_INSTALLMENTS: InstallmentItem[] = []
 
 export function parseInstallmentPattern(description: string): {
   isInstallment: boolean
@@ -195,24 +78,24 @@ export function formatEndMonthYear(current: number, total: number): string {
 
 export class InstallmentStore {
   static getInstallments(): InstallmentItem[] {
-    if (typeof window === 'undefined') return DEFAULT_INSTALLMENTS
+    if (typeof window === 'undefined') return []
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
+      const raw = financialStorage.getItem(STORAGE_KEY)
       if (!raw) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_INSTALLMENTS))
-        return DEFAULT_INSTALLMENTS
+        financialStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_INSTALLMENTS))
+        return []
       }
       const parsed = JSON.parse(raw)
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_INSTALLMENTS
+      return Array.isArray(parsed) ? parsed : []
     } catch (_) {
-      return DEFAULT_INSTALLMENTS
+      return []
     }
   }
 
   static saveInstallments(items: InstallmentItem[]): void {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined' || !getFinancialUserScope()) return
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
+      financialStorage.setItem(STORAGE_KEY, JSON.stringify(items))
       window.dispatchEvent(new CustomEvent('leaomed_installments_updated', { detail: { installments: items } }))
     } catch (_) {}
   }

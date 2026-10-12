@@ -66,7 +66,7 @@ export default function CreditCardModal({
   const [closingDay, setClosingDay] = useState(20)
   const [dueDay, setDueDay] = useState(28)
   const [additionalCards, setAdditionalCards] = useState('Nenhum')
-  const [cardholder, setCardholder] = useState('Dr. Rafael Leão')
+  const [cardholder, setCardholder] = useState('Titular do cartão')
   const [lastDigits, setLastDigits] = useState('4821')
   const [badge, setBadge] = useState('Principal (PF) - Veículo & Pessoal')
   const [color, setColor] = useState('bg-[var(--capital-card,#f8fafc)]')
@@ -83,7 +83,7 @@ export default function CreditCardModal({
       setClosingDay(cardToEdit.closingDay || 20)
       setDueDay(cardToEdit.dueDay || 28)
       setAdditionalCards(cardToEdit.additionalCards || 'Nenhum')
-      setCardholder(cardToEdit.cardholder || 'Dr. Rafael Leão')
+      setCardholder(cardToEdit.cardholder || 'Titular do cartão')
       setLastDigits(cardToEdit.lastDigits || '4821')
       setBadge(cardToEdit.badge || 'Principal (PF)')
       setColor(cardToEdit.color || 'bg-[var(--capital-card,#f8fafc)]')
@@ -97,7 +97,7 @@ export default function CreditCardModal({
       setClosingDay(15)
       setDueDay(22)
       setAdditionalCards('Nenhum')
-      setCardholder('Dr. Rafael Leão')
+      setCardholder('Titular do cartão')
       setLastDigits('1234')
       setBadge('Principal (PF)')
       setColor('bg-[var(--capital-card,#f8fafc)]')
@@ -231,7 +231,7 @@ export default function CreditCardModal({
             <div className="flex items-end justify-between text-xs z-10 pt-1 border-t border-[var(--capital-line,#e4dfd3)]">
               <div>
                 <span className="text-[9px] uppercase tracking-wider block opacity-70">Titular</span>
-                <span className="font-bold text-[11px] truncate">{cardholder || 'Dr. Rafael Leão'}</span>
+                <span className="font-bold text-[11px] truncate">{cardholder || 'Titular do cartão'}</span>
               </div>
               <div className="text-right">
                 <span className="text-[9px] uppercase tracking-wider block opacity-70">Limite Total</span>
@@ -405,7 +405,7 @@ export default function CreditCardModal({
                 type="text"
                 value={cardholder}
                 onChange={(e) => setCardholder(e.target.value)}
-                placeholder="Dr. Rafael Leão"
+                placeholder="Titular do cartão"
                 className="w-full px-3 py-2 rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]"
               />
             </div>
@@ -478,7 +478,7 @@ export default function CreditCardModal({
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: Parcela Lava e Seca Midea (R$ 355,00) / Entrada T-Cross"
+              placeholder="Ex: Parcela Lava e Seca Midea (R$ 355,00) / Entrada Veículo"
               className="w-full px-3 py-2 rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]"
             />
           </div>

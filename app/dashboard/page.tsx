@@ -73,7 +73,7 @@ export default async function DashboardPage({
         COALESCE(SUM(CASE WHEN t.amount < 0 AND t.is_ignored = FALSE AND t.is_fixed = TRUE THEN ABS(t.amount) ELSE 0 END), 0) as fixed_expenses,
         COUNT(t.id) as total_transactions
       FROM public.transactions t
-      LEFT JOIN public.accounts a ON a.id = t.account_id
+      LEFT JOIN public.accounts a ON a.id = t.account_id AND a.user_id = t.user_id
       WHERE t.user_id = ${userId}
         AND t.date >= ${startDate} AND t.date <= ${endDate}
         AND (
@@ -99,7 +99,7 @@ export default async function DashboardPage({
         COALESCE(t.category, 'Outros') as name,
         SUM(ABS(t.amount)) as total
       FROM public.transactions t
-      LEFT JOIN public.accounts a ON a.id = t.account_id
+      LEFT JOIN public.accounts a ON a.id = t.account_id AND a.user_id = t.user_id
       WHERE t.user_id = ${userId}
         AND t.amount < 0
         AND t.is_ignored = FALSE

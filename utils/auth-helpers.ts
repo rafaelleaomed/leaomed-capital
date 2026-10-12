@@ -1,6 +1,28 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import type { User } from '@supabase/supabase-js';
+
+type AuthenticatedUserResult = {
+  userId: string | null;
+  user: User | null;
+  errorResponse: NextResponse | null;
+};
+
+export async function getAuthenticatedUserId(): Promise<AuthenticatedUserResult> {
+  try {
+    return await resolveAuthenticatedUserId();
+  } catch {
+    return {
+      userId: null,
+      user: null,
+      errorResponse: NextResponse.json(
+        { success: false, error: 'Não foi possível validar a sessão.' },
+        { status: 503, headers: { 'Cache-Control': 'private, no-store' } }
+      ),
+    };
+  }
+}
 
 /**
  * Helper para Route Handlers: extrai o userId autenticado da sessão
@@ -8,11 +30,7 @@ import { NextResponse } from 'next/server';
  *
  * Retorna { userId, user, errorResponse } — se errorResponse não for null, retorne-o imediatamente.
  */
-export async function getAuthenticatedUserId(): Promise<{
-  userId: string | null;
-  user: any | null;
-  errorResponse: NextResponse | null;
-}> {
+async function resolveAuthenticatedUserId(): Promise<AuthenticatedUserResult> {
   const cookieStore = await cookies();
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

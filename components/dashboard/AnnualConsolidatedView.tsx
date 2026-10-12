@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { TrendingUp, TrendingDown, DollarSign, PieChart, ShieldCheck, ArrowUpRight, ArrowDownRight, Sparkles, Calendar, Layers } from 'lucide-react'
+import { GranularTransactionStore } from '@/utils/granularTransactionStore'
 import { DashboardFilter } from '@/utils/dashboardData'
 
 interface AnnualConsolidatedViewProps {
@@ -10,17 +11,7 @@ interface AnnualConsolidatedViewProps {
 }
 
 // Dados anuais auditados mês a mês de 2026 (Jan a Set)
-const REAL_ANNUAL_DATA_2026 = [
-  { month: 'Jan', fullName: 'Janeiro', incomeConsolidated: 23000.00, expensesConsolidated: 10860.21, incomePf: 19000.00, expensesPf: 6376.24, incomePj: 23000.00, expensesPj: 4483.97 },
-  { month: 'Fev', fullName: 'Fevereiro', incomeConsolidated: 29300.00, expensesConsolidated: 11627.37, incomePf: 23500.00, expensesPf: 6517.47, incomePj: 29300.00, expensesPj: 5109.90 },
-  { month: 'Mar', fullName: 'Março', incomeConsolidated: 24600.00, expensesConsolidated: 10006.33, incomePf: 22000.00, expensesPf: 6992.65, incomePj: 24600.00, expensesPj: 3013.68 },
-  { month: 'Abr', fullName: 'Abril', incomeConsolidated: 26979.69, expensesConsolidated: 24257.48, incomePf: 22879.69, expensesPf: 20982.68, incomePj: 26600.00, expensesPj: 3274.80 },
-  { month: 'Mai', fullName: 'Maio', incomeConsolidated: 26098.91, expensesConsolidated: 30398.25, incomePf: 23398.91, expensesPf: 27004.93, incomePj: 25700.00, expensesPj: 3393.32 },
-  { month: 'Jun', fullName: 'Junho', incomeConsolidated: 29479.99, expensesConsolidated: 31985.63, incomePf: 25979.99, expensesPf: 28729.65, incomePj: 26500.00, expensesPj: 3255.98 },
-  { month: 'Jul', fullName: 'Julho', incomeConsolidated: 26720.00, expensesConsolidated: 17475.76, incomePf: 23920.00, expensesPf: 16984.55, incomePj: 26300.00, expensesPj: 491.21 },
-  { month: 'Ago', fullName: 'Agosto', incomeConsolidated: 30770.00, expensesConsolidated: 18657.29, incomePf: 24000.00, expensesPf: 18166.08, incomePj: 27400.00, expensesPj: 491.21 },
-  { month: 'Set', fullName: 'Setembro', incomeConsolidated: 27300.00, expensesConsolidated: 20869.01, incomePf: 24500.00, expensesPf: 17619.01, incomePj: 26800.00, expensesPj: 3250.00 },
-]
+
 
 // Modelo Demonstrativo Anual Genérico
 const DEMO_ANNUAL_DATA_2026 = [
@@ -38,7 +29,25 @@ const DEMO_ANNUAL_DATA_2026 = [
 export function AnnualConsolidatedView({ currentFilter, isDemo = false }: AnnualConsolidatedViewProps) {
   const [hoveredMonth, setHoveredMonth] = useState<string | null>(null)
 
-  const rawData = isDemo ? DEMO_ANNUAL_DATA_2026 : REAL_ANNUAL_DATA_2026
+  const [ownTransactions, setOwnTransactions] = useState(() => GranularTransactionStore.getAll())
+  useEffect(() => {
+    const refresh = () => setOwnTransactions(GranularTransactionStore.getAll())
+    refresh()
+    window.addEventListener('leaomed_transactions_updated', refresh)
+    return () => window.removeEventListener('leaomed_transactions_updated', refresh)
+  }, [])
+  const rawData = isDemo ? DEMO_ANNUAL_DATA_2026 : DEMO_ANNUAL_DATA_2026.map((d, index) => {
+    const rows = ownTransactions.filter(t => !t.isIgnored && t.date.startsWith('2026-' + String(index + 1).padStart(2, '0')))
+    const sum = (entity: 'PF' | 'PJ', income: boolean) => rows.filter(t => t.entityType === entity && (income ? t.amount > 0 : t.amount < 0)).reduce((total, t) => total + Math.abs(t.amount), 0)
+    const incomePf = sum('PF', true), expensesPf = sum('PF', false), incomePj = sum('PJ', true), expensesPj = sum('PJ', false)
+    return { ...d, incomeConsolidated: incomePf + incomePj, expensesConsolidated: expensesPf + expensesPj, incomePf, expensesPf, incomePj, expensesPj }
+  })
+  const annualCategories = useMemo(() => {
+    const totals = new Map<string, number>()
+    ownTransactions.filter(t => !t.isIgnored && t.amount < 0 && t.date.startsWith('2026-') && (currentFilter === 'CONSOLIDATED' || t.entityType === currentFilter)).forEach(t => totals.set(t.category, (totals.get(t.category) || 0) + Math.abs(t.amount)))
+    const total = [...totals.values()].reduce((a, b) => a + b, 0)
+    return [...totals].map(([name, amount]) => ({ name, amount, pct: total > 0 ? Math.round(amount / total * 1000) / 10 : 0, color: '#3B82F6' }))
+  }, [ownTransactions, currentFilter])
 
   // Mapear dados conforme filtro ativo (Consolidado, PF ou PJ)
   const monthlyItems = useMemo(() => {
@@ -238,7 +247,7 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
 
         {/* Rodapé do Gráfico com Análise Executiva */}
         <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] pt-2 gap-2">
-          <span>* Observação Contábil: Os picos de despesas em Maio e Junho/2026 refletem a entrada e quitação do T-Cross e tributos concentrados.</span>
+          <span>* Observação Contábil: O consolidado anual aguarda lançamentos próprios para apuração.</span>
           <span className="font-bold text-[var(--capital-success,#157449)] dark:text-[var(--capital-success,#157449)]">Total Auditado: 9 meses</span>
         </div>
       </div>
@@ -295,13 +304,7 @@ export function AnnualConsolidatedView({ currentFilter, isDemo = false }: Annual
           </div>
 
           <div className="space-y-3">
-            {[
-              { name: 'Transporte & Veículo (T-Cross Localiza + Safra)', amount: 62450.00, pct: 35.5, color: '#3B82F6' },
-              { name: 'Moradia & Condomínio / Casa', amount: 38200.00, pct: 21.7, color: '#10B981' },
-              { name: 'Tributos Simples Nacional / DAS (PJ)', amount: 28400.00, pct: 16.1, color: '#F59E0B' },
-              { name: 'Financiamentos & Imóveis (Gramado Parks)', amount: 16788.00, pct: 9.5, color: '#8B5CF6' },
-              { name: 'Compras, Saúde & Pessoal', amount: 30299.33, pct: 17.2, color: '#EC4899' },
-            ].map(cat => (
+            {annualCategories.map(cat => (
               <div key={cat.name} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">

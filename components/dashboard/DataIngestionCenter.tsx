@@ -1,5 +1,7 @@
 'use client'
 
+import { getFinancialScopeVersion } from '@/utils/userScopedStorage'
+
 import React, { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
@@ -60,6 +62,7 @@ export interface ProcessedBatch {
 }
 
 export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
+  const financialScopeVersion = React.useRef(getFinancialScopeVersion()).current
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'INVOICE' | 'PRINT' | 'MANUAL' | 'OPEN_FINANCE'>('INVOICE')
   const [isProcessing, setIsProcessing] = useState(false)
@@ -166,6 +169,7 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
       let data: any = null
       try {
         data = await response.json()
+        if (getFinancialScopeVersion() !== financialScopeVersion) return
       } catch (_) {
         data = null
       }

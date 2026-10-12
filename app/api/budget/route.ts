@@ -119,7 +119,7 @@ export async function GET(request: Request) {
       }
     });
   } catch (error) {
-    console.error('Erro na rota /api/budget:', error);
+    console.error('Erro na rota /api/budget:', error instanceof Error ? error.name : 'unknown_error');
     return NextResponse.json(
       { success: false, error: 'Falha ao buscar dados orçamentários do banco.' },
       { status: 500 }

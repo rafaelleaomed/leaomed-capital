@@ -1,5 +1,7 @@
 'use client'
 
+import { financialStorage } from '@/utils/userScopedStorage'
+
 import { AccessibleDialog } from './AccessibleDialog'
 
 import React, { useState, useMemo, useEffect } from 'react'
@@ -42,8 +44,8 @@ const DEFAULT_SUBCATEGORIES_BY_CATEGORY: Record<string, string[]> = {
     'Combustível',
     'Estacionamentos',
     'Táxi / Uber',
-    'Parcela T-Cross Financiamento',
-    'Parcela T-Cross Cartão',
+    'Parcela Veículo Financiamento',
+    'Parcela Veículo Cartão',
     'Seguro Auto',
     'Sem Parar / Pedágio',
     'IPVA / Licenciamento',
@@ -113,8 +115,8 @@ const DEFAULT_SUBCATEGORIES_BY_CATEGORY: Record<string, string[]> = {
   'Financiamento': [
     'Parcela Veículo',
     'Parcela Imóvel / Terreno',
-    'Parcela Gramados Parks',
-    'Condomínio Buona Vitta',
+    'Parcela Imóvel',
+    'Condomínio Imóvel',
     'Empréstimos Bancários'
   ],
   'Despesas Pessoais': [
@@ -154,7 +156,7 @@ const DEFAULT_SUBCATEGORIES_BY_CATEGORY: Record<string, string[]> = {
   ],
   // Receitas
   'Faturamento Hospitalar & PJ': [
-    'Plantão Camarinha',
+    'Plantão Médico',
     'UPAs Contagem',
     'Hospital Madre Teresa',
     'Hospital Mater Dei',
@@ -254,11 +256,11 @@ export function QuickTransactionModal({
       }
       if (typeof window !== 'undefined') {
         try {
-          const exp = localStorage.getItem('leaomed_custom_expense_categories')
+          const exp = financialStorage.getItem('leaomed_custom_expense_categories')
           if (exp) setCustomExpenseCategories(JSON.parse(exp))
-          const inc = localStorage.getItem('leaomed_custom_income_categories')
+          const inc = financialStorage.getItem('leaomed_custom_income_categories')
           if (inc) setCustomIncomeCategories(JSON.parse(inc))
-          const subs = localStorage.getItem('leaomed_custom_subcategories_map')
+          const subs = financialStorage.getItem('leaomed_custom_subcategories_map')
           if (subs) setCustomSubcategoriesMap(JSON.parse(subs))
         } catch (_) {}
       }
@@ -336,13 +338,13 @@ export function QuickTransactionModal({
       if (!expenseCategories.includes(trimmed) && !customExpenseCategories.includes(trimmed)) {
         const updated = [...customExpenseCategories, trimmed]
         setCustomExpenseCategories(updated)
-        try { localStorage.setItem('leaomed_custom_expense_categories', JSON.stringify(updated)) } catch (_) {}
+        try { financialStorage.setItem('leaomed_custom_expense_categories', JSON.stringify(updated)) } catch (_) {}
       }
     } else {
       if (!incomeCategories.includes(trimmed) && !customIncomeCategories.includes(trimmed)) {
         const updated = [...customIncomeCategories, trimmed]
         setCustomIncomeCategories(updated)
-        try { localStorage.setItem('leaomed_custom_income_categories', JSON.stringify(updated)) } catch (_) {}
+        try { financialStorage.setItem('leaomed_custom_income_categories', JSON.stringify(updated)) } catch (_) {}
       }
     }
     setCategory(trimmed)
@@ -362,7 +364,7 @@ export function QuickTransactionModal({
         [category]: [...currentSubs, trimmed]
       }
       setCustomSubcategoriesMap(updatedMap)
-      try { localStorage.setItem('leaomed_custom_subcategories_map', JSON.stringify(updatedMap)) } catch (_) {}
+      try { financialStorage.setItem('leaomed_custom_subcategories_map', JSON.stringify(updatedMap)) } catch (_) {}
     }
     setSubcategory(trimmed)
     setSubcategoryMode('SELECT')
@@ -431,10 +433,10 @@ export function QuickTransactionModal({
     setTimeout(() => {
       // Salva no localStorage para sincronizar com a planilha e histórico
       try {
-        const storedTxs = localStorage.getItem('leaomed_manual_transactions')
+        const storedTxs = financialStorage.getItem('leaomed_manual_transactions')
         const currentList = storedTxs ? JSON.parse(storedTxs) : []
         currentList.unshift(newTx)
-        localStorage.setItem('leaomed_manual_transactions', JSON.stringify(currentList))
+        financialStorage.setItem('leaomed_manual_transactions', JSON.stringify(currentList))
 
         // Despacha evento global para atualizar a planilha em tempo real
         window.dispatchEvent(new CustomEvent('leaomed_new_transaction', { detail: newTx }))

@@ -1,5 +1,7 @@
 'use client'
 
+import { getFinancialScopeVersion } from '@/utils/userScopedStorage'
+
 import React, { useState, useEffect, useMemo } from 'react'
 import { 
   CreditCard, 
@@ -135,7 +137,7 @@ export const EXPENSE_TAXONOMY: Record<string, string[]> = {
 
 export const INCOME_TAXONOMY: Record<string, string[]> = {
   'Faturamento Hospitalar & PJ': [
-    'Plantão Camarinha',
+    'Plantão Médico',
     'UPAs Contagem',
     'Hospital Madre Teresa',
     'Hospital Mater Dei',
@@ -144,7 +146,7 @@ export const INCOME_TAXONOMY: Record<string, string[]> = {
     'Outros Plantões'
   ],
   'Receita PF & Pró-Labore': [
-    'Pró-Labore Camarinha',
+    'Pró-Labore Médico',
     'Salários & Remunerações',
     'Consultas Particulares',
     'Reembolso / Transferências',
@@ -188,6 +190,7 @@ export function GranularExpenseAuditor({
   selectedYear,
   initialCategory
 }: GranularExpenseAuditorProps) {
+  const financialScopeVersion = React.useRef(getFinancialScopeVersion()).current
   const [transactions, setTransactions] = useState<GranularTransaction[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [txTypeFilter, setTxTypeFilter] = useState<'ALL' | 'EXPENSE' | 'INCOME'>('ALL')
@@ -336,6 +339,7 @@ export function GranularExpenseAuditor({
     if (!isDemo) {
       try {
         const fresh = await GranularTransactionStore.fetchFromApi(periodTarget || selectedPeriod)
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
         if (fresh && fresh.length > 0) {
           setTransactions(fresh.map(t => ({
             ...t,
@@ -504,9 +508,11 @@ export function GranularExpenseAuditor({
       }
 
       const data = await resp.json()
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
       if (data.success && data.results) {
         // Atualiza transações no store com as sugestões retornadas (Modo Sombra)
         data.results.forEach((res: any) => {
+          if (getFinancialScopeVersion() !== financialScopeVersion) return
           GranularTransactionStore.updateTransaction(res.transaction_id, {
             categorySource: res.source,
             decisionType: res.decision_type,
@@ -539,6 +545,7 @@ export function GranularExpenseAuditor({
   const handleAcceptAiSuggestion = (tx: GranularTransaction) => {
     if (!tx.aiSuggestedCategory) return
 
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     GranularTransactionStore.updateTransaction(tx.id, {
       category: tx.aiSuggestedCategory,
       subcategory: tx.aiSuggestedSubcategory || 'Outros',
@@ -555,6 +562,8 @@ export function GranularExpenseAuditor({
 
   // Rejeita sugestão do Jev
   const handleRejectAiSuggestion = (tx: GranularTransaction) => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     GranularTransactionStore.updateTransaction(tx.id, {
       categorizationStatus: 'rejected',
       aiReviewRequired: true
@@ -847,6 +856,7 @@ export function GranularExpenseAuditor({
             alwaysApply: true
           })
         }
+        if (getFinancialScopeVersion() !== financialScopeVersion) return
         GranularTransactionStore.updateTransaction(id, {
           amount: finalAmount,
           category: finalCat,
@@ -872,6 +882,7 @@ export function GranularExpenseAuditor({
     if (!confirm(`Deseja realmente excluir os ${count} lançamentos selecionados?`)) return
 
     selectedTxIds.forEach(id => {
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
       GranularTransactionStore.deleteTransaction(id)
     })
     setSelectedTxIds(new Set())
@@ -886,6 +897,8 @@ export function GranularExpenseAuditor({
   }
 
   const handleDelete = (id: string) => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     GranularTransactionStore.deleteTransaction(id)
     setDeletingId(null)
   }
@@ -918,6 +931,7 @@ export function GranularExpenseAuditor({
   }
 
   const handleSaveEdit = () => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     if (!editingTx) return
 
     const parsedVal = parseFloat(editForm.amount) || 0
@@ -929,6 +943,7 @@ export function GranularExpenseAuditor({
 
     const fallbackCat = editForm.txType === 'INCOME' ? 'Receita PF & Pró-Labore' : 'Despesas Pessoais'
 
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     GranularTransactionStore.updateTransaction(editingTx.id, {
       description: editForm.description.trim(),
       amount: finalVal,
@@ -969,6 +984,7 @@ export function GranularExpenseAuditor({
 
     const fallbackCat = newForm.txType === 'INCOME' ? 'Receita PF & Pró-Labore' : 'Despesas Pessoais'
 
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     GranularTransactionStore.addTransaction({
       entityType: newForm.entityType,
       date: newForm.date,
@@ -2119,7 +2135,7 @@ export function GranularExpenseAuditor({
                 <input 
                   type="text"
                   required
-                  placeholder="Ex: Pix recebido, McDonald's, Plantão Camarinha..."
+                  placeholder="Ex: Pix recebido, McDonald's, Plantão Médico..."
                   value={newForm.description}
                   onChange={(e) => {
                     const desc = e.target.value

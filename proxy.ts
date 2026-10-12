@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://matwnfjaopdiwnmimweo.supabase.co';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hdHduZmphb3BkaXdubWltd2VvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NTk4OTUsImV4cCI6MjEwNjEzNTg5NX0.LfyoTG1HI2Ae8kX2QMtNpez3moodA9uRf7uTFCNrP3k';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 ano de persistência
 
 function copyCookies(from: NextResponse, to: NextResponse): NextResponse {
+  to.headers.set('Cache-Control', 'private, no-store, max-age=0');
   from.cookies.getAll().forEach((cookie) => {
     to.cookies.set(cookie.name, cookie.value, {
       ...cookie,
@@ -28,6 +29,15 @@ function copyCookies(from: NextResponse, to: NextResponse): NextResponse {
  * - Protege /dashboard/* e /api/*
  */
 export async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const isPrivate = pathname.startsWith('/dashboard') || (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/') && !pathname.startsWith('/api/webhooks/'));
+  const privateResponse = (result: NextResponse) => {
+    if (isPrivate) {
+      result.headers.set('Cache-Control', 'private, no-store, max-age=0');
+      result.headers.set('Vary', 'Cookie');
+    }
+    return result;
+  };
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -35,6 +45,7 @@ export async function proxy(request: NextRequest) {
   });
 
   try {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) throw new Error('Authentication unavailable');
     const supabase = createServerClient(
       SUPABASE_URL,
       SUPABASE_ANON_KEY,
@@ -70,10 +81,10 @@ export async function proxy(request: NextRequest) {
 
     // Renova a sessão (importante para tokens JWT expirando)
     const {
-      data: { user },
+      data: { user: authenticatedUser }, error,
     } = await supabase.auth.getUser();
+    const user = error ? null : authenticatedUser;
 
-    const { pathname } = request.nextUrl;
 
     // Se o usuário já está logado e acessa a raiz (/), vai direto ao dashboard preservando cookies
     if (pathname === '/' && user) {
@@ -123,10 +134,16 @@ export async function proxy(request: NextRequest) {
     }
 
   } catch (e) {
-    console.error('[Proxy Middleware] Erro inesperado:', e);
+    console.error('[Proxy Middleware] Autenticação indisponível');
+    if (isPrivate) {
+      return privateResponse(NextResponse.json(
+        { success: false, error: 'Não foi possível validar a sessão. Tente novamente.' },
+        { status: 503 }
+      ));
+    }
   }
 
-  return response;
+  return privateResponse(response);
 }
 
 export const config = {

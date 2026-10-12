@@ -1,5 +1,7 @@
 'use client'
 
+import { financialStorage, getFinancialScopeVersion } from '@/utils/userScopedStorage'
+
 import React, { useState, useMemo } from 'react'
 import { 
   PieChart, 
@@ -39,6 +41,7 @@ interface AssetRow {
 }
 
 export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
+  const financialScopeVersion = React.useRef(getFinancialScopeVersion()).current
   // Metas oficiais de alocação estratégica de portfólio
   const [targets, setTargets] = useState({
     'Ações': 25,
@@ -52,9 +55,9 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
   const [emergencyMonths, setEmergencyMonths] = useState<number>(10)
   const [isInvestModalOpen, setIsInvestModalOpen] = useState(false)
   
-  // O custo fixo mensal estimado deve vir principalmente do somatório das despesas obrigatórias da planilha (R$ 25.528,57)
-  const [obligatoryBudgetTotal, setObligatoryBudgetTotal] = useState<number>(25528.57)
-  const [fixedCostInput, setFixedCostInput] = useState<number>(25528.57)
+  // O custo fixo mensal estimado deve vir principalmente do somatório das despesas obrigatórias da planilha (calculado pelas despesas próprias)
+  const [obligatoryBudgetTotal, setObligatoryBudgetTotal] = useState<number>(0)
+  const [fixedCostInput, setFixedCostInput] = useState<number>(0)
   const [isSyncedWithBudget, setIsSyncedWithBudget] = useState<boolean>(true)
 
   // Portfólio oficial conciliado integrado com o Store central
@@ -65,7 +68,7 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
   // Carregar metas personalizadas do Setup Wizard
   const loadCustomTargets = React.useCallback(() => {
     try {
-      const stored = localStorage.getItem('leaomed_user_custom_setup')
+      const stored = financialStorage.getItem('leaomed_user_custom_setup')
       if (stored) {
         const parsed = JSON.parse(stored)
         if (parsed.investmentTargets && Array.isArray(parsed.investmentTargets)) {
@@ -98,7 +101,7 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
 
     // Carregar despesas obrigatórias da planilha (Base principal para reserva)
     try {
-      const savedObligatory = localStorage.getItem('leaomed_obligatory_expenses')
+      const savedObligatory = financialStorage.getItem('leaomed_obligatory_expenses')
       if (savedObligatory) {
         const val = parseFloat(savedObligatory)
         if (!isNaN(val) && val > 0) {
@@ -143,6 +146,7 @@ export function InvestmentRebalance({ isDemo = false }: { isDemo?: boolean }) {
     fetch('/api/investments')
       .then(res => res.json())
       .then(data => {
+          if (getFinancialScopeVersion() !== financialScopeVersion) return
         if (!isMounted) return
         if (data.success && data.data) {
           if (Array.isArray(data.data.assets) && data.data.assets.length > 0) {

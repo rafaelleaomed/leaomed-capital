@@ -1,5 +1,7 @@
 'use client'
 
+import { financialStorage, getFinancialScopeVersion } from '@/utils/userScopedStorage'
+
 import React, { useState, useEffect, useMemo } from 'react'
 import { 
   ShieldCheck, 
@@ -65,33 +67,7 @@ export interface PjMonthTaxData {
   contabilidade: number
 }
 
-export const INITIAL_PJ_HISTORY: PjMonthTaxData[] = [
-  { month: 'set_24', label: 'Set/24', faturamento: 12600.00, simples: 0.00, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 293.65, outras: 0.00, contabilidade: 0.00 },
-  { month: 'out_24', label: 'Out/24', faturamento: 0.00, simples: 857.80, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 58.84, outras: 0.00, contabilidade: 427.88 },
-  { month: 'nov_24', label: 'Nov/24', faturamento: 12400.00, simples: 804.28, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 58.84, outras: 0.00, contabilidade: 427.88 },
-  { month: 'dez_24', label: 'Dez/24', faturamento: 10400.00, simples: 0.00, irpj: 25.84, csll: 22.61, cofins: 90.77, pis: 19.70, inss: 280.38, iss: 206.73, darf: 58.84, outras: 0.00, contabilidade: 427.88 },
-  { month: 'jan_25', label: 'Jan/25', faturamento: 15900.00, simples: 0.00, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 0.00, outras: 0.00, contabilidade: 427.88 },
-  { month: 'fev_25', label: 'Fev/25', faturamento: 22600.00, simples: 954.00, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 60.39, outras: 0.00, contabilidade: 460.00 },
-  { month: 'mar_25', label: 'Mar/25', faturamento: 0.00, simples: 1356.00, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 183.56, outras: 36.25, contabilidade: 460.00 },
-  { month: 'abr_25', label: 'Abr/25', faturamento: 16700.00, simples: 1002.01, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 651.84, outras: 0.00, contabilidade: 460.00 },
-  { month: 'mai_25', label: 'Mai/25', faturamento: 24700.00, simples: 1482.00, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 1250.24, outras: 161.36, contabilidade: 460.00 },
-  { month: 'jun_25', label: 'Jun/25', faturamento: 30900.00, simples: 1854.00, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 1929.27, outras: 0.00, contabilidade: 460.00 },
-  { month: 'jul_25', label: 'Jul/25', faturamento: 24900.00, simples: 1603.99, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 1397.15, outras: 0.00, contabilidade: 460.00 },
-  { month: 'ago_25', label: 'Ago/25', faturamento: 27800.00, simples: 1832.41, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 1751.90, outras: 0.00, contabilidade: 460.00 },
-  { month: 'set_25', label: 'Set/25', faturamento: 33500.00, simples: 2304.34, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 2148.07, outras: 0.00, contabilidade: 460.00 },
-  { month: 'out_25', label: 'Out/25', faturamento: 30000.00, simples: 2151.74, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 2354.32, outras: 0.00, contabilidade: 0.00 },
-  { month: 'nov_25', label: 'Nov/25', faturamento: 28100.00, simples: 2094.29, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 2216.82, outras: 0.00, contabilidade: 460.00 },
-  { month: 'dez_25', label: 'Dez/25', faturamento: 24900.00, simples: 1910.96, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 2216.82, outras: 0.00, contabilidade: 460.00 },
-  { month: 'jan_26', label: 'Jan/26', faturamento: 23000.00, simples: 0.00, irpj: 72.29, csll: 63.25, cofins: 253.90, pis: 55.12, inss: 784.30, iss: 578.29, darf: 2216.82, outras: 0.00, contabilidade: 460.00 },
-  { month: 'fev_26', label: 'Fev/26', faturamento: 29300.00, simples: 0.00, irpj: 95.06, csll: 83.18, cofins: 333.90, pis: 72.48, inss: 1031.40, iss: 760.48, darf: 2242.19, outras: 0.00, contabilidade: 491.21 },
-  { month: 'mar_26', label: 'Mar/26', faturamento: 24600.00, simples: 0.00, irpj: 81.10, csll: 70.96, cofins: 284.86, pis: 61.84, inss: 879.92, iss: 648.79, darf: 495.00, outras: 0.00, contabilidade: 491.21 },
-  { month: 'abr_26', label: 'Abr/26', faturamento: 26600.00, simples: 0.00, irpj: 87.89, csll: 76.90, cofins: 308.71, pis: 67.02, inss: 953.60, iss: 703.12, darf: 0.00, outras: 0.00, contabilidade: 491.21 },
-  { month: 'mai_26', label: 'Mai/26', faturamento: 25700.00, simples: 0.00, irpj: 85.83, csll: 75.10, cofins: 301.47, pis: 65.44, inss: 931.23, iss: 686.62, darf: 1136.35, outras: 206.42, contabilidade: 491.21 },
-  { month: 'jun_26', label: 'Jun/26', faturamento: 26500.00, simples: 0.00, irpj: 88.59, csll: 77.52, cofins: 311.17, pis: 67.55, inss: 961.21, iss: 708.73, darf: 550.00, outras: 0.00, contabilidade: 491.21 },
-  { month: 'jul_26', label: 'Jul/26', faturamento: 26300.00, simples: 2257.83, irpj: 90.31, csll: 79.02, cofins: 317.23, pis: 68.86, inss: 979.90, iss: 722.51, darf: 1040.02, outras: 0.00, contabilidade: 491.21 },
-  { month: 'ago_26', label: 'Ago/26', faturamento: 27100.00, simples: 2257.83, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 1283.97, outras: 0.00, contabilidade: 491.21 },
-  { month: 'set_26', label: 'Set/26', faturamento: 23300.00, simples: 1939.78, irpj: 0.00, csll: 0.00, cofins: 0.00, pis: 0.00, inss: 0.00, iss: 0.00, darf: 1040.02, outras: 0.00, contabilidade: 491.21 }
-]
+export const INITIAL_PJ_HISTORY: PjMonthTaxData[] = []
 
 
 export interface SubcategoryItem {
@@ -153,6 +129,7 @@ export function getCategoryColor(name: string) {
 }
 
 export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialTab, selectedMonth, selectedYear }: BudgetBreakdownProps) {
+  const financialScopeVersion = React.useRef(getFinancialScopeVersion()).current
   // Determina a aba inicial de acordo com o filtro global
   const defaultTab: BudgetScopeTab = useMemo(() => {
     if (initialTab === 'RECEITAS') return currentFilter === 'PJ' ? 'INCOME_PJ' : 'INCOME_PF'
@@ -481,7 +458,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
   ], [])
 
   // Dados reais entram somente pela API autenticada. O navegador nunca toma uma
-  // decisão de acesso baseada em e-mail gravado no localStorage.
+  // decisão de acesso baseada em e-mail gravado no financialStorage.
   const baseExpensePFCategories = isDemo ? demoExpensePFCategories : emptyExpensePFCategories
   const baseExpensePJCategories = isDemo ? demoExpensePJCategories : emptyExpensePJCategories
   const baseIncomePJCategories = isDemo ? demoIncomePJCategories : emptyIncomePJCategories
@@ -512,6 +489,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
       try {
         const res = await fetch(`/api/budget?period=${period}&filter=${currentFilter}`)
         const json = await res.json()
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
         if (json?.success && json?.data?.categories && json.data.categories.length > 0) {
           const apiCats: CategoryGroup[] = json.data.categories.map((c: any) => ({
             name: c.name,
@@ -544,10 +522,10 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
   // Carregar edições e exclusões locais salvas no localStorage isolado por usuário
   useEffect(() => {
     try {
-      const storedDeleted = localStorage.getItem('leaomed_deleted_budget_items')
+      const storedDeleted = financialStorage.getItem('leaomed_deleted_budget_items')
       const deletedKeys: string[] = storedDeleted ? JSON.parse(storedDeleted) : []
 
-      const savedEdits = localStorage.getItem('leaomed_custom_budget_edits_v2')
+      const savedEdits = financialStorage.getItem('leaomed_custom_budget_edits_v2')
       const editsMap: Record<string, { name?: string; value: number; is_fixed?: boolean }> = savedEdits ? JSON.parse(savedEdits) : {}
 
       const applyUpdates = (cats: CategoryGroup[], scopeKey: string) => {
@@ -576,13 +554,13 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
       setIncomePJCats(prev => applyUpdates(prev, 'INCOME_PJ'))
       setIncomePFCats(prev => applyUpdates(prev, 'INCOME_PF'))
 
-      const storedPjTax = localStorage.getItem('leaomed_pj_tax_history_v2')
+      const storedPjTax = financialStorage.getItem('leaomed_pj_tax_history_v2')
       if (storedPjTax) {
         try {
           setPjTaxHistory(JSON.parse(storedPjTax))
         } catch (_) {}
       }
-      const storedBoletos = localStorage.getItem('leaomed_pj_uploaded_boletos')
+      const storedBoletos = financialStorage.getItem('leaomed_pj_uploaded_boletos')
       if (storedBoletos) {
         try {
           setUploadedBoletos(JSON.parse(storedBoletos))
@@ -600,7 +578,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
   useEffect(() => {
     if (typeof window !== 'undefined' && totalObligatoryPF > 0) {
-      localStorage.setItem('leaomed_obligatory_expenses', totalObligatoryPF.toString())
+      financialStorage.setItem('leaomed_obligatory_expenses', totalObligatoryPF.toString())
       window.dispatchEvent(new CustomEvent('leaomed_budget_obligatory_updated', {
         detail: { obligatoryTotal: totalObligatoryPF }
       }))
@@ -650,6 +628,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
   // Salvar Edição
   const handleSaveEdit = (e: React.FormEvent) => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     e.preventDefault()
     if (!editingItem) return
 
@@ -686,14 +665,14 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
     // Persistir no localStorage
     try {
-      const stored = localStorage.getItem('leaomed_custom_budget_edits_v2')
+      const stored = financialStorage.getItem('leaomed_custom_budget_edits_v2')
       const map = stored ? JSON.parse(stored) : {}
       map[`${scope}::${categoryName}::${subcategoryName}`] = {
         name: editNameInput.trim() || subcategoryName,
         value: parsedVal,
         is_fixed: editIsFixedInput
       }
-      localStorage.setItem('leaomed_custom_budget_edits_v2', JSON.stringify(map))
+      financialStorage.setItem('leaomed_custom_budget_edits_v2', JSON.stringify(map))
     } catch (_) {}
 
     setEditingItem(null)
@@ -721,12 +700,12 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
     else if (scope === 'INCOME_PF') updateState(setIncomePFCats)
 
     try {
-      const stored = localStorage.getItem('leaomed_deleted_budget_items')
+      const stored = financialStorage.getItem('leaomed_deleted_budget_items')
       const deletedList: string[] = stored ? JSON.parse(stored) : []
       const key = `${scope}::${categoryName}::${subcategoryName}`
       if (!deletedList.includes(key)) {
         deletedList.push(key)
-        localStorage.setItem('leaomed_deleted_budget_items', JSON.stringify(deletedList))
+        financialStorage.setItem('leaomed_deleted_budget_items', JSON.stringify(deletedList))
       }
     } catch (_) {}
 
@@ -745,7 +724,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
   // Cálculos do Mês Selecionado da PJ
   const currentPjMonthData = useMemo(() => {
-    return pjTaxHistory.find(m => m.month === selectedPjMonthKey) || pjTaxHistory[pjTaxHistory.length - 1]
+    return pjTaxHistory.find(m => m.month === selectedPjMonthKey) || pjTaxHistory[pjTaxHistory.length - 1] || { month: selectedPjMonthKey, label: 'Sem dados', faturamento: 0, irpj: 0, csll: 0, cofins: 0, pis: 0, inss: 0, iss: 0, darf: 0, outras: 0, contabilidade: 0 }
   }, [pjTaxHistory, selectedPjMonthKey])
 
   const pjMonthMetrics = useMemo(() => {
@@ -756,7 +735,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
     const custoOperacionalTotal = tributosPuros + d.contabilidade
     const pctTributosPuros = d.faturamento > 0 ? (tributosPuros / d.faturamento) * 100 : 0
     const pctCargaTotal = d.faturamento > 0 ? (custoOperacionalTotal / d.faturamento) * 100 : 0
-    const proLaborePf = 23000.00
+    const proLaborePf = 0
     const sobraCaixaPj = Math.max(0, d.faturamento - custoOperacionalTotal - proLaborePf)
 
     return {
@@ -859,6 +838,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
   // Handler Assíncrono com OCR/Parser Completo para Múltiplos Boletos e Guias PJ
   const handlePjBoletoUpload = async (files: FileList | null) => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     if (!files || files.length === 0) return
     setIsUploadingBoleto(true)
 
@@ -892,9 +872,11 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
           })
           if (resp.ok) {
             parsedResult = await resp.json()
+            if (getFinancialScopeVersion() !== financialScopeVersion) return
           }
         } catch (_) {}
 
+        if (getFinancialScopeVersion() !== financialScopeVersion) return
         // Fallback local se a API não estiver disponível
         let targetMonthKey = parsedResult?.monthKey || findMonthInFilename(file.name)?.monthKey || selectedPjMonthKey
         let targetIdx = updatedHistory.findIndex(m => m.month.toLowerCase() === targetMonthKey.toLowerCase())
@@ -902,6 +884,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
           targetIdx = updatedHistory.findIndex(m => m.month === selectedPjMonthKey)
         }
         if (targetIdx === -1) {
+          updatedHistory.push({ month: targetMonthKey, label: findMonthInFilename(file.name)?.label || targetMonthKey, faturamento: 0, irpj: 0, csll: 0, cofins: 0, pis: 0, inss: 0, iss: 0, darf: 0, outras: 0, contabilidade: 0 })
           targetIdx = updatedHistory.length - 1
         }
 
@@ -914,7 +897,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
         if (parsedResult && parsedResult.success && parsedResult.breakdown) {
           // Discriminação direta retornada pelo leitor de DAS
           taxType = parsedResult.description || 'DAS Simples Nacional Médico'
-          amount = parsedResult.totalAmount || 2257.83
+          amount = parsedResult.totalAmount || 0
 
           targetMonthData.simples = amount
           targetMonthData.irpj = parsedResult.breakdown.irpj
@@ -927,59 +910,32 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
           detailedSummary = `DAS de ${targetMonthData.label} (R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}) auditado! Discriminado: IRPJ R$ ${targetMonthData.irpj.toFixed(2)}, CSLL R$ ${targetMonthData.csll.toFixed(2)}, COFINS R$ ${targetMonthData.cofins.toFixed(2)}, PIS R$ ${targetMonthData.pis.toFixed(2)}, INSS R$ ${targetMonthData.inss.toFixed(2)}, ISS R$ ${targetMonthData.iss.toFixed(2)}.`
         } else if (lower.includes('das') || lower.includes('simples') || lower.includes('pgdas')) {
           taxType = 'DAS Simples Nacional Médico'
-          // Dados oficiais da clínica médica MED LEAO para cada competência
-          if (targetMonthData.month === 'jul_26') {
-            amount = 2257.83
-            targetMonthData.simples = 2257.83
-            targetMonthData.irpj = 90.31
-            targetMonthData.csll = 79.02
-            targetMonthData.cofins = 317.23
-            targetMonthData.pis = 68.86
-            targetMonthData.inss = 979.90
-            targetMonthData.iss = 722.51
-          } else if (targetMonthData.month === 'jun_26') {
-            amount = 2764.77
-            targetMonthData.simples = 2214.77
-            targetMonthData.irpj = 88.59
-            targetMonthData.csll = 77.52
-            targetMonthData.cofins = 311.17
-            targetMonthData.pis = 67.55
-            targetMonthData.inss = 961.21
-            targetMonthData.iss = 708.73
-            targetMonthData.darf = 550.00
-          } else {
-            amount = extractAmountFromFilename(file.name) || 2257.83
-            targetMonthData.simples = amount
-            targetMonthData.irpj = Math.round(amount * 0.040003 * 100) / 100
-            targetMonthData.csll = Math.round(amount * 0.035002 * 100) / 100
-            targetMonthData.cofins = Math.round(amount * 0.140502 * 100) / 100
-            targetMonthData.pis = Math.round(amount * 0.030501 * 100) / 100
-            targetMonthData.inss = Math.round(amount * 0.433999 * 100) / 100
-            targetMonthData.iss = Math.round((amount - (targetMonthData.irpj + targetMonthData.csll + targetMonthData.cofins + targetMonthData.pis + targetMonthData.inss)) * 100) / 100
-          }
-          detailedSummary = `DAS ${targetMonthData.label} conciliado com sucesso com discriminação de todos os tributos na planilha!`
+          amount = extractAmountFromFilename(file.name) || 0
+          targetMonthData.simples = amount
+          detailedSummary = `DAS ${targetMonthData.label} registrado. Revise os valores extraídos antes de confirmar.`
         } else if (lower.includes('darf')) {
           taxType = 'DARF Federal (IRPJ / CSLL / Retenções)'
-          amount = extractAmountFromFilename(file.name) || (targetMonthData.month === 'jun_26' ? 550.00 : 1040.02)
+          amount = extractAmountFromFilename(file.name) || 0
           targetMonthData.darf = amount
         } else if (lower.includes('inss') || lower.includes('gps') || lower.includes('previd')) {
           taxType = 'INSS Patronal / Pró-labore'
-          amount = extractAmountFromFilename(file.name) || 979.90
+          amount = extractAmountFromFilename(file.name) || 0
           targetMonthData.inss = amount
         } else if (lower.includes('iss') || lower.includes('prefeitura') || lower.includes('bh')) {
           taxType = 'ISSQN Municipal'
-          amount = extractAmountFromFilename(file.name) || 722.51
+          amount = extractAmountFromFilename(file.name) || 0
           targetMonthData.iss = amount
         } else if (lower.includes('contabil') || lower.includes('contador') || lower.includes('honor')) {
           taxType = 'Mensalidade Contabilidade PJ'
-          amount = extractAmountFromFilename(file.name) || 491.21
+          amount = extractAmountFromFilename(file.name) || 0
           targetMonthData.contabilidade = amount
         } else {
           taxType = `Boleto Operacional PJ (${file.name.slice(0, 18)})`
-          amount = extractAmountFromFilename(file.name) || 491.21
+          amount = extractAmountFromFilename(file.name) || 0
           targetMonthData.outras = amount
         }
 
+        if (amount <= 0) continue
         updatedHistory[targetIdx] = targetMonthData
 
         newItems.push({
@@ -992,19 +948,21 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
         })
       }
 
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
       setPjTaxHistory(updatedHistory)
       setSelectedPjMonthKey(lastMatchedMonthKey)
 
       setUploadedBoletos(prev => {
+        if (getFinancialScopeVersion() !== financialScopeVersion) return prev
         const merged = [...newItems, ...prev]
         try {
-          localStorage.setItem('leaomed_pj_uploaded_boletos', JSON.stringify(merged))
+          financialStorage.setItem('leaomed_pj_uploaded_boletos', JSON.stringify(merged))
         } catch (_) {}
         return merged
       })
 
       try {
-        localStorage.setItem('leaomed_pj_tax_history_v2', JSON.stringify(updatedHistory))
+        financialStorage.setItem('leaomed_pj_tax_history_v2', JSON.stringify(updatedHistory))
       } catch (_) {}
 
       setBoletoSuccessMsg(`✅ ${detailedSummary || `${fileArr.length} boleto(s) PJ conciliado(s) com sucesso na planilha!`}`)
@@ -1020,6 +978,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
   // Handler para Salvar Célula da Tabela da PJ
   const handleSavePjCell = (e: React.FormEvent) => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     e.preventDefault()
     if (!editingPjCell) return
     const parsedVal = parseFloat(editPjValueInput.replace(',', '.'))
@@ -1038,7 +997,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
 
     setPjTaxHistory(updated)
     try {
-      localStorage.setItem('leaomed_pj_tax_history_v2', JSON.stringify(updated))
+      financialStorage.setItem('leaomed_pj_tax_history_v2', JSON.stringify(updated))
     } catch (_) {}
 
     // Sincronizar com subcategorias se for o mês ativo
@@ -1067,7 +1026,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
     if (window.confirm('Deseja restaurar os valores originais da planilha oficial para todas as competências da PJ?')) {
       setPjTaxHistory(INITIAL_PJ_HISTORY)
       try {
-        localStorage.removeItem('leaomed_pj_tax_history_v2')
+        financialStorage.removeItem('leaomed_pj_tax_history_v2')
       } catch (_) {}
     }
   }
@@ -1184,7 +1143,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
               }`}
             >
               <TrendingUp className="w-4 h-4 text-[var(--capital-text,#242a2e)]" />
-              <span>Receitas PJ (Faturamento Camarinha)</span>
+              <span>Receitas PJ (Faturamento Médico)</span>
               <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md ${
                 activeScopeTab === 'INCOME_PJ' ? 'bg-[var(--capital-card,#fff)] text-[var(--capital-text,#242a2e)] font-bold' : 'bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#fff)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]'
               }`}>
@@ -1331,7 +1290,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                     </span>
                   </div>
                   <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-1 max-w-3xl leading-relaxed">
-                    Fluxo médico: o faturamento hospitalar (Camarinha) entra na conta da PJ, são pagos os impostos federais/municipais e a contabilidade, e o saldo líquido é transferido para a Pessoa Física como pró-labore.
+                    Fluxo médico: o faturamento hospitalar (Médico) entra na conta da PJ, são pagos os impostos federais/municipais e a contabilidade, e o saldo líquido é transferido para a Pessoa Física como pró-labore.
                   </p>
                 </div>
 
@@ -1358,7 +1317,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                 {/* Card 1: Faturamento Bruto */}
                 <div className="p-3.5 rounded-2xl bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] shadow-xs">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] block mb-1">
-                    Faturamento Bruto PJ (Camarinha)
+                    Faturamento Bruto PJ (Médico)
                   </span>
                   <div className="font-mono text-lg md:text-xl font-semibold text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] tabular-nums">
                     R$ {currentPjMonthData.faturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -1445,7 +1404,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
                 <div className="flex items-center gap-2">
                   <UserCheck className="w-4 h-4 text-[var(--capital-accent,#927025)] dark:text-[var(--capital-accent,#927025)] shrink-0" />
                   <span className="text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
-                    <strong>Pró-Labore Transferido para PF:</strong> R$ 23.000,00 (origem do "Salário Pró-Labore Camarinha" na PF).
+                    <strong>Pró-Labore Transferido para PF:</strong> R$ {pjMonthMetrics.proLaborePf.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="text-right text-[11px] text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)]">
@@ -1958,7 +1917,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
               <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-0.5">
                 {isDemo 
                   ? 'Faturamento gerado por plantões hospitalares e contratos de convênios médicos.' 
-                  : 'Faturamento bruto da PJ (Camarinha BRUTO) auditado na planilha oficial.'}
+                  : 'Faturamento bruto da PJ (Médico BRUTO) auditado na planilha oficial.'}
               </p>
             </div>
             <div className="text-right">
@@ -1979,7 +1938,7 @@ export function BudgetBreakdown({ currentFilter = 'PF', isDemo = false, initialT
               <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-0.5">
                 {isDemo 
                   ? 'Retiradas de pró-labore da clínica médica, consultas particulares e proventos de investimentos.' 
-                  : 'Pró-labore retirado da PJ (Camarinha), reembolsos médicos e rendimentos de investimentos da PF.'}
+                  : 'Pró-labore retirado da PJ (Médico), reembolsos médicos e rendimentos de investimentos da PF.'}
               </p>
             </div>
             <div className="text-right">

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { timingSafeEqual } from 'node:crypto';
 
 const getSupabaseAdmin = () => {
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -17,6 +18,18 @@ export async function POST(req: Request) {
       received: false,
       message: 'Integração de webhook do Open Finance desativada por configuração.'
     }, { status: 200 });
+  }
+
+  // Configure this Authorization header in Pluggy's registered webhook headers.
+  // Never accept untrusted events with service-role database privileges.
+  const secret = process.env.PLUGGY_WEBHOOK_SECRET;
+  if (!secret) {
+    return Response.json({ error: 'Autenticação do webhook não configurada.' }, { status: 503 });
+  }
+  const provided = Buffer.from(req.headers.get('authorization') || '', 'utf8');
+  const expected = Buffer.from(`Bearer ${secret}`, 'utf8');
+  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
+    return Response.json({ error: 'Não autorizado.' }, { status: 401 });
   }
 
   try {

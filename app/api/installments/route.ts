@@ -19,7 +19,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, installments: rows });
   } catch (error) {
-    console.error('Erro ao buscar parcelamentos no banco:', error);
+    console.error('Erro ao buscar parcelamentos no banco:', error instanceof Error ? error.name : 'unknown_error');
     return NextResponse.json(
       { success: false, error: 'Falha interna ao recuperar projeções de parcelamento.' },
       { status: 500 }
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, installment: rows[0] });
   } catch (error) {
-    console.error('Erro ao criar parcelamento no banco:', error);
+    console.error('Erro ao criar parcelamento no banco:', error instanceof Error ? error.name : 'unknown_error');
     return NextResponse.json(
       { success: false, error: 'Falha ao salvar novo parcelamento no banco.' },
       { status: 500 }
@@ -103,9 +103,13 @@ export async function PUT(req: Request) {
       RETURNING *
     `;
 
+    if (rows.length === 0) {
+      return NextResponse.json({ success: false, error: 'Parcelamento não encontrado.' }, { status: 404 });
+    }
+
     return NextResponse.json({ success: true, installment: rows[0] });
   } catch (error) {
-    console.error('Erro ao atualizar parcelamento no banco:', error);
+    console.error('Erro ao atualizar parcelamento no banco:', error instanceof Error ? error.name : 'unknown_error');
     return NextResponse.json(
       { success: false, error: 'Falha ao atualizar parcelamento no banco.' },
       { status: 500 }
@@ -125,15 +129,20 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: false, error: 'ID é obrigatório.' }, { status: 400 });
     }
 
-    await sql`
+    const rows = await sql`
       UPDATE public.installments
       SET is_active = FALSE, updated_at = NOW()
       WHERE id = ${id} AND user_id = ${userId}
+      RETURNING id
     `;
+
+    if (rows.length === 0) {
+      return NextResponse.json({ success: false, error: 'Parcelamento não encontrado.' }, { status: 404 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao desativar parcelamento no banco:', error);
+    console.error('Erro ao desativar parcelamento no banco:', error instanceof Error ? error.name : 'unknown_error');
     return NextResponse.json(
       { success: false, error: 'Falha ao excluir parcelamento.' },
       { status: 500 }

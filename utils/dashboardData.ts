@@ -75,14 +75,37 @@ export function buildDashboardPayload(
       categoriesMap[cat] = (categoriesMap[cat] || 0) + val;
     }
   } else {
-    // CONSOLIDATED: Receita líquida externa real sem duplicar pró-labore
-    income = engineData.cashFlow.pj.income > 0 
-      ? engineData.cashFlow.pj.income + Math.max(0, engineData.cashFlow.pf.income - (engineData.cashFlow.pf.income > 20000 ? 23000 : 0))
-      : (engineData.cashFlow.pf.income + engineData.cashFlow.pj.income);
-    expenses = engineData.cashFlow.pf.expenses + engineData.cashFlow.pj.expenses;
-    fixed = engineData.cashFlow.pf.fixed + engineData.cashFlow.pj.fixed;
-    variable = engineData.cashFlow.pf.variable + engineData.cashFlow.pj.variable;
-    for (const [cat, val] of Object.entries(engineData.cashFlow.pf.byCategory)) {
+      // CONSOLIDATED: Elimina dupla contagem de transferências PJ <-> PF
+      let rawIncome = engineData.cashFlow.pf.income + engineData.cashFlow.pj.income;
+      let rawExpenses = engineData.cashFlow.pf.expenses + engineData.cashFlow.pj.expenses;
+      let rawVariable = engineData.cashFlow.pf.variable + engineData.cashFlow.pj.variable;
+
+      // Identifica o volume financeiro de transferências internas e deduplicadas
+      const internalTransfersIn = engineData.raw.transactions
+        .filter(tx => Number(tx.amount) > 0 && (
+          tx.category?.toLowerCase().includes('transferência') || 
+          tx.subcategory?.toLowerCase().includes('transferência') || 
+          tx.subcategory?.toLowerCase().includes('deduplicado') ||
+          tx.category?.toLowerCase().includes('aporte')
+        ))
+        .reduce((acc, tx) => acc + Number(tx.amount), 0);
+
+      const internalTransfersOut = engineData.raw.transactions
+        .filter(tx => Number(tx.amount) < 0 && (
+          tx.category?.toLowerCase().includes('transferência') || 
+          tx.subcategory?.toLowerCase().includes('transferência') || 
+          tx.subcategory?.toLowerCase().includes('deduplicado') ||
+          tx.category?.toLowerCase().includes('aporte')
+        ))
+        .reduce((acc, tx) => acc + Math.abs(Number(tx.amount)), 0);
+
+      // Subtrai do Consolidado para não inflar a renda e os gastos reais da pessoa
+      income = Math.max(0, rawIncome - internalTransfersIn);
+      expenses = Math.max(0, rawExpenses - internalTransfersOut);
+      fixed = engineData.cashFlow.pf.fixed + engineData.cashFlow.pj.fixed;
+      variable = Math.max(0, rawVariable - internalTransfersOut);
+
+      for (const [cat, val] of Object.entries(engineData.cashFlow.pf.byCategory)) {
       categoriesMap[cat] = (categoriesMap[cat] || 0) + val;
     }
     for (const [cat, val] of Object.entries(engineData.cashFlow.pj.byCategory)) {
