@@ -1,5 +1,7 @@
 'use client'
 
+import { getFinancialScopeVersion } from '@/utils/userScopedStorage'
+
 import { AccessibleDialog } from './AccessibleDialog'
 
 import React, { useState, useRef } from 'react'
@@ -69,6 +71,7 @@ async function compressImageIfNeeded(file: File): Promise<File> {
 }
 
 export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUploadModalProps) {
+  const financialScopeVersion = React.useRef(getFinancialScopeVersion()).current
   const [activeTab, setActiveTab] = useState<'FILE' | 'PASTE'>('FILE')
   const [pastedText, setPastedText] = useState('')
   const [isUploading, setIsUploading] = useState(false)
@@ -114,6 +117,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
       for (let i = 0; i < filesToProcess.length; i++) {
         const rawFile = filesToProcess[i]
         const fileToUpload = await compressImageIfNeeded(rawFile)
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
         formData.append('files', fileToUpload)
       }
 
@@ -131,6 +135,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
 
       let data: any = null
       const rawText = await res.text()
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
       try {
         data = JSON.parse(rawText)
       } catch (_) {
@@ -228,6 +233,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
       })
 
       const data = await res.json()
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
       if (!res.ok || !data?.success) {
         throw new Error(data?.error || 'Não foi possível encontrar transações no texto colado.')
       }
@@ -261,6 +267,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
   }
 
   const handleSaveToDatabase = async () => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     if (parsedTransactions.length === 0) return
     const needsReview = parseDiagnostics.some(diagnostic => diagnostic?.requiresReview || diagnostic?.requires_review)
     if (needsReview && !reviewAcknowledged) {
@@ -300,6 +307,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
       })
 
       const result = await res.json()
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
 
       if (!res.ok || !result.success) {
         throw new Error(result.error || 'Erro ao persistir transações.')
@@ -327,7 +335,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
   return (
     <AccessibleDialog onClose={onClose} labelledBy="document-upload-title" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--capital-card,#f8fafc)] backdrop-blur-sm animate-in fade-in duration-150">
       <div 
-        className="w-full max-w-xl rounded-xl overflow-hidden shadow-sm border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] transition-all p-6 space-y-4 max-h-[90vh] flex flex-col"
+        className="w-full max-w-xl rounded-xl overflow-hidden shadow-sm border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] transition-all p-4 sm:p-6 space-y-4 max-h-[92vh] flex flex-col"
       >
         <div className="flex items-center justify-between pb-3 border-b border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)]">
           <div className="flex items-center gap-2.5">
@@ -458,12 +466,12 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
                 ? 'A senha informada não conseguiu abrir este arquivo. Geralmente são os primeiros 4 a 6 dígitos do seu CPF ou sua data de nascimento (ex: 15051980).'
                 : 'O seu banco protegeu este arquivo por senha. Digite a senha abaixo para que possamos extrair todos os lançamentos instantaneamente.'}
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input
                 type="text"
                 autoFocus
                 aria-label="Senha de abertura do PDF"
-                  value={pdfPassword}
+                value={pdfPassword}
                 onChange={(e) => setPdfPassword(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && pdfPassword.trim() && !isUploading) {
@@ -471,17 +479,17 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
                   }
                 }}
                 placeholder="Digite a senha da fatura"
-                className="flex-1 px-3 py-2 rounded-xl border border-[var(--capital-warning,#8b5b15)] dark:border-[var(--capital-warning,#8b5b15)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] text-xs text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] placeholder:text-[var(--capital-muted,#242a2e)] focus:outline-hidden focus:border-[var(--capital-warning,#8b5b15)] font-mono shadow-inner"
+                className="w-full flex-1 px-3 py-2 rounded-xl border border-[var(--capital-warning,#8b5b15)] dark:border-[var(--capital-warning,#8b5b15)] bg-[var(--capital-card,#fff)] dark:bg-[var(--capital-card,#232a2e)] text-xs text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] placeholder:text-[var(--capital-muted,#242a2e)] focus:outline-hidden focus:border-[var(--capital-warning,#8b5b15)] font-mono shadow-inner"
               />
               <button
                 onClick={handleUnlockWithPassword}
                 disabled={isUploading || !pdfPassword.trim()}
-                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-[var(--capital-button-text,#242a2e)] font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-xs active:scale-95"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-[var(--capital-button-text,#242a2e)] font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-xs active:scale-95 shrink-0"
               >
                 {isUploading ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <KeyRound className="w-3.5 h-3.5" />
+                  <KeyRound className="w-3.5 h-3.5 shrink-0" />
                 )}
                 <span>Desbloquear Fatura</span>
               </button>
@@ -568,20 +576,20 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
               ))}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-2">
               <button
                 onClick={() => { setParsedTransactions([]); setParseDiagnostics([]); setReviewAcknowledged(false) }}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--capital-muted,#242a2e)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-all cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-[var(--capital-muted,#242a2e)] hover:bg-[var(--capital-neutral,#f8fafc)] dark:hover:bg-[var(--capital-card,#fff)] transition-all cursor-pointer text-center"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSaveToDatabase}
                 disabled={isUploading || (parseDiagnostics.some(diagnostic => diagnostic?.requiresReview || diagnostic?.requires_review) && !reviewAcknowledged)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-semibold text-xs transition-all shadow-md shadow-none active:scale-95 cursor-pointer disabled:opacity-50"
+                className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-semibold text-xs transition-all shadow-md shadow-none active:scale-95 cursor-pointer disabled:opacity-50"
               >
                 <span>Confirmar & Salvar no Banco</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3.5 h-3.5 shrink-0" />
               </button>
             </div>
           </div>

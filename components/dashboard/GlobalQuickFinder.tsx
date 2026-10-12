@@ -1,5 +1,9 @@
 'use client'
 
+import { CreditCardStore } from '@/utils/creditCardStore'
+import { InstallmentStore } from '@/utils/installmentStore'
+import { InvestmentPortfolioStore } from '@/utils/investmentPortfolioStore'
+
 import { AccessibleDialog } from './AccessibleDialog'
 
 import React, { useState, useEffect, useMemo, useRef } from 'react'
@@ -115,72 +119,6 @@ export function GlobalQuickFinder({
         badge: 'Setup'
       },
 
-      // Cartões de Crédito
-      {
-        id: 'card-c6',
-        title: 'Cartão C6 Carbon Black PF',
-        subtitle: 'Limite R$ 65.000 • Pontuação Átomos • Fatura do mês',
-        category: 'Cartão',
-        tabTarget: 'orcamento',
-        elementId: 'cartoes-credito',
-        icon: CreditCard,
-        badge: 'Mastercard Black'
-      },
-      {
-        id: 'card-nu',
-        title: 'Cartão Nubank Ultravioleta PF',
-        subtitle: 'Limite R$ 40.000 • Cashback rendendo a 200% do CDI',
-        category: 'Cartão',
-        tabTarget: 'orcamento',
-        elementId: 'cartoes-credito',
-        icon: CreditCard,
-        badge: 'Ultravioleta'
-      },
-      {
-        id: 'card-itau',
-        title: 'Cartão Itaú Personnalité PF',
-        subtitle: 'Limite R$ 50.000 • Cartão principal de despesas correntes',
-        category: 'Cartão',
-        tabTarget: 'orcamento',
-        elementId: 'cartoes-credito',
-        icon: CreditCard,
-        badge: 'Visa Infinite'
-      },
-
-      // Parcelamentos & Financiamentos
-      {
-        id: 'debt-safra',
-        title: 'Financiamento Banco Safra (T-Cross)',
-        subtitle: 'R$ 3.336,42/mês • 18 parcelas restantes • Quitação em Out/2027',
-        category: 'Parcelamento',
-        tabTarget: 'parcelamentos',
-        elementId: 'parcelamentos-dividas',
-        icon: Receipt,
-        value: 'R$ 3.336,42',
-        badge: 'Prioridade'
-      },
-      {
-        id: 'debt-localiza',
-        title: 'Aluguel Cartão Localiza Meoo',
-        subtitle: 'R$ 6.837,00/mês • 12 parcelas restantes • Quitação em Out/2027',
-        category: 'Parcelamento',
-        tabTarget: 'parcelamentos',
-        elementId: 'parcelamentos-dividas',
-        icon: Receipt,
-        value: 'R$ 6.837,00',
-        badge: 'Alívio R$ 10k+'
-      },
-      {
-        id: 'debt-gramado',
-        title: 'Cota Multipropriedade Gramado Parks',
-        subtitle: 'R$ 684,00/mês • Despesa fixa de investimento em lazer',
-        category: 'Parcelamento',
-        tabTarget: 'parcelamentos',
-        elementId: 'parcelamentos-dividas',
-        icon: Receipt,
-        value: 'R$ 684,00'
-      },
-
       // Investimentos & Patrimônio
       {
         id: 'inv-rebalance',
@@ -202,40 +140,23 @@ export function GlobalQuickFinder({
         icon: ShieldCheck,
         badge: 'Segurança'
       },
-      {
-        id: 'inv-renda-fixa',
-        title: 'Carteira de Renda Fixa (CDI / Tesouro)',
-        subtitle: '43.2% do patrimônio investido • R$ 77.141,92 alocados',
-        category: 'Investimento',
-        tabTarget: 'investimentos',
-        icon: TrendingUp,
-        value: 'R$ 77.141,92'
-      },
-
-      // Tributos & Gestão Médica PJ
-      {
-        id: 'pj-das',
-        title: 'Tributos DAS Simples Nacional PJ',
-        subtitle: 'Guia unificada mensal de tributos sobre plantões e contratos',
-        category: 'Categoria',
-        tabTarget: 'orcamento',
-        elementId: 'categorias-planilha',
-        icon: Building2,
-        value: 'R$ 2.764,77',
-        badge: 'Simples Nacional'
-      },
-      {
-        id: 'pj-inter',
-        title: 'Tarifas Bancárias Banco Inter PJ',
-        subtitle: 'Manutenção de conta médica e emissão de boletos',
-        category: 'Categoria',
-        tabTarget: 'orcamento',
-        elementId: 'categorias-planilha',
-        icon: Building2,
-        value: 'R$ 491,21'
-      }
     ]
 
+    CreditCardStore.getCards().forEach(card => items.push({
+      id: 'card-' + card.id, title: card.name, subtitle: card.institution,
+      category: 'Cartão', tabTarget: 'orcamento', elementId: 'cartoes-credito', icon: CreditCard,
+      value: card.spent.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    }))
+    InstallmentStore.getInstallments().forEach(item => items.push({
+      id: 'debt-' + item.id, title: item.name, subtitle: item.paymentMethod,
+      category: 'Parcelamento', tabTarget: 'parcelamentos', elementId: 'parcelamentos-dividas', icon: Receipt,
+      value: item.monthlyValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    }))
+    InvestmentPortfolioStore.getAssets().forEach(asset => items.push({
+      id: 'asset-' + asset.name, title: asset.name, subtitle: asset.broker,
+      category: 'Investimento', tabTarget: 'investimentos', icon: TrendingUp,
+      value: asset.current.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    }))
     // Injeta categorias dinâmicas do payload atual
     categories.forEach((cat) => {
       if (!items.some(i => i.title.toLowerCase().includes(cat.name.toLowerCase()))) {
@@ -253,7 +174,7 @@ export function GlobalQuickFinder({
     })
 
     return items
-  }, [categories])
+  }, [categories, isOpen])
 
   // Filtragem dos itens em tempo real
   const filteredItems = useMemo(() => {

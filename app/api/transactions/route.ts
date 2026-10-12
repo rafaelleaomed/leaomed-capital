@@ -17,6 +17,8 @@ function generateTransactionHash(t: {
 }): string {
   const normDesc = (t.description || '').trim().toLowerCase().replace(/\s+/g, ' ')
   const source = (t.sourceAccountOrCard || '').trim().toLowerCase().replace(/\s+/g, ' ')
+  // accountId is authorized against the session before hashing. Preserve the
+  // existing hash format so re-importing old statements remains idempotent.
   const raw = `${t.date}|${Number(t.amount).toFixed(2)}|${normDesc}|${t.accountId || 'default'}|${source}`
   return crypto.createHash('sha256').update(raw).digest('hex')
 }
@@ -51,7 +53,7 @@ export async function GET(req: NextRequest) {
           SELECT t.id, t.account_id, t.amount, t.date, t.description, t.category, t.subcategory,
                  t.is_fixed, t.is_ignored, a.type as entity_type, a.name as account_name
           FROM public.transactions t
-          LEFT JOIN public.accounts a ON a.id = t.account_id
+          LEFT JOIN public.accounts a ON a.id = t.account_id AND a.user_id = t.user_id
           WHERE t.user_id = ${userId}
             AND t.date >= ${startDate} AND t.date <= ${endDate}
             AND (a.type = ${entity} OR a.type IS NULL)
@@ -63,7 +65,7 @@ export async function GET(req: NextRequest) {
           SELECT t.id, t.account_id, t.amount, t.date, t.description, t.category, t.subcategory,
                  t.is_fixed, t.is_ignored, a.type as entity_type, a.name as account_name
           FROM public.transactions t
-          LEFT JOIN public.accounts a ON a.id = t.account_id
+          LEFT JOIN public.accounts a ON a.id = t.account_id AND a.user_id = t.user_id
           WHERE t.user_id = ${userId}
             AND t.date >= ${startDate} AND t.date <= ${endDate}
           ORDER BY t.date DESC, t.created_at DESC
@@ -75,7 +77,7 @@ export async function GET(req: NextRequest) {
         SELECT t.id, t.account_id, t.amount, t.date, t.description, t.category, t.subcategory,
                t.is_fixed, t.is_ignored, a.type as entity_type, a.name as account_name
         FROM public.transactions t
-        LEFT JOIN public.accounts a ON a.id = t.account_id
+        LEFT JOIN public.accounts a ON a.id = t.account_id AND a.user_id = t.user_id
         WHERE t.user_id = ${userId}
         ORDER BY t.date DESC, t.created_at DESC
         LIMIT ${limit} OFFSET ${offset}
@@ -90,7 +92,7 @@ export async function GET(req: NextRequest) {
       offset
     })
   } catch (error: any) {
-    console.error('Erro ao buscar transactions no banco:', error)
+    console.error('Erro ao buscar transactions no banco:', error instanceof Error ? error.name : 'unknown_error')
     return NextResponse.json(
       { success: false, error: 'Falha ao buscar transações no banco de dados.' },
       { status: 500 }
@@ -125,9 +127,23 @@ export async function POST(req: NextRequest) {
       }, { status: 400 })
     }
 
+    // Validate every supplied account before any mutation, including mixed batches.
+    const suppliedAccountIds = [...new Set(transactionsToInsert.map((tx: any) => tx.accountId).filter(Boolean))]
+    for (const accountId of suppliedAccountIds) {
+      if (typeof accountId !== 'string') {
+        return NextResponse.json({ success: false, error: 'Conta inválida.' }, { status: 400 })
+      }
+      const ownedAccount = await sql`
+        SELECT id FROM public.accounts WHERE id = ${accountId} AND user_id = ${userId}
+      `
+      if (ownedAccount.length === 0) {
+        return NextResponse.json({ success: false, error: 'Conta não encontrada.' }, { status: 404 })
+      }
+    }
+
     // Busca ou cria uma conta padrão para o usuário caso não informada
     const existingAccounts = await sql`
-      SELECT id, type FROM public.accounts WHERE user_id = ${userId} LIMIT 2
+      SELECT id, type FROM public.accounts WHERE user_id = ${userId}
     `
     let defaultPfAccountId = existingAccounts.find((a: any) => a.type === 'PF')?.id
     let defaultPjAccountId = existingAccounts.find((a: any) => a.type === 'PJ')?.id
@@ -137,6 +153,7 @@ export async function POST(req: NextRequest) {
         INSERT INTO public.accounts (user_id, type, pluggy_item_id, pluggy_account_id, name, institution)
         VALUES (${userId}, 'PF', 'manual_import', ${`manual_pf_${userId}`}, 'Conta Corrente PF', 'Manual / Extrato')
         ON CONFLICT (pluggy_account_id) DO UPDATE SET name = EXCLUDED.name
+        WHERE public.accounts.user_id = EXCLUDED.user_id
         RETURNING id
       `
       defaultPfAccountId = createdPf[0]?.id
@@ -147,9 +164,14 @@ export async function POST(req: NextRequest) {
         INSERT INTO public.accounts (user_id, type, pluggy_item_id, pluggy_account_id, name, institution)
         VALUES (${userId}, 'PJ', 'manual_import', ${`manual_pj_${userId}`}, 'Conta Inter PJ', 'Manual / Extrato')
         ON CONFLICT (pluggy_account_id) DO UPDATE SET name = EXCLUDED.name
+        WHERE public.accounts.user_id = EXCLUDED.user_id
         RETURNING id
       `
       defaultPjAccountId = createdPj[0]?.id
+    }
+
+    if (!defaultPfAccountId || !defaultPjAccountId) {
+      return NextResponse.json({ success: false, error: 'Falha ao obter contas do usuário.' }, { status: 500 })
     }
 
     let insertedCount = 0
@@ -193,14 +215,16 @@ export async function POST(req: NextRequest) {
             subcategory = EXCLUDED.subcategory,
             is_fixed = EXCLUDED.is_fixed,
             is_ignored = EXCLUDED.is_ignored
+          WHERE public.transactions.user_id = EXCLUDED.user_id
           RETURNING id
         `
         if (res && res.length > 0) insertedCount++
+        else failedCount++ // A conflict owned by another user must never be reported as saved.
       } catch (insertErr: any) {
         if (insertErr.code === '23505') { // unique_violation
           duplicateCount++
         } else {
-          console.error('Erro ao inserir transação:', insertErr)
+          console.error('Erro ao inserir transação:', insertErr instanceof Error ? insertErr.name : 'unknown_error')
           failedCount++
         }
       }
@@ -218,7 +242,7 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json(response, { status: failedCount > 0 ? 500 : 200 })
   } catch (error: any) {
-    console.error('Erro na rota POST /api/transactions:', error)
+    console.error('Erro na rota POST /api/transactions:', error instanceof Error ? error.name : 'unknown_error')
     return NextResponse.json(
       { success: false, error: 'Falha ao salvar transações no banco.' },
       { status: 500 }
@@ -259,7 +283,7 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true, transaction: updated[0] })
   } catch (error: any) {
-    console.error('Erro ao atualizar transação:', error)
+    console.error('Erro ao atualizar transação:', error instanceof Error ? error.name : 'unknown_error')
     return NextResponse.json(
       { success: false, error: 'Falha ao atualizar transação.' },
       { status: 500 }

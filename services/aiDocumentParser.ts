@@ -1,4 +1,4 @@
-import { USER_TAXONOMY, USER_TAXONOMY_MAP, getSubcategoriesForCategory } from '@/utils/taxonomy'
+﻿import { USER_TAXONOMY, USER_TAXONOMY_MAP, getSubcategoriesForCategory } from '@/utils/taxonomy'
 import { CategoryRulesEngine } from '@/utils/categoryRulesEngine'
 import { detectInvoiceProfile, InvoiceProfile, InvoiceProfileId } from '@/services/invoiceProfiles'
 
@@ -73,7 +73,7 @@ export interface DocumentParseResult {
 }
 
 /**
- * Converte qualquer representação de data em formato "YYYY-MM-DD".
+ * Converte qualquer representaÃ§Ã£o de data em formato "YYYY-MM-DD".
  * Suporta:
  * - "15 mai", "04 abr", "13 jul"
  * - "15/05/2026", "15/05/26", "15/05"
@@ -131,7 +131,7 @@ export function parseInvoiceDate(dateStr: string, defaultYear = new Date().getFu
 }
 
 /**
- * Converte strings numéricas em formato monetário brasileiro para float.
+ * Converte strings numÃ©ricas em formato monetÃ¡rio brasileiro para float.
  * Suporta: "1.250,50", "336,76", "-50,00", "R$ 450,20", "1250.50", "(800,00)"
  */
 export function parseCurrencyValue(raw: string): number {
@@ -145,11 +145,11 @@ export function parseCurrencyValue(raw: string): number {
     clean = clean.replace(/[\(\)\-]/g, '')
   }
 
-  // Se tiver tanto ponto quanto vírgula (ex: 1.250,50)
+  // Se tiver tanto ponto quanto vÃ­rgula (ex: 1.250,50)
   if (clean.includes('.') && clean.includes(',')) {
     clean = clean.replace(/\./g, '').replace(',', '.')
   } else if (clean.includes(',')) {
-    // Apenas vírgula decimal (ex: 350,75)
+    // Apenas vÃ­rgula decimal (ex: 350,75)
     clean = clean.replace(',', '.')
   }
 
@@ -159,7 +159,7 @@ export function parseCurrencyValue(raw: string): number {
 }
 
 /**
- * Parser para formato OFX bancário
+ * Parser para formato OFX bancÃ¡rio
  */
 function parseOfxContent(text: string): ExtractedTransaction[] {
   const txs: ExtractedTransaction[] = []
@@ -176,7 +176,7 @@ function parseOfxContent(text: string): ExtractedTransaction[] {
       const rawAmt = parseFloat(amountMatch[1].trim())
       const rawDate = dateMatch[1] // YYYYMMDD
       const date = `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
-      const desc = memoMatch ? memoMatch[1].trim() : 'Lançamento Bancário'
+      const desc = memoMatch ? memoMatch[1].trim() : 'LanÃ§amento BancÃ¡rio'
       const pred = CategoryRulesEngine.predict(desc, 'PF')
 
       txs.push({
@@ -198,7 +198,7 @@ function parseOfxContent(text: string): ExtractedTransaction[] {
 }
 
 /**
- * Parser para linhas CSV (delimitadas por vírgula, ponto-e-vírgula ou tab)
+ * Parser para linhas CSV (delimItaúas por vÃ­rgula, ponto-e-vÃ­rgula ou tab)
  */
 function parseCsvContent(text: string): ExtractedTransaction[] {
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
@@ -206,7 +206,7 @@ function parseCsvContent(text: string): ExtractedTransaction[] {
 
   const txs: ExtractedTransaction[] = []
   
-  // Identifica delimitador principal
+  // Identifica delimItaúor principal
   const firstLine = lines[0]
   let delimiter = ';'
   if ((firstLine.match(/,/g) || []).length > (firstLine.match(/;/g) || []).length) {
@@ -215,13 +215,13 @@ function parseCsvContent(text: string): ExtractedTransaction[] {
     delimiter = '\t'
   }
 
-  // Verifica se a primeira linha é cabeçalho
+  // Verifica se a primeira linha Ã© cabeÃ§alho
   const header = firstLine.toLowerCase().split(delimiter).map(s => s.trim().replace(/['"]/g, ''))
   let dateIdx = header.findIndex(h => h.includes('data') || h.includes('date') || h.includes('dia'))
   let descIdx = header.findIndex(h => h.includes('desc') || h.includes('historico') || h.includes('estabelecimento') || h.includes('titulo') || h.includes('memo'))
   let amountIdx = header.findIndex(h => h.includes('valor') || h.includes('amount') || h.includes('quantia'))
 
-  // Se não identificou cabeçalhos exatos, usa posições padrão comuns
+  // Se nÃ£o identificou cabeÃ§alhos exatos, usa posiÃ§Ãµes padrÃ£o comuns
   if (dateIdx === -1) dateIdx = 0
   if (descIdx === -1) descIdx = 1
   if (amountIdx === -1) amountIdx = 2
@@ -285,11 +285,11 @@ function findLastCurrencyValue(line: string): number | undefined {
 }
 
 function transactionKind(description: string): InvoiceTransactionType {
-  if (/estorno|reembolso|devolu[cç][aã]o|cr[eé]dito\s+(?:de|em)\s+fatura/i.test(description)) return 'refund'
-  if (/pagamento|inclus[aã]o\s+de\s+pagamento|pgto\b/i.test(description)) return 'bill_payment'
+  if (/estorno|reembolso|devolu[cÃ§][aÃ£]o|cr[eÃ©]dito\s+(?:de|em)\s+fatura/i.test(description)) return 'refund'
+  if (/pagamento|inclus[aÃ£]o\s+de\s+pagamento|pgto\b/i.test(description)) return 'bill_payment'
   if (/saque|cash\s+advance/i.test(description)) return 'cash_withdrawal'
   if (/anuidade|tarifa|iof\b|encargo|multa/i.test(description)) return 'fee'
-  if (/ajuste|lan[cç]amento\s+manual/i.test(description)) return 'adjustment'
+  if (/ajuste|lan[cÃ§]amento\s+manual/i.test(description)) return 'adjustment'
   return 'purchase'
 }
 
@@ -340,7 +340,7 @@ function buildTransaction(input: {
   card: string
   invoicePeriod?: string
 }): ExtractedTransaction | null {
-  const description = input.description.replace(/[\*•|]+/g, ' ').replace(/\s+/g, ' ').trim()
+  const description = input.description.replace(/[\*â€¢|]+/g, ' ').replace(/\s+/g, ' ').trim()
   if (description.length < 2) return null
   const installment = extractInstallment(description)
   const type = transactionKind(description)
@@ -382,7 +382,7 @@ function isFinancialOffer(line: string, profile: InvoiceProfile): boolean {
 }
 
 function beginsExcludedSection(line: string): boolean {
-  return /parcelamento\s+(?:da\s+)?fatura|op[cç][oõ]es\s+de\s+parcelamento|encargos?\s+(?:do|de)\s+parcelamento|compras?\s+parceladas?\s*-?\s*pr[oó]ximas?\s+faturas?/i.test(line)
+  return /parcelamento\s+(?:da\s+)?fatura|op[cÃ§][oÃµ]es\s+de\s+parcelamento|encargos?\s+(?:do|de)\s+parcelamento|compras?\s+parceladas?\s*-?\s*pr[oÃ³]ximas?\s+faturas?/i.test(line)
 }
 
 function isInstitutionalLine(line: string, profile: InvoiceProfile): boolean {
@@ -450,7 +450,7 @@ function parseC6Invoice(lines: string[], profile: InvoiceProfile, defaultYear: n
   // import path, but mark it for review because it cannot be reconciled.
   let currentCard: string | null = lines.some(line => /c6\s+carbon(?:\s+virtual)?\s+final\s+\d{4}/i.test(line))
     ? null
-    : 'C6 Cartão de Crédito'
+    : 'C6 CartÃ£o de CrÃ©dito'
   let insideExcludedSection = false
 
   for (const line of lines) {
@@ -461,20 +461,20 @@ function parseC6Invoice(lines: string[], profile: InvoiceProfile, defaultYear: n
     if (cardMatch) {
       const virtual = /virtual/i.test(line) ? ' Virtual' : ''
       currentCard = `C6 Carbon${virtual} Final ${cardMatch[1]}`
-      const subtotalMatch = line.match(/subtotal\s+(?:deste|do)\s+cart[aã]o\D{0,25}(r?\$?\s*[\d.,]+)/i)
+      const subtotalMatch = line.match(/subtotal\s+(?:deste|do)\s+cart[aÃ£]o\D{0,25}(r?\$?\s*[\d.,]+)/i)
       if (subtotalMatch) expectedSubtotals.set(currentCard, parseCurrencyValue(subtotalMatch[1]))
       insideExcludedSection = false
       continue
     }
 
-    if (/transa[cç][oõ]es\s+dos\s+cart[oõ]es\s+adicionais/i.test(line)) {
+    if (/transa[cÃ§][oÃµ]es\s+dos\s+cart[oÃµ]es\s+adicionais/i.test(line)) {
       insideExcludedSection = false
       continue
     }
 
     if (isFinancialOffer(line, profile)) {
       insideExcludedSection = beginsExcludedSection(line)
-      excluded.push({ reason: /pr[oó]ximas?\s+faturas?/i.test(line) ? 'future_installment' : 'financial_offer', marker: 'section_anchor' })
+      excluded.push({ reason: /pr[oÃ³]ximas?\s+faturas?/i.test(line) ? 'future_installment' : 'financial_offer', marker: 'section_anchor' })
       continue
     }
     if (isInstitutionalLine(line, profile)) {
@@ -509,7 +509,7 @@ function parseTextInvoice(rawText: string): DocumentParseResult {
     const c6 = parseC6Invoice(lines, profile, defaultYear, expectedPeriod)
     const cards = new Map<string, ExtractedTransaction[]>()
     for (const tx of c6.transactions) {
-      const key = tx.accountOrCard || 'Cartão de Crédito'
+      const key = tx.accountOrCard || 'CartÃ£o de CrÃ©dito'
       cards.set(key, [...(cards.get(key) || []), tx])
     }
     const cardReconciliations = [...cards.entries()].map(([card, txs]) => {
@@ -541,7 +541,7 @@ function parseTextInvoice(rawText: string): DocumentParseResult {
   const transactions: ExtractedTransaction[] = []
   const excluded: InvoiceRejectedLine[] = []
   let insideExcludedSection = false
-  let currentCard = profile.label === 'Fatura bancária genérica' ? 'Cartão de Crédito' : profile.label
+  let currentCard = profile.label === 'Fatura bancÃ¡ria genÃ©rica' ? 'CartÃ£o de CrÃ©dito' : profile.label
   let expectedTotal: number | undefined
 
   for (let index = 0; index < lines.length; index++) {
@@ -550,13 +550,13 @@ function parseTextInvoice(rawText: string): DocumentParseResult {
     if (totalMatch) expectedTotal = parseCurrencyValue(totalMatch[1])
     if (insideExcludedSection && (
       profile.transactionAnchors.some(anchor => anchor.test(line)) ||
-      /^(?:lan[cç]amentos|compras|transa[cç][oõ]es|cart[aã]o\s+(?:final|virtual|adicional))/i.test(line)
+      /^(?:lan[cÃ§]amentos|compras|transa[cÃ§][oÃµ]es|cart[aÃ£]o\s+(?:final|virtual|adicional))/i.test(line)
     )) {
       insideExcludedSection = false
     }
     if (isFinancialOffer(line, profile)) {
       insideExcludedSection = beginsExcludedSection(line)
-      excluded.push({ reason: /pr[oó]ximas?\s+faturas?/i.test(line) ? 'future_installment' : 'financial_offer', marker: 'section_anchor' })
+      excluded.push({ reason: /pr[oÃ³]ximas?\s+faturas?/i.test(line) ? 'future_installment' : 'financial_offer', marker: 'section_anchor' })
       continue
     }
     if (isInstitutionalLine(line, profile)) {
@@ -599,15 +599,15 @@ function parseTextInvoice(rawText: string): DocumentParseResult {
 }
 
 /**
- * Parser determinístico de texto/OCR. O contrato legado (transactions,
- * institution, period e total_amount) é preservado; `diagnostics` é opcional
- * para a prévia de revisão e para uma futura camada semântica sanitizada.
+ * Parser determinÃ­stico de texto/OCR. O contrato legado (transactions,
+ * institution, period e total_amount) Ã© preservado; `diagnostics` Ã© opcional
+ * para a prÃ©via de revisÃ£o e para uma futura camada semÃ¢ntica sanitizada.
  */
 export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult {
   const genericProfile = detectInvoiceProfile('')
   if (!rawText || rawText.trim().length === 0) {
     return {
-      document_type: 'OUTRO', period: new Date().toISOString().slice(0, 7), institution: 'Fatura Bancária', total_amount: 0, transactions: [],
+      document_type: 'OUTRO', period: new Date().toISOString().slice(0, 7), institution: 'Fatura BancÃ¡ria', total_amount: 0, transactions: [],
       diagnostics: makeDiagnostics({ profile: genericProfile, confidence: 'low', requiresReview: true, excluded: [], extractedTotal: 0 }),
     }
   }
@@ -621,7 +621,7 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
       return {
         document_type: 'OFX_EXTRATO',
         period,
-        institution: 'Extrato Bancário OFX',
+        institution: 'Extrato BancÃ¡rio OFX',
         total_amount: totalAmount,
         transactions: ofxTxs,
         diagnostics: makeDiagnostics({ profile: { ...genericProfile, label: 'Extrato OFX estruturado', maturity: 'specialized' }, confidence: 'high', requiresReview: false, excluded: [], extractedTotal: totalAmount })
@@ -651,7 +651,7 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
   /* Retired legacy line-by-line parser. Kept temporarily only to make the
    * migration diff reviewable; it is intentionally outside the build. */
   /*
-  // Blacklist institucional: Termos de cabeçalho bancário, dados de boleto, agência e holdings que NUNCA são compras
+  // Blacklist institucional: Termos de cabeÃ§alho bancÃ¡rio, dados de boleto, agÃªncia e holdings que NUNCA sÃ£o compras
   const INSTITUTIONAL_BLACKLIST = [
     /h\s*o\s*l\s*d\s*i\s*n\s*g/i,
     /u\s*n\s*i\s*b\s*a\s*n\s*c\s*o/i,
@@ -661,14 +661,14 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
     /ouvidoria/i,
     /sac\s*0800/i,
     /autentica/i,
-    /linha\s+digit[aá]vel/i,
-    /c[oó]digo\s+de\s+barras/i,
-    /benefici[aá]rio/i,
+    /linha\s+digit[aÃ¡]vel/i,
+    /c[oÃ³]digo\s+de\s+barras/i,
+    /benefici[aÃ¡]rio/i,
     /pagador/i,
-    /ag[eê]ncia/i,
-    /limite\s+de\s+cr[eé]dito/i,
-    /limite\s+dispon[ií]vel/i,
-    /pagamento\s+m[ií]nimo/i,
+    /ag[eÃª]ncia/i,
+    /limite\s+de\s+cr[eÃ©]dito/i,
+    /limite\s+dispon[iÃ­]vel/i,
+    /pagamento\s+m[iÃ­]nimo/i,
     /encargos\s+financeiros/i,
     /cet\s+anual/i,
     /comprovante\s+de\s+pagamento/i,
@@ -679,7 +679,7 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
   const transactions: ExtractedTransaction[] = []
 
-  let currentCard = 'Cartão de Crédito'
+  let currentCard = 'CartÃ£o de CrÃ©dito'
   let detectedPeriod = ''
   let totalAmount = 0
 
@@ -693,8 +693,8 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
 
     if (!line || line.length < 5) continue
 
-    // Detecta início de compras parceladas futuras e encerra lançamentos correntes
-    if (/compras parceladas\s*-\s*pr[oó]ximas faturas/i.test(line)) {
+    // Detecta inÃ­cio de compras parceladas futuras e encerra lanÃ§amentos correntes
+    if (/compras parceladas\s*-\s*pr[oÃ³]ximas faturas/i.test(line)) {
       break
     }
 
@@ -703,7 +703,7 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
       continue
     }
 
-    // Captura repasse de IOF em faturas com lançamentos internacionais
+    // Captura repasse de IOF em faturas com lanÃ§amentos internacionais
     if (/repasse de iof.*r\$\s*([0-9\.\,]+)/i.test(line)) {
       const iofMatch = line.match(/repasse de iof.*r\$\s*([0-9\.\,]+)/i)
       if (iofMatch) {
@@ -724,20 +724,20 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
       continue
     }
 
-    // Detecta menção a cartões ou bancos no cabeçalho
+    // Detecta menÃ§Ã£o a cartÃµes ou bancos no cabeÃ§alho
     if (/c6 carbon/i.test(line)) {
       currentCard = 'C6 Carbon Black Mastercard'
     } else if (/nubank|ultravioleta/i.test(line)) {
       currentCard = 'Nubank Ultravioleta'
-    } else if (/itau.*personnalite|personnalite.*black|itau.*black/i.test(line) || (line.includes('Black') && /itau/i.test(rawText))) {
-      currentCard = 'Itaú Personnalité Mastercard Black'
-    } else if (/itau|personnalite/i.test(line)) {
-      if (!currentCard.includes('Black')) currentCard = 'Itaú Personnalité'
-    } else if (/inter/i.test(line) && !currentCard.includes('Itaú') && !currentCard.includes('C6')) {
+    } else if (/Itaú.*Personnalité|Personnalité.*black|Itaú.*black/i.test(line) || (line.includes('Black') && /Itaú/i.test(rawText))) {
+      currentCard = 'Itaúº Personnalité© Mastercard Black'
+    } else if (/Itaú|Personnalité/i.test(line)) {
+      if (!currentCard.includes('Black')) currentCard = 'Itaúº Personnalité©'
+    } else if (/inter/i.test(line) && !currentCard.includes('Itaúº') && !currentCard.includes('C6')) {
       currentCard = 'Banco Inter'
     }
 
-    // Detecta mudança de cartão específico
+    // Detecta mudanÃ§a de cartÃ£o especÃ­fico
     if (/carbon.*final\s+(\d+)/i.test(line)) {
       const match = line.match(/carbon.*final\s+(\d+)(?:\s*-\s*([A-Za-z\s]+))?/i)
       const lastDigits = match?.[1] || ''
@@ -755,7 +755,7 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
       continue
     }
 
-    // Detecta competência ou vencimento no cabeçalho
+    // Detecta competÃªncia ou vencimento no cabeÃ§alho
     if (!detectedPeriod) {
       const vencMatch = line.match(/vencimento\s*(?:em\s*)?:?\s*(\d{1,2}\s+[a-z]{3,9}\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4})/i)
       if (vencMatch) {
@@ -769,14 +769,14 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
       continue
     }
 
-    // ── Heurística Primária: Detecção na Mesma Linha ───────────────────────
-    // Procura valor monetário brasileiro na linha (ex: R$ 336,76 ou 45,90 ou 1.250,00)
+    // â”€â”€ HeurÃ­stica PrimÃ¡ria: DetecÃ§Ã£o na Mesma Linha â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Procura valor monetÃ¡rio brasileiro na linha (ex: R$ 336,76 ou 45,90 ou 1.250,00)
     const valueRegex = /(?:r\$\s*)?(-?\s*\d{1,3}(?:\.\d{3})*,\d{2}|-?\s*\d+,\d{2})/i
     const valMatch = line.match(valueRegex)
 
     if (valMatch) {
       const rawVal = parseCurrencyValue(valMatch[0])
-      // Ignora valores zerados (R$ 0,00) que geralmente são metadados ou ruído
+      // Ignora valores zerados (R$ 0,00) que geralmente sÃ£o metadados ou ruÃ­do
       if (rawVal !== 0) {
         // Procura data na linha: "15/05/2026", "15/05", "15 mai", "15 de maio", "15.05"
         const dateRegex = /\b(\d{1,2}[\/\.-]\d{1,2}(?:[\/\.-]\d{2,4})?|\d{1,2}\s+(?:de\s+)?[a-z]{3,9}(?:\s+\d{2,4})?)\b/i
@@ -789,12 +789,12 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
             detectedPeriod = formattedDate.slice(0, 7)
           }
 
-          // A descrição é o que sobra ao remover a data e o valor da linha
+          // A descriÃ§Ã£o Ã© o que sobra ao remover a data e o valor da linha
           let descText = line
             .replace(dateMatch[0], '')
             .replace(valMatch[0], '')
             .replace(/r\$/gi, '')
-            .replace(/[\*•|]+/g, ' ')
+            .replace(/[\*â€¢|]+/g, ' ')
             .trim()
 
           // Detecta parcelas (ex: "Parcela 03/10" ou "03/10")
@@ -806,7 +806,7 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
             installmentTotal = parseInt(parcelMatch[2], 10)
           }
 
-          // Limpa pontuação ou dígitos isolados no início
+          // Limpa pontuaÃ§Ã£o ou dÃ­gitos isolados no inÃ­cio
           descText = descText.replace(/\s+/g, ' ').replace(/^[\d\s\.\,\-]+/, '').trim()
 
           if (descText.length >= 2) {
@@ -831,7 +831,7 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
       }
     }
 
-    // ── Heurística Secundária: Linhas Divididas (Data em uma linha, Descrição e Valor na seguinte) ──
+    // â”€â”€ HeurÃ­stica SecundÃ¡ria: Linhas Divididas (Data em uma linha, DescriÃ§Ã£o e Valor na seguinte) â”€â”€
     const dateAtStartRegex = /^(\d{1,2}\s+(?:de\s+)?[a-z]{3,9}(?:\s+\d{2,4})?|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?|\d{4}-\d{2}-\d{2})\b/i
     if (dateAtStartRegex.test(line) && i + 1 < lines.length) {
       const nextLine = lines[i + 1]
@@ -858,7 +858,7 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
               installment_current: null,
               installment_total: null
             })
-            i++ // Consumiu a próxima linha
+            i++ // Consumiu a prÃ³xima linha
             continue
           }
         }

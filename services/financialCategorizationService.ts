@@ -187,7 +187,51 @@ export class FinancialCategorizationService {
         }
       }
     } catch (dbErr) {
-      console.warn('[FinancialCategorizationService] Aviso ao consultar category_rules no Postgres:', dbErr)
+      console.warn('[FinancialCategorizationService] Aviso ao consultar category_rules no Postgres:', dbErr instanceof Error ? dbErr.name : 'unknown_error')
+    }
+
+    // -------------------------------------------------------------
+    // ETAPA 2.5: Memória de Categorização Passada (Hit Histórico Idêntico)
+    // Se o usuário já categorizou uma transação com a mesmíssima descrição no passado
+    // -------------------------------------------------------------
+    try {
+      const pastTx = await sql`
+        SELECT category, subcategory, is_fixed_expense
+        FROM public.transactions
+        WHERE user_id = ${req.user_id} 
+          AND account_id IN (SELECT id FROM public.accounts WHERE type = ${req.account_scope} AND user_id = ${req.user_id})
+          AND LOWER(description) = ${lowerDesc}
+          AND category IS NOT NULL 
+          AND category != 'Pendente'
+          AND category != 'NÃO_IDENTIFICADO'
+        ORDER BY date DESC
+        LIMIT 1
+      `;
+      if (pastTx && pastTx.length > 0) {
+        const pTx = pastTx[0];
+        return {
+          transaction_id: req.id,
+          original_description: req.description,
+          sanitized_description: sanitizedDesc,
+          applied_category: pTx.category,
+          applied_subcategory: pTx.subcategory,
+          suggested_category: pTx.category,
+          suggested_subcategory: pTx.subcategory,
+          decision_type: 'deterministic',
+          certainty_label: 'hit histórico',
+          choice_confidence: null,
+          is_fixed_probability: null,
+          needs_review_probability: null,
+          is_fixed: Boolean(pTx.is_fixed_expense),
+          review_required: false, // JEV sugere direto com base no histórico
+          categorization_status: 'auto_applied',
+          source: 'local_rule',
+          provider: 'postgres_rules',
+          latency_ms: Date.now() - startTime
+        };
+      }
+    } catch (dbErr) {
+       console.warn('[FinancialCategorizationService] Aviso ao consultar hit histórico:', dbErr instanceof Error ? dbErr.name : 'unknown_error');
     }
 
     // -------------------------------------------------------------
@@ -381,7 +425,8 @@ export class FinancialCategorizationService {
           error_message
         ) VALUES (
           ${params.user_id},
-          ${params.transaction_id || null},
+          (SELECT id FROM public.transactions
+           WHERE id = ${params.transaction_id || null} AND user_id = ${params.user_id}),
           ${params.input_hash},
           ${params.sanitized_input ? JSON.stringify(params.sanitized_input) : null},
           ${params.decision.provider},
@@ -402,7 +447,7 @@ export class FinancialCategorizationService {
         )
       `
     } catch (logErr) {
-      console.warn('[FinancialCategorizationService] Falha ao registrar log de auditoria no Postgres:', logErr)
+      console.warn('[FinancialCategorizationService] Falha ao registrar log de auditoria no Postgres:', logErr instanceof Error ? logErr.name : 'unknown_error')
     }
   }
 }

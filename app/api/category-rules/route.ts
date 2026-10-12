@@ -22,7 +22,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, rules })
   } catch (error: any) {
-    console.error('Erro ao buscar category_rules:', error)
+    console.error('Erro ao buscar category_rules:', error instanceof Error ? error.name : 'unknown_error')
     return NextResponse.json(
       { success: false, error: 'Falha ao consultar regras no banco de dados.' },
       { status: 500 }
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, rule: inserted[0] })
   } catch (error: any) {
-    console.error('Erro ao salvar category_rule:', error)
+    console.error('Erro ao salvar category_rule:', error instanceof Error ? error.name : 'unknown_error')
     return NextResponse.json(
       { success: false, error: 'Falha ao salvar regra de categorização.' },
       { status: 500 }
@@ -136,14 +136,19 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: false, error: 'ID da regra não fornecido.' }, { status: 400 })
     }
 
-    await sql`
+    const deleted = await sql`
       DELETE FROM public.category_rules
       WHERE id = ${ruleId} AND user_id = ${userId}
+      RETURNING id
     `
+
+    if (deleted.length === 0) {
+      return NextResponse.json({ success: false, error: 'Regra não encontrada.' }, { status: 404 })
+    }
 
     return NextResponse.json({ success: true, message: 'Regra excluída com sucesso.' })
   } catch (error: any) {
-    console.error('Erro ao deletar category_rule:', error)
+    console.error('Erro ao deletar category_rule:', error instanceof Error ? error.name : 'unknown_error')
     return NextResponse.json({ success: false, error: 'Falha ao deletar regra.' }, { status: 500 })
   }
 }

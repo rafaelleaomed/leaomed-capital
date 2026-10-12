@@ -1,3 +1,5 @@
+
+import { financialStorage, getFinancialUserScope } from './userScopedStorage'
 export interface CreditCardItem {
   id: string
   name: string
@@ -18,80 +20,28 @@ export interface CreditCardItem {
 
 const STORAGE_KEY = 'leaomed_credit_cards_v3'
 
-export const DEFAULT_CREDIT_CARDS: CreditCardItem[] = [
-  {
-    id: 'card_c6_carbon',
-    name: 'Cartão C6 Carbon Black PF',
-    institution: 'C6 Bank',
-    limit: 50000.00,
-    spent: 6800.00,
-    closingDay: 20,
-    dueDay: 28,
-    additionalCards: '1 adicional (Esposa)',
-    cardholder: 'Dr. Rafael Leão',
-    lastDigits: '9482',
-    badge: 'Principal (PF) - Veículo & Pessoal',
-    color: 'bg-slate-900',
-    entityType: 'PF',
-    status: 'Fatura auditada (PDF)',
-    notes: 'Inclui Parcela Entrada T-Cross'
-  },
-  {
-    id: 'card_itau_pf',
-    name: 'Cartão Itaú PF',
-    institution: 'Banco Itaú',
-    limit: 20000.00,
-    spent: 355.00,
-    closingDay: 8,
-    dueDay: 15,
-    additionalCards: 'Nenhum',
-    cardholder: 'Dr. Rafael Leão',
-    lastDigits: '3104',
-    badge: 'Casa & Eletro (PF)',
-    color: 'bg-orange-600',
-    entityType: 'PF',
-    status: 'Fatura auditada',
-    notes: 'Parcela Lava e Seca Midea (R$ 355,00)'
-  },
-  {
-    id: 'card_nubank_pf',
-    name: 'Cartão Nubank PF',
-    institution: 'Nubank',
-    limit: 15000.00,
-    spent: 250.92,
-    closingDay: 3,
-    dueDay: 10,
-    additionalCards: 'Nenhum',
-    cardholder: 'Dr. Rafael Leão',
-    lastDigits: '7712',
-    badge: 'Tecnologia & Família (PF)',
-    color: 'bg-purple-700',
-    entityType: 'PF',
-    status: 'Fatura auditada',
-    notes: 'Parcela TV TCL (R$ 250,92)'
-  }
-]
+export const DEFAULT_CREDIT_CARDS: CreditCardItem[] = []
 
 export class CreditCardStore {
   static getCards(): CreditCardItem[] {
-    if (typeof window === 'undefined') return DEFAULT_CREDIT_CARDS
+    if (typeof window === 'undefined') return []
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
+      const raw = financialStorage.getItem(STORAGE_KEY)
       if (!raw) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_CREDIT_CARDS))
-        return DEFAULT_CREDIT_CARDS
+        financialStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_CREDIT_CARDS))
+        return []
       }
       const parsed = JSON.parse(raw)
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_CREDIT_CARDS
+      return Array.isArray(parsed) ? parsed : []
     } catch (_) {
-      return DEFAULT_CREDIT_CARDS
+      return []
     }
   }
 
   static saveCards(cards: CreditCardItem[]): void {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined' || !getFinancialUserScope()) return
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cards))
+      financialStorage.setItem(STORAGE_KEY, JSON.stringify(cards))
       window.dispatchEvent(new CustomEvent('leaomed_credit_cards_updated', { detail: { cards } }))
     } catch (_) {}
   }
@@ -131,6 +81,6 @@ export class CreditCardStore {
 
   static resetToDefaults(): CreditCardItem[] {
     this.saveCards(DEFAULT_CREDIT_CARDS)
-    return DEFAULT_CREDIT_CARDS
+    return []
   }
 }

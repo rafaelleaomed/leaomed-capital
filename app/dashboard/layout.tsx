@@ -5,25 +5,21 @@ import { PrivacyProvider } from '@/context/PrivacyContext'
 import { PrivacyToggle } from '@/components/PrivacyToggle'
 import { UserAccountHeader } from '@/components/dashboard/UserAccountHeader'
 import { SidebarNavigation } from '@/components/dashboard/SidebarNavigation'
-import { createClient } from '@/utils/supabase/server'
+import { getAuthenticatedUser } from '@/utils/supabase-server'
+import { isUserAuthorized } from '@/utils/auth-helpers'
+import { redirect } from 'next/navigation'
+import { FinancialSessionBoundary } from '@/components/FinancialSessionBoundary'
+
+export const dynamic = 'force-dynamic'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  let userName = 'Dr. Usuário'
-  let userEmail = 'usuario@leaomed.com'
-  try {
-    const supabase = await createClient()
-    if (supabase) {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        userEmail = user.email || userEmail
-        userName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Doutor(a)'
-      }
-    }
-  } catch {
-    // O cabeçalho permanece disponível enquanto a sessão é recuperada.
-  }
+  const user = await getAuthenticatedUser()
+  if (!user || !isUserAuthorized(user)) redirect('/login')
+  const userEmail = user.email || ''
+  const userName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário'
 
   return (
+    <FinancialSessionBoundary key={user.id} userId={user.id}>
     <ThemeProvider>
       <PrivacyProvider>
         <div className="capital-shell min-h-[100dvh]">
@@ -46,5 +42,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </PrivacyProvider>
     </ThemeProvider>
+    </FinancialSessionBoundary>
   )
 }

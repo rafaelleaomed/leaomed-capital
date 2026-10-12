@@ -1,5 +1,7 @@
 'use client'
 
+import { getFinancialScopeVersion } from '@/utils/userScopedStorage'
+
 import React, { useState } from 'react'
 import { History } from 'lucide-react'
 
@@ -14,6 +16,7 @@ export interface MonthRecord {
 }
 
 export function HistoricalOverview({ isDemo = false }: { isDemo?: boolean }) {
+  const financialScopeVersion = React.useRef(getFinancialScopeVersion()).current
   const [selectedView, setSelectedView] = useState<'ALL' | 'PJ' | 'PF'>('ALL')
 
   // Histórico demonstrativo genérico para visualização técnica e portfólio
@@ -28,7 +31,7 @@ export function HistoricalOverview({ isDemo = false }: { isDemo?: boolean }) {
     { month: 'Jul/26', pjGross: 40000.00, pjTaxes: 2800.00, pjProlabore: 23000.00, pfIncome: 28500.00, pfExpenses: 19200.00, balance: 9300.00 }
   ]
 
-  const [history, setHistory] = useState<MonthRecord[]>(demoHistory)
+  const [history, setHistory] = useState<MonthRecord[]>(isDemo ? demoHistory : [])
 
   React.useEffect(() => {
     if (isDemo) return
@@ -36,8 +39,8 @@ export function HistoricalOverview({ isDemo = false }: { isDemo?: boolean }) {
     fetch('/api/history')
       .then(res => res.json())
       .then(data => {
-        if (!isMounted) return
-        if (data.success && Array.isArray(data.history) && data.history.length > 0) {
+        if (!isMounted || getFinancialScopeVersion() !== financialScopeVersion) return
+        if (data.success && Array.isArray(data.history)) {
           const mapped: MonthRecord[] = data.history.map((row: any) => ({
             month: row.month_year,
             pjGross: parseFloat(row.pj_gross_revenue) || 0,

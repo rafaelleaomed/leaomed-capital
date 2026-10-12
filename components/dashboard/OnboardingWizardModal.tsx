@@ -1,5 +1,7 @@
 'use client'
 
+import { financialStorage } from '@/utils/userScopedStorage'
+
 import React, { useState } from 'react'
 import { 
   Sparkles, 
@@ -40,12 +42,7 @@ export function OnboardingWizardModal({
   const [currentStep, setCurrentStep] = useState(1)
 
   // Etapa 1: Contas e Vínculos
-  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([
-    'Pessoa Jurídica',
-    'Itaú Personnalité PF',
-    'Nubank PF',
-    'Cartão C6 Carbon Black PF'
-  ])
+  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
   const [newAccountName, setNewAccountName] = useState('')
 
   // Etapa 2: Método de Ingestão de Dados
@@ -59,24 +56,7 @@ export function OnboardingWizardModal({
   const [newSubcategoryName, setNewSubcategoryName] = useState('')
 
   // Etapa 4: Financiamentos e Parcelamentos
-  const [installments, setInstallments] = useState([
-    {
-      name: 'Financiamento Veicular (CDC)',
-      category: 'Transporte',
-      monthlyValue: 3336.28,
-      currentInstallment: 1,
-      totalInstallments: 36,
-      endMonthYear: '2028-04'
-    },
-    {
-      name: 'Fração Imobiliária / Cota Turística',
-      category: 'Imóvel / Resort',
-      monthlyValue: 1865.33,
-      currentInstallment: 1,
-      totalInstallments: 70,
-      endMonthYear: '2032-02'
-    }
-  ])
+  const [installments, setInstallments] = useState<Array<{ name: string; category: string; monthlyValue: number; currentInstallment: number; totalInstallments: number; endMonthYear: string }>>([])
   const [newInstallment, setNewInstallment] = useState({
     name: '',
     category: 'Transporte',
@@ -91,7 +71,7 @@ export function OnboardingWizardModal({
   // Carregar dados prévios do localStorage ao inicializar
   React.useEffect(() => {
     try {
-      const stored = localStorage.getItem('leaomed_user_custom_setup')
+      const stored = financialStorage.getItem('leaomed_user_custom_setup')
       if (stored) {
         const parsed = JSON.parse(stored)
         if (parsed.accounts && Array.isArray(parsed.accounts)) setSelectedAccounts(parsed.accounts)
@@ -177,7 +157,7 @@ export function OnboardingWizardModal({
     }
     // Salva no localStorage para persistência imediata
     try {
-      localStorage.setItem('leaomed_user_custom_setup', JSON.stringify(config))
+      financialStorage.setItem('leaomed_user_custom_setup', JSON.stringify(config))
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('leaomed_setup_updated', { detail: config }))
       }

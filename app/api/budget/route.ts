@@ -24,7 +24,7 @@ export async function GET(request: Request) {
       endDate = `${period}-${String(daysInMonth).padStart(2, '0')}`;
     }
 
-    // 1. Obter categorias e subcategorias oficiais com soma real de transações do período
+    // Only expose categories present in this user's transactions, never global private labels.
     const categoriesWithTransactions = await sql`
       SELECT 
         c.name as category_name,
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
         COUNT(t.id) as transaction_count
       FROM public.categories c
       JOIN public.subcategories s ON s.category_id = c.id
-      LEFT JOIN public.transactions t 
+      JOIN public.transactions t
         ON t.category = c.name 
         AND t.subcategory = s.name 
         AND t.user_id = ${userId}
@@ -119,7 +119,7 @@ export async function GET(request: Request) {
       }
     });
   } catch (error) {
-    console.error('Erro na rota /api/budget:', error);
+    console.error('Erro na rota /api/budget:', error instanceof Error ? error.name : 'unknown_error');
     return NextResponse.json(
       { success: false, error: 'Falha ao buscar dados orçamentários do banco.' },
       { status: 500 }
