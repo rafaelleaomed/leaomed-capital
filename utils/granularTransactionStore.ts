@@ -8,6 +8,7 @@ export interface GranularTransaction {
   id: string
   entityType: 'PF' | 'PJ'
   date: string // YYYY-MM-DD
+  originalDate?: string
   description: string
   originalDescription?: string
   amount: number // Valores negativos para despesas, positivos para receitas
@@ -85,7 +86,8 @@ export class GranularTransactionStore {
         const mapped: GranularTransaction[] = data.transactions.map((t: any) => ({
           id: t.id,
           entityType: t.entity_type || 'PF',
-          date: t.date?.split('T')[0] || t.date,
+          date: t.competence_date?.split('T')[0] || t.date?.split('T')[0] || t.date,
+          originalDate: t.date?.split('T')[0] || t.date,
           description: t.description,
           amount: parseFloat(t.amount) || 0,
           accountOrCard: t.account_name || 'Conta',

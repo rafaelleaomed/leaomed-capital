@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sql } from '@/utils/db'
 import { getAuthenticatedUserId } from '@/utils/auth-helpers'
 import crypto from 'crypto'
+import { canRecoverLegacyInstallments } from '@/services/installmentPersistence'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,36 +51,36 @@ export async function GET(req: NextRequest) {
 
       if (entity === 'PF' || entity === 'PJ') {
         rows = await sql`
-          SELECT t.id, t.account_id, t.amount, t.date, t.description, t.category, t.subcategory,
+          SELECT t.id, t.account_id, t.amount, t.date, t.competence_date, t.description, t.category, t.subcategory,
                  t.is_fixed, t.is_ignored, a.type as entity_type, a.name as account_name
           FROM public.transactions t
           LEFT JOIN public.accounts a ON a.id = t.account_id AND a.user_id = t.user_id
           WHERE t.user_id = ${userId}
-            AND t.date >= ${startDate} AND t.date <= ${endDate}
+            AND COALESCE(t.competence_date, t.date) >= ${startDate} AND COALESCE(t.competence_date, t.date) <= ${endDate}
             AND (a.type = ${entity} OR a.type IS NULL)
-          ORDER BY t.date DESC, t.created_at DESC
+          ORDER BY COALESCE(t.competence_date, t.date) DESC, t.created_at DESC
           LIMIT ${limit} OFFSET ${offset}
         `
       } else {
         rows = await sql`
-          SELECT t.id, t.account_id, t.amount, t.date, t.description, t.category, t.subcategory,
+          SELECT t.id, t.account_id, t.amount, t.date, t.competence_date, t.description, t.category, t.subcategory,
                  t.is_fixed, t.is_ignored, a.type as entity_type, a.name as account_name
           FROM public.transactions t
           LEFT JOIN public.accounts a ON a.id = t.account_id AND a.user_id = t.user_id
           WHERE t.user_id = ${userId}
-            AND t.date >= ${startDate} AND t.date <= ${endDate}
-          ORDER BY t.date DESC, t.created_at DESC
+            AND COALESCE(t.competence_date, t.date) >= ${startDate} AND COALESCE(t.competence_date, t.date) <= ${endDate}
+          ORDER BY COALESCE(t.competence_date, t.date) DESC, t.created_at DESC
           LIMIT ${limit} OFFSET ${offset}
         `
       }
     } else {
       rows = await sql`
-        SELECT t.id, t.account_id, t.amount, t.date, t.description, t.category, t.subcategory,
+        SELECT t.id, t.account_id, t.amount, t.date, t.competence_date, t.description, t.category, t.subcategory,
                t.is_fixed, t.is_ignored, a.type as entity_type, a.name as account_name
         FROM public.transactions t
         LEFT JOIN public.accounts a ON a.id = t.account_id AND a.user_id = t.user_id
         WHERE t.user_id = ${userId}
-        ORDER BY t.date DESC, t.created_at DESC
+        ORDER BY COALESCE(t.competence_date, t.date) DESC, t.created_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `
     }
@@ -105,11 +106,14 @@ export async function GET(req: NextRequest) {
  * Inserção de uma ou múltiplas transações com deduplicação atômica via hash único.
  */
 export async function POST(req: NextRequest) {
-  const { userId, errorResponse } = await getAuthenticatedUserId()
+  const { userId, user, errorResponse } = await getAuthenticatedUserId()
   if (errorResponse) return errorResponse
 
   try {
     const body = await req.json()
+    if (body.recoverLegacy && (!canRecoverLegacyInstallments(user) || body.expectedUserId !== userId)) {
+      return NextResponse.json({ success: false, error: 'Recuperação indisponível para esta conta.' }, { status: 403 })
+    }
     const transactionsToInsert = Array.isArray(body.transactions) ? body.transactions : [body]
 
     if (transactionsToInsert.length === 0) {
@@ -118,7 +122,9 @@ export async function POST(req: NextRequest) {
 
     const invalidTransactionIndex = transactionsToInsert.findIndex((tx: any) => {
       const amount = Number(tx?.amount)
-      return !tx?.date || !/^\d{4}-\d{2}-\d{2}$/.test(tx.date) || !tx?.description?.trim() || !Number.isFinite(amount) || amount === 0
+      return !tx?.date || !/^\d{4}-\d{2}-\d{2}$/.test(tx.date) ||
+        (tx.competenceDate !== undefined && (typeof tx.competenceDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(tx.competenceDate))) ||
+        !tx?.description?.trim() || !Number.isFinite(amount) || amount === 0
     })
     if (invalidTransactionIndex >= 0) {
       return NextResponse.json({
@@ -140,6 +146,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Conta não encontrada.' }, { status: 404 })
       }
     }
+
+    if (!userId || !user?.email) return NextResponse.json({ success: false, error: 'Identidade autenticada indisponível.' }, { status: 401 })
+    // Supabase Auth and the financial database are independent; create only this verified identity.
+    await sql`INSERT INTO public.users (id, email) VALUES (${userId}, ${user.email}) ON CONFLICT (id) DO NOTHING`
 
     // Busca ou cria uma conta padrão para o usuário caso não informada
     const existingAccounts = await sql`
@@ -211,6 +221,7 @@ export async function POST(req: NextRequest) {
             ${tx.description}, ${category}, ${subcategory}, ${isFixed}, ${isIgnored}, ${txHash}
           )
           ON CONFLICT (hash) DO UPDATE SET
+            competence_date = EXCLUDED.competence_date,
             category = EXCLUDED.category,
             subcategory = EXCLUDED.subcategory,
             is_fixed = EXCLUDED.is_fixed,

@@ -39,7 +39,7 @@ export default async function DashboardPage({
   if (!period) {
     try {
       const latestPeriodRows = await sql`
-        SELECT TO_CHAR(MAX(t.date), 'YYYY-MM') as latest_period
+        SELECT TO_CHAR(MAX(COALESCE(t.competence_date, t.date)), 'YYYY-MM') as latest_period
         FROM public.transactions t
         WHERE t.user_id = ${user.id}
       `
@@ -75,7 +75,7 @@ export default async function DashboardPage({
       FROM public.transactions t
       LEFT JOIN public.accounts a ON a.id = t.account_id AND a.user_id = t.user_id
       WHERE t.user_id = ${userId}
-        AND t.date >= ${startDate} AND t.date <= ${endDate}
+        AND COALESCE(t.competence_date, t.date) >= ${startDate} AND COALESCE(t.competence_date, t.date) <= ${endDate}
         AND (
           CASE 
             WHEN ${activeFilter} = 'PF' THEN (a.type = 'PF' OR a.type IS NULL)
@@ -103,7 +103,7 @@ export default async function DashboardPage({
       WHERE t.user_id = ${userId}
         AND t.amount < 0
         AND t.is_ignored = FALSE
-        AND t.date >= ${startDate} AND t.date <= ${endDate}
+        AND COALESCE(t.competence_date, t.date) >= ${startDate} AND COALESCE(t.competence_date, t.date) <= ${endDate}
         AND (
           CASE 
             WHEN ${activeFilter} = 'PF' THEN (a.type = 'PF' OR a.type IS NULL)

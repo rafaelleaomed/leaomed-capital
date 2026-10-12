@@ -1556,7 +1556,7 @@ export function GranularExpenseAuditor({
                         />
                       </td>
                       <td className="py-3 px-4 font-mono text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] whitespace-nowrap">
-                        {tx.date}
+                        <span title={tx.originalDate && tx.originalDate !== tx.date ? `Data original da compra: ${tx.originalDate}` : undefined}>{tx.date}</span>
                       </td>
                       <td className="py-3 px-4 font-semibold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] max-w-xs truncate" title={tx.description}>
                         {tx.description}

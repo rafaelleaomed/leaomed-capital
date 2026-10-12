@@ -31,7 +31,7 @@ export interface InvoiceProfile {
 }
 
 const financialOfferAnchors = [
-  /parcelamento\s+(?:da\s+)?fatura/i,
+  /parcelamento\s+(?:d[ae]\s+)?fatura/i,
   /op[cç][oõ]es\s+de\s+parcelamento/i,
   /pagamento\s+m[ií]nimo/i,
   /encargos?\s+(?:do|de)\s+parcelamento/i,
