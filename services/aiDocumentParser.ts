@@ -200,74 +200,73 @@ function parseOfxContent(text: string): ExtractedTransaction[] {
 /**
  * Parser para linhas CSV (delimItaúas por vÃ­rgula, ponto-e-vÃ­rgula ou tab)
  */
-function parseCsvContent(text: string): ExtractedTransaction[] {
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
-  if (lines.length < 2) return []
-
-  const txs: ExtractedTransaction[] = []
-  
-  // Identifica delimItaúor principal
-  const firstLine = lines[0]
-  let delimiter = ';'
-  if ((firstLine.match(/,/g) || []).length > (firstLine.match(/;/g) || []).length) {
-    delimiter = ','
-  } else if (firstLine.includes('\t')) {
-    delimiter = '\t'
+function splitDelimitedLine(line: string, delimiter: string): string[] {
+  const columns: string[] = []
+  let current = ''
+  let quoted = false
+  for (let index = 0; index < line.length; index++) {
+    const char = line[index]
+    if (char === '"') {
+      if (quoted && line[index + 1] === '"') { current += '"'; index++ }
+      else quoted = !quoted
+    } else if (char === delimiter && !quoted) {
+      columns.push(current.trim())
+      current = ''
+    } else current += char
   }
+  columns.push(current.trim())
+  return quoted ? [] : columns
+}
 
-  // Verifica se a primeira linha Ã© cabeÃ§alho
-  const header = firstLine.toLowerCase().split(delimiter).map(s => s.trim().replace(/['"]/g, ''))
-  let dateIdx = header.findIndex(h => h.includes('data') || h.includes('date') || h.includes('dia'))
-  let descIdx = header.findIndex(h => h.includes('desc') || h.includes('historico') || h.includes('estabelecimento') || h.includes('titulo') || h.includes('memo'))
-  let amountIdx = header.findIndex(h => h.includes('valor') || h.includes('amount') || h.includes('quantia'))
+function isValidTransactionDate(raw: string): boolean {
+  if (!/^(?:\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?|\d{1,2}\s+(?:de\s+)?(?:jan(?:eiro)?|fev(?:ereiro)?|mar(?:ço)?|abr(?:il)?|mai(?:o)?|jun(?:ho)?|jul(?:ho)?|ago(?:sto)?|set(?:embro)?|out(?:ubro)?|nov(?:embro)?|dez(?:embro)?)(?:\s+(?:de\s+)?\d{2,4})?)$/i.test(raw)) return false
+  const [year, month, day] = parseInvoiceDate(raw).split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return date.getUTCFullYear() === year && date.getUTCMonth() + 1 === month && date.getUTCDate() === day
+}
 
-  // Se nÃ£o identificou cabeÃ§alhos exatos, usa posiÃ§Ãµes padrÃ£o comuns
-  if (dateIdx === -1) dateIdx = 0
-  if (descIdx === -1) descIdx = 1
-  if (amountIdx === -1) amountIdx = 2
+function isCurrencyColumn(raw: string): boolean {
+  return /^(?:r\$\s*)?-?(?:\d{1,3}(?:\.\d{3})*|\d+)(?:[.,]\d{2})?$/i.test(raw.trim())
+}
 
-  const startLine = (header.some(h => isNaN(parseFloat(h)))) ? 1 : 0
-
-  for (let i = startLine; i < lines.length; i++) {
-    const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''))
-    if (cols.length <= Math.max(dateIdx, descIdx, amountIdx)) continue
-
-    const rawDate = cols[dateIdx]
-    const rawDesc = cols[descIdx]
-    const rawVal = cols[amountIdx]
-
-    if (!rawDate || !rawDesc || !rawVal) continue
-
-    const amount = parseCurrencyValue(rawVal)
-    if (amount === 0 && !rawVal.includes('0')) continue
-
-    const formattedDate = parseInvoiceDate(rawDate)
-    const pred = CategoryRulesEngine.predict(rawDesc, 'PF')
-
-    // Detecta parcelas
-    let installmentCurrent: number | null = null
-    let installmentTotal: number | null = null
-    const parcelMatch = rawDesc.match(/parcela\s+(\d+)\/(\d+)/i) || rawDesc.match(/(\d+)\/(\d+)$/)
-    if (parcelMatch) {
-      installmentCurrent = parseInt(parcelMatch[1], 10)
-      installmentTotal = parseInt(parcelMatch[2], 10)
-    }
-
-    txs.push({
-      date: formattedDate,
-      description: rawDesc,
-      amount: Math.abs(amount),
-      category: pred.category,
-      subcategory: pred.subcategory,
-      subdivision: pred.subdivision,
-      is_fixed: pred.isCardBillPayment || Boolean(installmentTotal && installmentTotal > 1),
-      is_card_bill_payment: pred.isCardBillPayment,
-      installment_current: installmentCurrent,
-      installment_total: installmentTotal
+function parseCsvContent(text: string): ExtractedTransaction[] {
+  const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).map(line => line.trim()).filter(Boolean)
+  if (lines.length < 2) return []
+  // A comma in prose or a monetary decimal is not a delimited table.
+  for (const delimiter of [';', '\t', ',']) {
+    const rows = lines.map(line => splitDelimitedLine(line, delimiter))
+    const header = rows[0].map(value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())
+    const dateHeader = header.findIndex(value => /^(?:data|date|dia)(?:\s|$)/.test(value))
+    const descHeader = header.findIndex(value => /desc|historico|estabelecimento|titulo|memo/.test(value))
+    const amountHeader = header.findIndex(value => /^(?:valor|amount|quantia)(?:\s|$)/.test(value))
+    const hasHeader = dateHeader >= 0 && descHeader >= 0 && amountHeader >= 0
+    const dateIndex = hasHeader ? dateHeader : 0
+    const descriptionIndex = hasHeader ? descHeader : 1
+    const amountIndex = hasHeader ? amountHeader : 2
+    const firstDataRow = hasHeader ? 1 : 0
+    const validRow = (row: string[]) => row.length === rows[0].length && row.length >= 3 &&
+      isValidTransactionDate(row[dateIndex] || '') && Boolean(row[descriptionIndex]) && isCurrencyColumn(row[amountIndex] || '')
+    if (!hasHeader && !rows.every(validRow)) continue
+    if (hasHeader && !rows.slice(firstDataRow).some(validRow)) continue
+    return rows.slice(firstDataRow).filter(validRow).map(row => {
+      const amount = parseCurrencyValue(row[amountIndex])
+      const description = row[descriptionIndex]
+      const pred = CategoryRulesEngine.predict(description, 'PF')
+      const installment = extractInstallment(description)
+      const type = transactionKind(description)
+      const signedAmount = signedAmountFor(type, Math.abs(amount), amount)
+      return {
+        date: parseInvoiceDate(row[dateIndex]), description, amount: Math.abs(amount),
+        category: pred.category, subcategory: pred.subcategory, subdivision: pred.subdivision,
+        is_fixed: pred.isCardBillPayment || Boolean(installment.total && installment.total > 1),
+        is_card_bill_payment: type === 'bill_payment' || pred.isCardBillPayment,
+        installment_current: installment.current, installment_total: installment.total,
+        transaction_type: type, signed_amount: signedAmount, entryType: type, signedAmount,
+        direction: signedAmount < 0 ? 'credit' : 'debit',
+      }
     })
   }
-
-  return txs
+  return []
 }
 
 function normalizePdfLine(line: string): string {
@@ -382,7 +381,7 @@ function isFinancialOffer(line: string, profile: InvoiceProfile): boolean {
 }
 
 function beginsExcludedSection(line: string): boolean {
-  return /parcelamento\s+(?:da\s+)?fatura|op[cÃ§][oÃµ]es\s+de\s+parcelamento|encargos?\s+(?:do|de)\s+parcelamento|compras?\s+parceladas?\s*-?\s*pr[oÃ³]ximas?\s+faturas?/i.test(line)
+  return /parcelamento\s+(?:d[ae]\s+)?fatura|op[cÃ§][oÃµ]es\s+de\s+parcelamento|encargos?\s+(?:do|de)\s+parcelamento|compras?\s+parceladas?\s*-?\s*pr[oÃ³]ximas?\s+faturas?/i.test(line)
 }
 
 function isInstitutionalLine(line: string, profile: InvoiceProfile): boolean {
@@ -453,7 +452,8 @@ function parseC6Invoice(lines: string[], profile: InvoiceProfile, defaultYear: n
     : 'C6 CartÃ£o de CrÃ©dito'
   let insideExcludedSection = false
 
-  for (const line of lines) {
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index]
     const totalMatch = line.match(/(?:valor|total)(?:\s+da|\s+desta)?\s+fatura\D{0,25}(r?\$?\s*[\d.,]+)/i)
     if (totalMatch) expectedTotal = parseCurrencyValue(totalMatch[1])
 
@@ -467,13 +467,19 @@ function parseC6Invoice(lines: string[], profile: InvoiceProfile, defaultYear: n
       continue
     }
 
+    if (currentCard && /subtotal\s+(?:deste|do)\s+cart[aã]o/i.test(line)) {
+      const subtotal = findLastCurrencyValue(line) ?? (/^(?:r\$\s*)?[\d.,]+$/i.test(lines[index + 1] || '') ? findLastCurrencyValue(lines[index + 1]) : undefined)
+      if (subtotal !== undefined) expectedSubtotals.set(currentCard, subtotal)
+      continue
+    }
+
     if (/transa[cÃ§][oÃµ]es\s+dos\s+cart[oÃµ]es\s+adicionais/i.test(line)) {
       insideExcludedSection = false
       continue
     }
 
     if (isFinancialOffer(line, profile)) {
-      insideExcludedSection = beginsExcludedSection(line)
+      insideExcludedSection = insideExcludedSection || beginsExcludedSection(line)
       excluded.push({ reason: /pr[oÃ³]ximas?\s+faturas?/i.test(line) ? 'future_installment' : 'financial_offer', marker: 'section_anchor' })
       continue
     }
@@ -490,7 +496,20 @@ function parseC6Invoice(lines: string[], profile: InvoiceProfile, defaultYear: n
       continue
     }
 
-    const candidate = lineHasDateAndValue(line)
+    let candidate = lineHasDateAndValue(line)
+    // PDF.js may emit a row as date / merchant / amount on adjacent lines.
+    // Join only within a posted card section, stopping at the next row/header.
+    if (!candidate && /^(?:\d{1,2}[\/.-]\d{1,2}(?:[\/.-]\d{2,4})?|\d{1,2}\s+(?:de\s+)?[a-z]{3,9})(?:\s|$)/i.test(line)) {
+      let combined = line
+      for (let offset = 1; offset <= 3 && index + offset < lines.length; offset++) {
+        const next = lines[index + offset]
+        if (/^(?:\d{1,2}[\/.-]\d{1,2}|\d{1,2}\s+(?:de\s+)?(?:jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez))\b/i.test(next) ||
+          profile.transactionAnchors.some(anchor => anchor.test(next)) || isFinancialOffer(next, profile) || isInstitutionalLine(next, profile) || /subtotal/i.test(next)) break
+        combined += ` ${next}`
+        candidate = lineHasDateAndValue(combined)
+        if (candidate) { index += offset; break }
+      }
+    }
     if (!candidate) continue
     const transaction = buildTransaction({ dateText: candidate.date, description: candidate.description, rawValue: candidate.value, defaultYear, card: currentCard, invoicePeriod })
     if (transaction) transactions.push(transaction)
@@ -630,7 +649,7 @@ export function parseInvoiceFromTextOrOCR(rawText: string): DocumentParseResult 
   }
 
   // 2. Tenta formato CSV estruturado
-  if (rawText.includes(';') || (rawText.includes(',') && rawText.split('\n')[0].includes(','))) {
+  if (/[;,\t]/.test(rawText)) {
     const csvTxs = parseCsvContent(rawText)
     if (csvTxs.length > 0) {
       const period = csvTxs[0].date.slice(0, 7)

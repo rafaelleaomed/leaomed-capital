@@ -1,4 +1,5 @@
 'use client'
+import { documentTransactionsForPersistence } from '@/utils/documentImport'
 
 import { getFinancialScopeVersion } from '@/utils/userScopedStorage'
 
@@ -278,25 +279,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
     setIsUploading(true)
     setStatusMessage('Salvando e categorizando lançamentos no banco de dados...')
     try {
-      const formatted = parsedTransactions.flatMap(t => {
-        const rawAmount = typeof t.val === 'number' ? t.val : parseFloat(t.val) || 0
-        const entryType = t.entryType || (t.isCardBillPayment ? 'bill_payment' : 'purchase')
-        if (entryType === 'bill_payment' || t.isCardBillPayment) return []
-        const signedAmount = typeof t.signedAmount === 'number' ? t.signedAmount : rawAmount
-        const isCredit = t.direction === 'credit' || entryType === 'refund' || signedAmount < 0
-        const amount = isCredit ? Math.abs(signedAmount) : -Math.abs(signedAmount)
-
-        return [{
-          date: t.date,
-          description: t.desc,
-          amount,
-          accountOrCard: t.accountOrCard,
-          category: t.cat || 'Outros',
-          subcategory: t.subcategory || 'Geral',
-          isFixed: Boolean(t.isFixed),
-          isIgnored: false
-        }]
-      })
+      const formatted = documentTransactionsForPersistence(parsedTransactions)
 
       if (formatted.length === 0) throw new Error('A fatura não possui compras ou créditos elegíveis para salvar.')
 

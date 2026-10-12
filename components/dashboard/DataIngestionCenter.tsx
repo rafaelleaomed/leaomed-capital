@@ -50,6 +50,7 @@ export interface ProcessedBatch {
     subcategory?: string
     subdivision?: string
     date: string
+    competenceDate?: string
     accountOrCard?: string
     isFixed?: boolean
     isCardBillPayment?: boolean
@@ -200,6 +201,7 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
           .filter(t => t.entryType !== 'bill_payment' && !t.isCardBillPayment)
           .map(t => ({
           date: t.date,
+          competenceDate: t.competenceDate,
           description: t.desc,
           amount: t.signedAmount ?? t.val,
           accountOrCard: t.accountOrCard || b.institution,

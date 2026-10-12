@@ -41,7 +41,7 @@ export async function GET(request: Request) {
         AND t.user_id = ${userId}
         AND t.amount < 0
         AND t.is_ignored = FALSE
-        ${startDate && endDate ? sql`AND t.date >= ${startDate} AND t.date <= ${endDate}` : sql``}
+        ${startDate && endDate ? sql`AND COALESCE(t.competence_date, t.date) >= ${startDate} AND COALESCE(t.competence_date, t.date) <= ${endDate}` : sql``}
       GROUP BY c.name, c.scope, s.name, s.is_fixed
       ORDER BY c.name ASC, total_spent DESC;
     `;

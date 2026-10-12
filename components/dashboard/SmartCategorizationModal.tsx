@@ -23,6 +23,7 @@ import { USER_TAXONOMY, USER_TAXONOMY_MAP, getCategoriesByScope, getSubcategorie
 export interface IncomingTransaction {
   id?: string
   date: string
+  competenceDate?: string
   description: string
   amount: number
   accountOrCard: string
@@ -45,6 +46,7 @@ interface SmartCategorizationModalProps {
 interface ReviewedItem {
   id: string
   date: string
+  competenceDate?: string
   description: string
   amount: number
   accountOrCard: string
@@ -97,6 +99,7 @@ export function SmartCategorizationModal({
       return {
         id: t.id || `inc_${Date.now()}_${idx}`,
         date: t.date || new Date().toISOString().split('T')[0],
+        competenceDate: t.competenceDate,
         description: t.description,
         amount: isCredit ? Math.abs(signedAmount) : -Math.abs(signedAmount),
         accountOrCard: t.accountOrCard || 'Cartão de Crédito',
@@ -174,6 +177,7 @@ export function SmartCategorizationModal({
     try {
       const payloadTransactions = items.filter(i => !i.isCardBillPayment).map(i => ({
         date: i.date,
+        competenceDate: i.competenceDate,
         description: i.description,
         amount: i.amount,
         accountOrCard: i.accountOrCard,

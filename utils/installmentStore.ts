@@ -20,6 +20,39 @@ export interface InstallmentItem {
 
 const STORAGE_KEY = 'leaomed_installment_store_v2'
 
+export function installmentEndDate(item: Pick<InstallmentItem, 'endMonthYear'>): string | undefined {
+  const months = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+  const match = item.endMonthYear.toLowerCase().match(/^([a-zç]+)\/(\d{4})$/)
+  if (!match) return undefined
+  const month = months.indexOf(match[1])
+  return month >= 0 ? `${match[2]}-${String(month + 1).padStart(2, '0')}-01` : undefined
+}
+
+export interface InstallmentDatabaseRow {
+  id: string; description: string; category: string; subcategory?: string
+  installment_amount: number | string; current_installment: number; total_installments: number
+  payment_method?: string; start_date?: string; end_date?: string
+}
+
+export function mapDatabaseInstallment(row: InstallmentDatabaseRow, previous?: InstallmentItem): InstallmentItem {
+  const end = row.end_date ? new Date(row.end_date) : null
+  const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+  return {
+    ...previous, id: String(row.id), name: row.description, category: row.category,
+    subcategory: row.subcategory, monthlyValue: Number(row.installment_amount) || 0,
+    currentInstallment: row.current_installment, totalInstallments: row.total_installments,
+    endMonthYear: previous?.isPerpetual ? 'Mensal Contínuo' : end && Number.isFinite(end.getTime()) ? `${months[end.getUTCMonth()]}/${end.getUTCFullYear()}` : formatEndMonthYear(row.current_installment, row.total_installments),
+    paymentMethod: row.payment_method || 'Cartão de Crédito', startDate: row.start_date?.slice(0, 10)
+  }
+}
+
+export function installmentApiPayload(item: Omit<InstallmentItem, 'id'>) {
+  return { description: item.name, category: item.category, subcategory: item.subcategory,
+    installment_amount: item.monthlyValue, current_installment: item.currentInstallment,
+    total_installments: item.totalInstallments, payment_method: item.paymentMethod,
+    start_date: item.startDate, end_date: installmentEndDate(item) }
+}
+
 export const DEFAULT_INSTALLMENTS: InstallmentItem[] = []
 
 export function parseInstallmentPattern(description: string): {

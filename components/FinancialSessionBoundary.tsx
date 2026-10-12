@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createSupabaseBrowserClient } from '@/utils/supabase-client'
 import { getFinancialUserScope, setFinancialUserScope } from '@/utils/userScopedStorage'
 import type { AuthChangeEvent, AuthError, Session, User } from '@supabase/supabase-js'
+import { LegacyFinancialRecovery } from '@/components/dashboard/LegacyInstallmentRecovery'
 
 /** Mount financial views only after checking that the browser matches the server session. */
 export function FinancialSessionBoundary({ userId, children }: { userId: string; children: React.ReactNode }) {
@@ -47,5 +48,5 @@ export function FinancialSessionBoundary({ userId, children }: { userId: string;
   }, [userId])
 
   if (!ready) return <div role="status" className="p-6">Verificando sessão…</div>
-  return children
+  return <LegacyFinancialRecovery>{children}</LegacyFinancialRecovery>
 }

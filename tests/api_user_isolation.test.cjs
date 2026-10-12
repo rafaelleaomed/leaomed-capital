@@ -17,6 +17,10 @@ const transactions = []
 async function sql(strings, ...values) {
   const query = strings.join('?').replace(/\s+/g, ' ').trim()
   queries.push({ query, values })
+  if (query.startsWith('INSERT INTO public.users')) {
+    assert.equal(values[0], userId, 'Only the verified session identity may be created')
+    return []
+  }
   if (/SELECT.*FROM public\.accounts/.test(query)) {
     assert.match(query, /user_id = \?/)
     return accounts.filter(a => a.user_id === userId && (!query.includes('WHERE id =') || a.id === values[0]))
@@ -78,7 +82,7 @@ async function sql(strings, ...values) {
 const originalLoad = Module._load
 Module._load = function (request, parent, isMain) {
   if (request === '@/utils/db') return { sql }
-  if (request === '@/utils/auth-helpers') return { getAuthenticatedUserId: async () => ({ userId, user: userId ? { id: userId } : null, errorResponse: userId ? null : Response.json({ success: false }, { status: 401 }) }) }
+  if (request === '@/utils/auth-helpers') return { getAuthenticatedUserId: async () => ({ userId, user: userId ? { id: userId, email: `${userId}@synthetic.invalid`, email_confirmed_at: '2026-01-01' } : null, errorResponse: userId ? null : Response.json({ success: false }, { status: 401 }) }) }
   if (request === 'pluggy-sdk') return { PluggyClient: class { async createConnectToken(item, options) { tokenOwner = options.clientUserId; return { accessToken: 'synthetic-token' } } } }
   if (request === '@supabase/supabase-js') return { createClient: () => ({ from: () => ({ insert: async () => { webhookWrites++; return { error: null } } }) }) }
   return originalLoad.call(this, request.startsWith('@/') ? path.join(root, request.slice(2)) : request, parent, isMain)
@@ -157,6 +161,18 @@ async function main() {
   const authenticatedWebhook = new Request('http://localhost/api/webhooks/pluggy', { method: 'POST', headers: { authorization: 'Bearer synthetic-webhook-secret' }, body: JSON.stringify({ eventId: 'synthetic', event: 'item/updated', itemId: 'synthetic-item' }) })
   assert.equal((await webhook.POST(authenticatedWebhook)).status, 200)
   assert.equal(webhookWrites, 1)
+  process.env.JEV_PLATFORM_OWNER_EMAIL = 'user-a@synthetic.invalid'
+  process.env.JEV_PLATFORM_OWNER_USER_ID = 'user-a'
+  const recovered = { transactions: [{ ...tx, description: 'Synthetic recovered expense' }], recoverLegacy: true, expectedUserId: 'user-a' }
+  queries = []
+  assert.equal((await routes.transactions.POST(req('transactions', recovered))).status, 403)
+  assert.equal(queries.length, 0, 'Another account must not execute legacy recovery writes')
+  userId = 'user-a'
+  assert.equal((await routes.transactions.POST(req('transactions', { ...recovered, expectedUserId: 'user-b' }))).status, 403)
+  assert.equal((await routes.transactions.POST(req('transactions', recovered))).status, 200)
+  const recoveredCount = transactions.length
+  assert.equal((await routes.transactions.POST(req('transactions', recovered))).status, 200)
+  assert.equal(transactions.length, recoveredCount, 'Repeating recovery must not duplicate records')
   console.log('API isolation passed: anonymous rejection; two-user reads; IDOR/mixed-batch rejection; session ownership; per-user hashes; webhook authentication; connect-token ownership.')
 }
 main().catch(error => { console.error(error); process.exitCode = 1 })
