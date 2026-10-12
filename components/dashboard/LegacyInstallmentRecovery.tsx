@@ -75,12 +75,12 @@ export function LegacyFinancialRecovery({ children }: { children?: ReactNode }) 
       })
       const result = await response.json()
       if (version !== getFinancialScopeVersion()) return
-      if (!response.ok || !result.success || result.mappings?.length !== legacy.length) throw new Error('recovery_failed')
+      if (!response.ok || !result.success || !Array.isArray(result.mappings)) throw new Error('recovery_failed')
       const ids = new Map<string, string>(result.mappings.map((item: { legacyId: string; id: string }) => [item.legacyId, item.id]))
-      const restored = legacy.map(item => ({ ...item, id: ids.get(item.id)! }))
+      const restored = legacy.filter(item => ids.has(item.id)).map(item => ({ ...item, id: ids.get(item.id)! }))
       const existing = InstallmentStore.getInstallments()
       InstallmentStore.saveInstallments([...existing, ...restored.filter(item => !existing.some(old => old.id === item.id))])
-      setMessage(`${restored.length} parcelamentos do backup recuperados para sua conta.`)
+      setMessage(`${restored.length} parcelamentos do backup recuperados para sua conta.${restored.length < legacy.length ? ' Registros excluídos anteriormente não foram reativados.' : ''}`)
     } catch {
       if (version === getFinancialScopeVersion()) setMessage('Não foi possível recuperar esse backup. Nenhum arquivo original foi removido.')
     } finally { if (version === getFinancialScopeVersion()) setRestoringBackup(false) }

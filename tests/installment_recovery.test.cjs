@@ -24,11 +24,17 @@ Module._load = function(request, parent, main) {
       assert.match(values[9], /^\d{4}-\d{2}-\d{2}$/)
       assert.match(values[10], /^\d{4}-\d{2}-\d{2}$/)
       if (saved.has(id)) return []
-      saved.set(id, { id, userId, description })
+      const candidate = { id, userId, description, amount: values[7], method: values[8], total: values[5], start: values[9], end: values[10], is_active: true }
+      assert.match(query, /total_installments = \? AND start_date = \?::date AND end_date = \?::date/)
+      if ([...saved.values()].some(row => row.userId === userId && row.description === description && row.amount === candidate.amount && row.method === candidate.method && row.total === candidate.total && row.start === candidate.start && row.end === candidate.end)) return []
+      saved.set(id, candidate)
       return [{ id }]
     }
     assert.match(query, /WHERE user_id = \?/)
-    return [...saved.values()].filter(row => row.userId === values[0] && row.description === values[1])
+    assert.match(query, /id = \?::uuid OR/)
+    const [userId, id, description, amount, method, total, start, end] = values
+    return [...saved.values()].filter(row => row.userId === userId && (row.id === id || (row.description === description && row.amount === amount && row.method === method && row.total === total && row.start === start && row.end === end)))
+      .sort((a, b) => Number(b.id === id) - Number(a.id === id) || Number(b.is_active) - Number(a.is_active)).slice(0, 1)
   } }
   return originalLoad.call(this, request.startsWith('@/') ? path.join(root, request.slice(2)) : request, parent, main)
 }
@@ -61,6 +67,30 @@ async function main() {
   assert.deepEqual(first.mappings, second.mappings)
   assert.equal(saved.size, 1)
   assert.equal([...saved.values()][0].userId, 'owner-a')
+  const differentSchedule = { ...item, id: 'legacy-2', totalInstallments: 12, endMonthYear: 'Agosto/2027' }
+  const both = await (await route.POST(request([item, differentSchedule]))).json()
+  assert.equal(both.mappings.length, 2)
+  assert.notEqual(both.mappings[0].id, both.mappings[1].id, 'Same merchant/value/card with different schedules must remain separate contracts')
+  assert.equal(saved.size, 2)
+  const recoveredId = first.mappings[0].id
+  const edited = saved.get(recoveredId)
+  edited.description = 'Edited after recovery'
+  edited.end = '2029-01-01'
+  const replayEdited = await (await route.POST(request([item]))).json()
+  assert.equal(replayEdited.mappings[0].id, recoveredId, 'Stable ID must find edited recovered records')
+  edited.is_active = false
+  const writeCountBeforeDeleteReplay = writes
+  const replayDeleted = await (await route.POST(request([item, differentSchedule]))).json()
+  assert.equal(replayDeleted.mappings.length, 1)
+  assert.equal(replayDeleted.mappings[0].legacyId, differentSchedule.id)
+  assert.equal(edited.is_active, false, 'A deleted recovered record must never be reactivated, even if its cached schedule differs')
+  assert.equal(writes, writeCountBeforeDeleteReplay)
+  assert.equal(saved.size, 2)
+  const previouslyDeleted = { ...item, id: 'legacy-previously-deleted', totalInstallments: 3, currentInstallment: 1, endMonthYear: 'Março/2028' }
+  saved.set('existing-deleted-uuid', { id: 'existing-deleted-uuid', userId: user.id, description: item.name, amount: item.monthlyValue, method: item.paymentMethod, total: 3, start: '2028-01-01', end: '2028-03-01', is_active: false })
+  const replayOldDeleted = await (await route.POST(request([previouslyDeleted]))).json()
+  assert.deepEqual(replayOldDeleted.mappings, [], 'A deleted record with an older server ID and matching schedule must not be recreated')
+  assert.equal(writes, writeCountBeforeDeleteReplay)
   const before = writes
   user = { id: 'friend-b', email: 'friend@example.invalid' }
   assert.equal((await (await route.GET()).json()).eligible, false)
