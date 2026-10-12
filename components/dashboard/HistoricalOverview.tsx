@@ -65,7 +65,7 @@ export function HistoricalOverview({ isDemo = false }: { isDemo?: boolean }) {
         <div>
           <h3 className="font-display text-base font-bold text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)] flex items-center gap-2">
             <History className="h-4 w-4 text-[var(--capital-accent,#927025)]" />
-            Série Temporal Financeira & Histórico Mensal (Dezembro/25 a Julho/26)
+            Série Temporal Financeira & Histórico Mensal
           </h3>
           <p className="text-xs text-[var(--capital-muted,#242a2e)] dark:text-[var(--capital-muted,#f6f3e9)] mt-0.5">
             Evolução histórica de receitas brutas, impostos, pró-labore e fluxo líquido PF/PJ.
