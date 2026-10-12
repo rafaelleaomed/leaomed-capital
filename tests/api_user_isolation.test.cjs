@@ -25,6 +25,17 @@ async function sql(strings, ...values) {
     assert.match(query, /user_id = \?/)
     return accounts.filter(a => a.user_id === userId && (!query.includes('WHERE id =') || a.id === values[0]))
   }
+  if (query.startsWith('INSERT INTO public.accounts')) {
+    assert.match(query, /WHERE public\.accounts\.user_id = EXCLUDED\.user_id/)
+    const [owner, entity, sourceKey, sourceName] = values
+    assert.equal(owner, userId)
+    const existing = accounts.find(a => a.pluggy_account_id === sourceKey)
+    if (existing && existing.user_id !== owner) return []
+    if (existing) { existing.name = sourceName; return [{ id: existing.id }] }
+    const account = { id: `source-account-${accounts.length}`, user_id: owner, type: entity, pluggy_account_id: sourceKey, name: sourceName }
+    accounts.push(account)
+    return [{ id: account.id }]
+  }
   if (query.startsWith('INSERT INTO public.transactions')) {
     assert.match(query, /WHERE public\.transactions\.user_id = EXCLUDED\.user_id/)
     const [owner, raw, account, amount, date, competence, description, category, subcategory, fixed, ignored, hash] = values
@@ -32,7 +43,11 @@ async function sql(strings, ...values) {
     assert.ok(accounts.some(a => a.id === account && a.user_id === owner))
     const existing = transactions.find(t => t.hash === hash)
     if (existing && existing.user_id !== owner) return []
-    if (existing) return [{ id: existing.id }]
+    if (existing) {
+      assert.match(query, /account_id = EXCLUDED\.account_id/)
+      existing.account_id = account
+      return [{ id: existing.id }]
+    }
     const t = { id: `transaction-${transactions.length}`, user_id: owner, account_id: account, hash, description }
     transactions.push(t)
     return [{ id: t.id }]
@@ -40,7 +55,7 @@ async function sql(strings, ...values) {
   if (query.includes('FROM public.transactions t')) {
     assert.match(query, /a\.user_id = t\.user_id/)
     assert.match(query, /t\.user_id = \?/)
-    return transactions.filter(t => t.user_id === userId)
+    return transactions.filter(t => t.user_id === userId).map(t => ({ ...t, account_name: accounts.find(a => a.id === t.account_id && a.user_id === t.user_id)?.name }))
   }
   if (query.startsWith('UPDATE public.transactions')) {
     assert.match(query, /WHERE id = \? AND user_id = \?/)
@@ -173,6 +188,48 @@ async function main() {
   const recoveredCount = transactions.length
   assert.equal((await routes.transactions.POST(req('transactions', recovered))).status, 200)
   assert.equal(transactions.length, recoveredCount, 'Repeating recovery must not duplicate records')
+  // Preserve the historic hash while repairing the old generic account into
+  // a scoped account whose name roundtrips the original card label.
+  const sourceTx = { ...tx, description: 'Source-preserving purchase', accountOrCard: 'Synthetic Card One' }
+  const legacySourceHash = crypto.createHash('sha256').update('2026-10-12|-10.00|source-preserving purchase|account-a|synthetic card one').digest('hex')
+  const genericLegacy = { id: 'generic-legacy-source', user_id: userId, account_id: 'account-a', hash: legacySourceHash, description: sourceTx.description }
+  transactions.push(genericLegacy)
+  const sourceCount = transactions.length
+  assert.equal((await routes.transactions.POST(req('transactions', sourceTx))).status, 200)
+  assert.equal(transactions.length, sourceCount, 'Repair must reuse the historic transaction hash')
+  assert.notEqual(genericLegacy.account_id, 'account-a')
+  const firstSourceAccount = accounts.find(a => a.id === genericLegacy.account_id)
+  assert.equal(firstSourceAccount.name, 'Synthetic Card One')
+  assert.equal(firstSourceAccount.user_id, userId)
+  assert.equal((await routes.transactions.POST(req('transactions', sourceTx))).status, 200)
+  assert.equal(transactions.length, sourceCount)
+  assert.equal((await routes.transactions.POST(req('transactions', { ...sourceTx, accountOrCard: 'Synthetic Card Two' }))).status, 200)
+  assert.equal(transactions.length, sourceCount + 1)
+  const secondSource = transactions.find(t => t.description === sourceTx.description && t.hash !== legacySourceHash)
+  assert.notEqual(secondSource.account_id, firstSourceAccount.id)
+  assert.equal(accounts.find(a => a.id === secondSource.account_id).name, 'Synthetic Card Two')
+  const sourceRoundtrip = await (await routes.transactions.GET(new Request('http://localhost/api/transactions'))).json()
+  assert.deepEqual(sourceRoundtrip.transactions.filter(t => t.description === sourceTx.description).map(t => t.account_name).sort(), ['Synthetic Card One', 'Synthetic Card Two'])
+  queries = []
+  assert.equal((await routes.transactions.POST(req('transactions', { ...sourceTx, accountOrCard: 42 }))).status, 400)
+  assert.equal((await routes.transactions.POST(req('transactions', { ...sourceTx, sourceAccountOrCard: 'x'.repeat(256) }))).status, 400)
+  assert.equal(queries.length, 0, 'Invalid source labels must fail before any database operation')
+  assert.equal((await routes.transactions.POST(req('transactions', { transactions: [sourceTx, { ...sourceTx, accountId: 'account-b' }] }))).status, 404)
+  assert.equal(queries.some(q => /INSERT|UPDATE/.test(q.query)), false, 'Foreign supplied account rejects the complete source batch before creating anything')
+  // An explicitly supplied owned account wins over the label.
+  const explicitCount = accounts.length
+  assert.equal((await routes.transactions.POST(req('transactions', { ...tx, description: 'Explicit account wins', accountId: 'account-a', accountOrCard: 'Ignored source for mapping' }))).status, 200)
+  assert.equal(accounts.length, explicitCount)
+  assert.equal(transactions.find(t => t.description === 'Explicit account wins').account_id, 'account-a')
+  userId = 'user-b'
+  assert.equal((await routes.transactions.POST(req('transactions', sourceTx))).status, 200)
+  const otherUserSource = transactions.find(t => t.user_id === userId && t.description === sourceTx.description)
+  assert.notEqual(otherUserSource.account_id, firstSourceAccount.id, 'Same source label must use a distinct account for another user')
+  assert.equal(accounts.find(a => a.id === otherUserSource.account_id).user_id, 'user-b')
+  const bothUsersSourceCount = transactions.length
+  assert.equal((await routes.transactions.POST(req('transactions', sourceTx))).status, 200)
+  assert.equal(transactions.length, bothUsersSourceCount)
   console.log('API isolation passed: anonymous rejection; two-user reads; IDOR/mixed-batch rejection; session ownership; per-user hashes; webhook authentication; connect-token ownership.')
 }
 main().catch(error => { console.error(error); process.exitCode = 1 })
+

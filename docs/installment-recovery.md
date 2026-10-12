@@ -6,6 +6,8 @@ O POST rejeita outras contas antes de acessar o banco e ignora qualquer `user_id
 
 A tela usa o UUID devolvido pelo banco para novos registros e só altera o cache após confirmação do servidor. Uma consulta vazia remove registros antigos de banco do cache; descobertas locais ainda não salvas (`inst_`) permanecem disponíveis. Datas válidas são fornecidas mesmo quando o formulário não informa datas; o mês final usa `Mês/Ano`, formato esperado pelo motor de projeção. Falhas de salvar/excluir são exibidas e não são tratadas como sucesso.
 
+A importação manual de um JSON selecionado explicitamente usa `/api/installments/import`, exige confirmação de propriedade do arquivo e `expectedUserId` correspondente à sessão atual. Essa operação cria somente registros da própria conta, com IDs derivados no servidor, e nunca consulta arquivos locais do servidor ou caches globais. A confirmação registra a declaração do usuário; não comprova a propriedade do arquivo. O bloqueio de proprietário da recuperação automática permanece separado e intacto.
+
 `contractNotes`, `isPerpetual` e `entityType` são preservados apenas no cache com proprietário da sessão, pois a tabela atual não contém essas colunas. `database/07_installment_metadata.sql` prepara as colunas de forma aditiva; não foi executada. Persistência desses campos em outros dispositivos requer aplicar a migração e estender o contrato API antes de declarar suporte completo.
 
 Validação sintética: `node tests/installment_recovery.test.cjs`, `node tests/api_user_isolation.test.cjs`, `npx tsc --noEmit`. Nenhuma migração ou escrita em banco real faz parte desses testes.
