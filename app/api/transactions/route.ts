@@ -124,6 +124,7 @@ export async function POST(req: NextRequest) {
       const amount = Number(tx?.amount)
       return !tx?.date || !/^\d{4}-\d{2}-\d{2}$/.test(tx.date) ||
         (tx.competenceDate !== undefined && (typeof tx.competenceDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(tx.competenceDate))) ||
+        [tx?.accountOrCard, tx?.sourceAccountOrCard].some(source => source !== undefined && (typeof source !== 'string' || source.length > 255)) ||
         !tx?.description?.trim() || !Number.isFinite(amount) || amount === 0
     })
     if (invalidTransactionIndex >= 0) {
@@ -153,10 +154,13 @@ export async function POST(req: NextRequest) {
 
     // Busca ou cria uma conta padrão para o usuário caso não informada
     const existingAccounts = await sql`
-      SELECT id, type FROM public.accounts WHERE user_id = ${userId}
+      SELECT id, type, pluggy_account_id FROM public.accounts WHERE user_id = ${userId}
+      ORDER BY created_at ASC, id ASC
     `
-    let defaultPfAccountId = existingAccounts.find((a: any) => a.type === 'PF')?.id
-    let defaultPjAccountId = existingAccounts.find((a: any) => a.type === 'PJ')?.id
+    const defaultFor = (entity: 'PF' | 'PJ') => existingAccounts.find((a: any) => a.type === entity && a.pluggy_account_id === `manual_${entity.toLowerCase()}_${userId}`)?.id ||
+      existingAccounts.find((a: any) => a.type === entity && !String(a.pluggy_account_id || '').startsWith('manual_source_'))?.id
+    let defaultPfAccountId = defaultFor('PF')
+    let defaultPjAccountId = defaultFor('PJ')
 
     if (!defaultPfAccountId) {
       const createdPf = await sql`
@@ -187,6 +191,7 @@ export async function POST(req: NextRequest) {
     let insertedCount = 0
     let duplicateCount = 0
     let failedCount = 0
+    const sourceAccounts = new Map<string, string>()
 
     for (const tx of transactionsToInsert) {
       if (!tx.date || tx.amount === undefined || tx.amount === null || !tx.description) {
@@ -194,14 +199,37 @@ export async function POST(req: NextRequest) {
       }
 
       const entityType = (tx.entityType || tx.type || 'PF').toUpperCase()
-      const accountId = tx.accountId || (entityType === 'PJ' ? defaultPjAccountId : defaultPfAccountId)
+      const defaultAccountId = entityType === 'PJ' ? defaultPjAccountId : defaultPfAccountId
+      const source = (tx.accountOrCard || tx.sourceAccountOrCard || '').trim()
+      // Preserve the historic hash account even when repairing the persisted
+      // account reference so reimporting an existing PDF does not duplicate it.
+      const hashAccountId = tx.accountId || defaultAccountId
+      let accountId = hashAccountId
+      if (!tx.accountId && source) {
+        const normalizedSource = source.toLowerCase().replace(/\s+/g, ' ')
+        const sourceHash = crypto.createHash('sha256').update(normalizedSource).digest('hex')
+        const sourceKey = `manual_source_${userId}_${entityType === 'PJ' ? 'pj' : 'pf'}_${sourceHash}`
+        accountId = sourceAccounts.get(sourceKey)
+        if (!accountId) {
+          const sourceRows = await sql`
+            INSERT INTO public.accounts (user_id, type, pluggy_item_id, pluggy_account_id, name, institution)
+            VALUES (${userId}, ${entityType === 'PJ' ? 'PJ' : 'PF'}, 'manual_import', ${sourceKey}, ${source}, 'Manual / Extrato')
+            ON CONFLICT (pluggy_account_id) DO UPDATE SET name = EXCLUDED.name
+            WHERE public.accounts.user_id = EXCLUDED.user_id
+            RETURNING id
+          `
+          accountId = sourceRows[0]?.id
+          if (!accountId) return NextResponse.json({ success: false, error: 'Não foi possível vincular a origem à sua conta.' }, { status: 500 })
+          sourceAccounts.set(sourceKey, accountId)
+        }
+      }
       const rawId = tx.id || tx.raw_id || `manual_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
       const txHash = generateTransactionHash({
         date: tx.date,
         amount: Number(tx.amount),
         description: tx.description,
-        accountId,
-        sourceAccountOrCard: tx.accountOrCard || tx.sourceAccountOrCard
+        accountId: hashAccountId,
+        sourceAccountOrCard: source
       })
 
       const amount = Number(tx.amount)
@@ -221,6 +249,7 @@ export async function POST(req: NextRequest) {
             ${tx.description}, ${category}, ${subcategory}, ${isFixed}, ${isIgnored}, ${txHash}
           )
           ON CONFLICT (hash) DO UPDATE SET
+            account_id = EXCLUDED.account_id,
             competence_date = EXCLUDED.competence_date,
             category = EXCLUDED.category,
             subcategory = EXCLUDED.subcategory,
@@ -301,3 +330,4 @@ export async function PUT(req: NextRequest) {
     )
   }
 }
+
