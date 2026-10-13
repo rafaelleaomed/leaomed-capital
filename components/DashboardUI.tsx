@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
 import { DeliveryPayload, DashboardFilter } from '@/utils/dashboardData'
@@ -28,6 +28,7 @@ import { AppleMobileTabBar } from './dashboard/AppleMobileTabBar'
 import { GlobalQuickFinder } from './dashboard/GlobalQuickFinder'
 import { AnnualConsolidatedView } from './dashboard/AnnualConsolidatedView'
 import { MonthSelectorModal } from './dashboard/MonthSelectorModal'
+import { NewUserOnboardingModal } from './dashboard/NewUserOnboardingModal'
 
 export type DashboardTab = 'visao-geral' | 'auditoria' | 'orcamento' | 'investimentos' | 'parcelamentos' | 'ingestao' | 'historico'
 
@@ -59,6 +60,26 @@ export default function DashboardUI({
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isQuickFinderOpen, setIsQuickFinderOpen] = useState(false)
   const [isMonthSelectorOpen, setIsMonthSelectorOpen] = useState(false)
+  const [isNewUserOnboardingOpen, setIsNewUserOnboardingOpen] = useState(false)
+  const [currentLoggedUserEmail, setCurrentLoggedUserEmail] = useState('')
+  const [currentLoggedUserName, setCurrentLoggedUserName] = useState('')
+
+  // Verifica se o usuário precisa preencher a configuração inicial (onboarding)
+  useEffect(() => {
+    if (isDemo) return
+    fetch('/api/user/profile')
+      .then(res => res.json())
+      .then(data => {
+        if (data?.success && data?.profile) {
+          setCurrentLoggedUserEmail(data.profile.email || '')
+          setCurrentLoggedUserName(data.profile.name || '')
+          if (!data.profile.onboardingCompleted) {
+            setIsNewUserOnboardingOpen(true)
+          }
+        }
+      })
+      .catch(() => {})
+  }, [isDemo])
 
   // Período selecionado (formato YYYY-MM)
   const isValidPeriod = (period?: string): period is string => /^\d{4}-(0[1-9]|1[0-2])$/.test(period || '')
@@ -376,6 +397,17 @@ export default function DashboardUI({
         selectedYear={selectedYear}
         onSelect={(month, year) => handlePeriodChange(year, month)}
         onClose={() => setIsMonthSelectorOpen(false)}
+      />
+
+      <NewUserOnboardingModal
+        isOpen={isNewUserOnboardingOpen}
+        userEmail={currentLoggedUserEmail}
+        initialName={currentLoggedUserName}
+        onCompleted={(updatedName) => {
+          setIsNewUserOnboardingOpen(false)
+          setCurrentLoggedUserName(updatedName)
+          router.refresh()
+        }}
       />
 
       {/* TabBar Nativa para Mobile (Apple HIG) */}
