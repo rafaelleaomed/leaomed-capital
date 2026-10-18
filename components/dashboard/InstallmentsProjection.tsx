@@ -1,5 +1,7 @@
 'use client'
 
+import { getFinancialScopeVersion } from '@/utils/userScopedStorage'
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { 
   CalendarCheck2, 
@@ -17,7 +19,10 @@ import {
 import { 
   InstallmentStore, 
   InstallmentItem, 
-  formatEndMonthYear 
+  formatEndMonthYear,
+  mapDatabaseInstallment,
+  installmentApiPayload,
+  InstallmentDatabaseRow
 } from '@/utils/installmentStore'
 import { CreditCardStore } from '@/utils/creditCardStore'
 import { 
@@ -137,6 +142,7 @@ export function InstallmentsProjection({
   selectedYear,
   onBack 
 }: InstallmentsProjectionProps) {
+  const financialScopeVersion = React.useRef(getFinancialScopeVersion()).current
   // Mês de referência no formato YYYY-MM
   const initialMonth = useMemo(() => {
     if (selectedYear !== undefined && selectedMonth !== undefined) {
@@ -160,6 +166,7 @@ export function InstallmentsProjection({
 
   // Lista bruta de parcelamentos do store local + API
   const [installments, setInstallments] = useState<InstallmentItem[]>([])
+  const [persistenceError, setPersistenceError] = useState('')
   
   // Status de conferência local (item.id -> boolean)
   const [reviewedMap, setReviewedMap] = useState<Record<string, boolean>>({})
@@ -234,34 +241,16 @@ export function InstallmentsProjection({
       fetch('/api/installments')
         .then(res => res.json())
         .then(data => {
+          if (getFinancialScopeVersion() !== financialScopeVersion) return
           if (!isMounted) return
-          if (data.success && Array.isArray(data.installments) && data.installments.length > 0) {
-            const dbMapped: InstallmentItem[] = data.installments.map((row: any) => ({
-              id: String(row.id),
-              name: row.description,
-              category: row.category,
-              subcategory: row.subcategory,
-              monthlyValue: parseFloat(row.installment_amount) || 0,
-              currentInstallment: row.current_installment,
-              totalInstallments: row.total_installments,
-              endMonthYear: row.end_date 
-                ? new Date(row.end_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) 
-                : formatEndMonthYear(row.current_installment, row.total_installments),
-              contractNotes: `Forma de pagamento: ${row.payment_method || 'Cartão'}`,
-              paymentMethod: row.payment_method || 'Cartão de Crédito'
-            }))
-            
+          if (data.success && Array.isArray(data.installments)) {
             const localList = InstallmentStore.getInstallments()
-            const merged = [...localList]
-            dbMapped.forEach(dbItem => {
-              if (!merged.some(m => m.id === dbItem.id || m.name.toLowerCase() === dbItem.name.toLowerCase())) {
-                merged.push(dbItem)
-              }
-            })
-            setInstallments(merged)
-          }
+            const dbMapped = data.installments.map((row: InstallmentDatabaseRow) => mapDatabaseInstallment(row, localList.find(item => item.id === String(row.id))))
+            const pending = localList.filter(item => item.id.startsWith('inst_'))
+            InstallmentStore.saveInstallments([...dbMapped, ...pending])
+          } else setPersistenceError('Não foi possível carregar os parcelamentos salvos.')
         })
-        .catch(() => {})
+        .catch(() => { if (getFinancialScopeVersion() === financialScopeVersion) setPersistenceError('Não foi possível carregar os parcelamentos salvos.') })
 
       return () => {
         isMounted = false
@@ -325,7 +314,8 @@ export function InstallmentsProjection({
     })
   }
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     if (!editingItem) return
 
     const monthlyVal = parseFloat(editForm.monthlyValue) || 0
@@ -345,22 +335,22 @@ export function InstallmentsProjection({
       endMonthYear: editForm.isPerpetual ? 'Mensal Contínuo' : formatEndMonthYear(currInst, totInst)
     }
 
-    InstallmentStore.updateInstallment(editingItem.id, updatedData)
-
-    if (!isDemo) {
-      fetch('/api/installments', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: editingItem.id,
-          description: updatedData.name,
-          category: updatedData.category,
-          installment_amount: updatedData.monthlyValue,
-          current_installment: updatedData.currentInstallment,
-          total_installments: updatedData.totalInstallments,
-          payment_method: updatedData.paymentMethod
-        })
-      }).catch(() => {})
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
+    try {
+      setPersistenceError('')
+      if (!isDemo) {
+        const updated = { ...editingItem, ...updatedData }
+        const pending = editingItem.id.startsWith('inst_')
+        const response = await fetch('/api/installments', { method: pending ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...installmentApiPayload(updated), ...(pending ? {} : { id: editingItem.id }) }) })
+        const result = await response.json()
+        if (getFinancialScopeVersion() !== financialScopeVersion) return
+        if (!response.ok || !result.success || !result.installment) throw new Error('save_failed')
+        InstallmentStore.deleteInstallment(editingItem.id)
+        InstallmentStore.saveInstallments([...InstallmentStore.getInstallments(), mapDatabaseInstallment(result.installment, updated)])
+      } else InstallmentStore.updateInstallment(editingItem.id, updatedData)
+    } catch {
+      if (getFinancialScopeVersion() === financialScopeVersion) setPersistenceError('Não foi possível salvar. O formulário foi preservado para tentar novamente.')
+      return
     }
 
     setEditingItem(null)
@@ -368,7 +358,8 @@ export function InstallmentsProjection({
   }
 
   // Handlers de Adição
-  const handleSaveNew = (e: React.FormEvent) => {
+  const handleSaveNew = async (e: React.FormEvent) => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     e.preventDefault()
     if (!newForm.name || !newForm.monthlyValue) return
 
@@ -389,21 +380,18 @@ export function InstallmentsProjection({
       endMonthYear: newForm.isPerpetual ? 'Mensal Contínuo' : formatEndMonthYear(currInst, totInst)
     }
 
-    const created = InstallmentStore.addInstallment(newItemData)
-
-    if (!isDemo) {
-      fetch('/api/installments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          description: created.name,
-          category: created.category,
-          installment_amount: created.monthlyValue,
-          current_installment: created.currentInstallment,
-          total_installments: created.totalInstallments,
-          payment_method: created.paymentMethod
-        })
-      }).catch(() => {})
+    try {
+      setPersistenceError('')
+      if (!isDemo) {
+        const response = await fetch('/api/installments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(installmentApiPayload(newItemData)) })
+        const result = await response.json()
+        if (getFinancialScopeVersion() !== financialScopeVersion) return
+        if (!response.ok || !result.success || !result.installment) throw new Error('save_failed')
+        InstallmentStore.saveInstallments([...InstallmentStore.getInstallments(), mapDatabaseInstallment(result.installment, { ...newItemData, id: String(result.installment.id) })])
+      } else InstallmentStore.addInstallment(newItemData)
+    } catch {
+      if (getFinancialScopeVersion() === financialScopeVersion) setPersistenceError('Não foi possível salvar. O formulário foi preservado para tentar novamente.')
+      return
     }
 
     setIsAddModalOpen(false)
@@ -423,12 +411,22 @@ export function InstallmentsProjection({
   }
 
   // Handler de Exclusão
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     if (!confirm('Deseja realmente remover este parcelamento?')) return
-    InstallmentStore.deleteInstallment(id)
-
-    if (!isDemo) {
-      fetch(`/api/installments?id=${id}`, { method: 'DELETE' }).catch(() => {})
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
+    try {
+      setPersistenceError('')
+      if (!isDemo && !id.startsWith('inst_')) {
+        const response = await fetch('/api/installments?id=' + encodeURIComponent(id), { method: 'DELETE' })
+        const result = await response.json()
+        if (getFinancialScopeVersion() !== financialScopeVersion) return
+        if (!response.ok || !result.success) throw new Error('delete_failed')
+      }
+      InstallmentStore.deleteInstallment(id)
+    } catch {
+      if (getFinancialScopeVersion() === financialScopeVersion) setPersistenceError('Não foi possível excluir o parcelamento. Tente novamente.')
+      return
     }
 
     loadInstallments()
@@ -436,6 +434,7 @@ export function InstallmentsProjection({
 
   return (
     <div className="flex flex-col gap-5 max-w-7xl mx-auto w-full">
+      {persistenceError && <p role="alert" className="text-sm text-red-600">{persistenceError}</p>}
       {/* ── Toolbar Superior ────────────────────────────────────────────── */}
       <div className="installment-toolbar">
         {onBack ? (

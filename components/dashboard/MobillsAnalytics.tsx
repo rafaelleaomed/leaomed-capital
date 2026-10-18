@@ -62,10 +62,10 @@ const SHORT_MONTH_NAMES = [
 
 export function MobillsAnalytics({
   currentFilter = 'CONSOLIDATED',
-  currentBalance = 15200.00,
-  totalIncome = 38500.00,
-  totalExpenses = 23000.00,
-  creditCardTotal = 4650.00,
+  currentBalance = 0,
+  totalIncome = 0,
+  totalExpenses = 0,
+  creditCardTotal = 0,
   categories = [],
   incomeSources,
   dailySpendData,
@@ -197,6 +197,8 @@ export function MobillsAnalytics({
       }))
     }
 
+    if (!isDemo) return []
+
     if (currentFilter === 'PJ') {
       return [
         { name: 'Impostos Simples Nacional / DAS', value: 4200.00, percentage: 53.8, color: '#3B82F6' },
@@ -215,7 +217,7 @@ export function MobillsAnalytics({
       { name: 'Lazer & Restaurantes', value: 2230.00, percentage: 9.9, color: '#EC4899' },
       { name: 'Despesas Financeiras', value: 320.00, percentage: 1.4, color: '#64748B' }
     ]
-  }, [categories, currentFilter])
+  }, [categories, currentFilter, isDemo])
 
   // Categorias de receitas da gestão médica dinâmicas por mês
   const incomeCategories = useMemo(() => {
@@ -230,25 +232,7 @@ export function MobillsAnalytics({
 
     const targetIncome = totalIncome || (isDemo ? 49700.00 : 26019.99)
 
-    if (!isDemo) {
-      if (currentFilter === 'PJ') {
-        return [
-          { name: 'Camarinha BRUTO (Faturamento PJ)', value: targetIncome, percentage: 100.0, color: '#06B6D4' }
-        ]
-      }
-      if (currentFilter === 'PF') {
-        return [
-          { name: 'Camarinha (Pró-labore PJ)', value: Number((targetIncome * 0.884).toFixed(2)), percentage: 88.4, color: '#06B6D4' },
-          { name: 'Reembolsos Médicos', value: Number((targetIncome * 0.102).toFixed(2)), percentage: 10.2, color: '#10B981' },
-          { name: 'Rendimento de Investimentos', value: Number((targetIncome * 0.014).toFixed(2)), percentage: 1.4, color: '#8B5CF6' }
-        ]
-      }
-      return [
-        { name: 'Faturamento PJ (Camarinha BRUTO)', value: Number((targetIncome * 0.898).toFixed(2)), percentage: 89.8, color: '#06B6D4' },
-        { name: 'Reembolsos Médicos (PF)', value: Number((targetIncome * 0.090).toFixed(2)), percentage: 9.0, color: '#10B981' },
-        { name: 'Rendimento Investimentos (PF)', value: Number((targetIncome * 0.012).toFixed(2)), percentage: 1.2, color: '#8B5CF6' }
-      ]
-    }
+    if (!isDemo) return targetIncome > 0 ? [{ name: "Receitas", value: targetIncome, percentage: 100, color: palette[0] }] : []
 
     const ratio = targetIncome / 49700.00
 
@@ -288,7 +272,7 @@ export function MobillsAnalytics({
     { day: '30', amount: 620 },
   ]
 
-  const dailySpendData30d = dailySpendData && dailySpendData.length > 0 ? dailySpendData : defaultDailySpend30d
+  const dailySpendData30d = dailySpendData && dailySpendData.length > 0 ? dailySpendData : isDemo ? defaultDailySpend30d : []
 
   const dailySpendData7d = [
     { day: 'Seg', amount: 280 },
@@ -300,7 +284,7 @@ export function MobillsAnalytics({
     { day: 'Dom', amount: 180 },
   ]
 
-  const dailySpend = timeRange === '7d' ? dailySpendData7d : dailySpendData30d
+  const dailySpend = timeRange === '7d' ? (isDemo ? dailySpendData7d : dailySpendData30d.slice(-7)) : dailySpendData30d
   const maxSpend = Math.max(...dailySpend.map(d => d.amount), 1000)
 
   // Status de Cartões Reais Auditados das Faturas (Sem inventar cartões e sem cartão PJ!)
@@ -333,7 +317,7 @@ export function MobillsAnalytics({
       ]
     }
 
-    // Dr. Rafael Leão (Dados Reais das Faturas Auditadas e Editáveis):
+    // Titular do cartão (Dados Reais das Faturas Auditadas e Editáveis):
     if (currentFilter === 'PJ') {
       // PJ opera exclusivamente em conta corrente - SEM CARTÃO DE CRÉDITO CORPORATIVO
       return []
@@ -362,8 +346,8 @@ export function MobillsAnalytics({
           closingDay: c.closingDay || 20,
           dueDay: c.dueDay || 28,
           additionalCards: c.additionalCards || 'Nenhum',
-          cardholder: c.cardholder || 'Dr. Rafael Leão',
-          lastDigits: c.lastDigits || '4821',
+          cardholder: c.cardholder || 'Titular do cartão',
+          lastDigits: c.lastDigits || '----',
           detail: c.notes || `Vencimento dia ${c.dueDay} • ${c.additionalCards || 'Sem adicionais'}`
         }
       })
@@ -772,7 +756,7 @@ export function MobillsAnalytics({
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-3">
-            <span>Picos concentrados em: T-Cross Entrada (dia 15) e Financiamento Safra (dia 27)</span>
+            <span>Picos concentrados em: Veículo Entrada (dia 15) e Financiamento Safra (dia 27)</span>
             <span className="font-semibold text-indigo-600 dark:text-indigo-400">Total: R$ {totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</span>
           </div>
         </div>

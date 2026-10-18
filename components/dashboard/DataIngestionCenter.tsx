@@ -1,5 +1,7 @@
 'use client'
 
+import { getFinancialScopeVersion } from '@/utils/userScopedStorage'
+
 import React, { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
@@ -48,6 +50,7 @@ export interface ProcessedBatch {
     subcategory?: string
     subdivision?: string
     date: string
+    competenceDate?: string
     accountOrCard?: string
     isFixed?: boolean
     isCardBillPayment?: boolean
@@ -60,6 +63,7 @@ export interface ProcessedBatch {
 }
 
 export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
+  const financialScopeVersion = React.useRef(getFinancialScopeVersion()).current
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'INVOICE' | 'PRINT' | 'MANUAL' | 'OPEN_FINANCE'>('INVOICE')
   const [isProcessing, setIsProcessing] = useState(false)
@@ -166,6 +170,7 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
       let data: any = null
       try {
         data = await response.json()
+        if (getFinancialScopeVersion() !== financialScopeVersion) return
       } catch (_) {
         data = null
       }
@@ -196,6 +201,7 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
           .filter(t => t.entryType !== 'bill_payment' && !t.isCardBillPayment)
           .map(t => ({
           date: t.date,
+          competenceDate: t.competenceDate,
           description: t.desc,
           amount: t.signedAmount ?? t.val,
           accountOrCard: t.accountOrCard || b.institution,
@@ -251,11 +257,13 @@ export function DataIngestionCenter({ isDemo = false }: { isDemo?: boolean }) {
   }
 
   const handleSimulatedInvoiceUpload = (bankName: string) => {
+    if (!isDemo || getFinancialScopeVersion() !== financialScopeVersion) return
     const fakeFile = new File(['conteudo simulado'], `Fatura_${bankName.replace(/\s+/g, '_')}_Junho2026.pdf`, { type: 'application/pdf' })
     processFiles([fakeFile])
   }
 
   const handleSimulatedPrintUpload = () => {
+    if (!isDemo || getFinancialScopeVersion() !== financialScopeVersion) return
     setIsProcessing(true)
     setFeedback('Analisando imagem com OCR Inteligente... Identificando faturas e extratos de plantões...')
 

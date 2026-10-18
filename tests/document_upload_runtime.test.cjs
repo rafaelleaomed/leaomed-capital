@@ -69,5 +69,7 @@ async function main() {
   assert.equal(response.status, 401)
   console.log('Unauthenticated upload remains rejected (401)')
   require('../tests/document_parser.test.ts')
+  require('../tests/invoice_profiles.test.ts')
+  require('../tests/invoice_csv_detection.test.ts')
 }
 main().catch(error => { console.error(error); process.exitCode = 1 })

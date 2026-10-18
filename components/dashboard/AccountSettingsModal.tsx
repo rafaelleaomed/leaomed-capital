@@ -1,5 +1,7 @@
 'use client'
 
+import { financialStorage, getFinancialScopeVersion } from '@/utils/userScopedStorage'
+
 import { AccessibleDialog } from './AccessibleDialog'
 
 import React, { useState, useEffect } from 'react'
@@ -22,14 +24,10 @@ interface AccountSettingsModalProps {
   isDemo?: boolean
 }
 
-const DEFAULT_ACCOUNTS: UserAccountItem[] = [
-  { id: 'pj', name: 'Pessoa Jurídica', institution: 'Banco Inter', type: 'PJ', category: 'CHECKING', status: 'ACTIVE' },
-  { id: 'c6-carbon', name: 'C6 Carbon Black', institution: 'C6 Bank', type: 'PF', category: 'CREDIT_CARD', status: 'ACTIVE' },
-  { id: 'itau-pf', name: 'Itaú Uniclass', institution: 'Banco Itaú', type: 'PF', category: 'CHECKING', status: 'ACTIVE' },
-  { id: 'nu-pf', name: 'Nubank', institution: 'Nubank', type: 'PF', category: 'CHECKING', status: 'ACTIVE' },
-]
+const DEFAULT_ACCOUNTS: UserAccountItem[] = []
 
 export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: AccountSettingsModalProps) {
+  const financialScopeVersion = React.useRef(getFinancialScopeVersion()).current
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'accounts' | 'jev'>('profile')
 
@@ -38,20 +36,29 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
   }, [])
 
   // Perfil
-  const [fullName, setFullName] = useState('Dr. Usuário')
-  const [email, setEmail] = useState('usuario@leaomed.com')
-  const [specialty, setSpecialty] = useState('Cirurgião Geral / Médico')
-  const [crm, setCrm] = useState('CRM-MG')
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [specialty, setSpecialty] = useState('')
+  const [crm, setCrm] = useState('')
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('')
 
   useEffect(() => {
     async function loadUser() {
       try {
-        const supabase = createSupabaseBrowserClient()
-        const { data } = await supabase.auth.getUser()
-        if (data?.user) {
-          if (data.user.email) setEmail(data.user.email)
-          if (data.user.user_metadata?.full_name) setFullName(data.user.user_metadata.full_name)
+        const res = await fetch('/api/user/profile')
+        const profileData = await res.json()
+        if (profileData?.success && profileData?.profile) {
+          if (profileData.profile.email) setEmail(profileData.profile.email)
+          if (profileData.profile.name) setFullName(profileData.profile.name)
+          if (profileData.profile.specialty) setSpecialty(profileData.profile.specialty)
+          if (profileData.profile.crm) setCrm(profileData.profile.crm)
+        } else {
+          const supabase = createSupabaseBrowserClient()
+          const { data } = await supabase.auth.getUser()
+          if (data?.user) {
+            if (data.user.email) setEmail(data.user.email)
+            if (data.user.user_metadata?.full_name) setFullName(data.user.user_metadata.full_name)
+          }
         }
       } catch (err) {
         // fallback
@@ -77,7 +84,7 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
   const [accountSuccessMsg, setAccountSuccessMsg] = useState('')
 
   // Jev: the browser only receives status. Personal keys are submitted once to
-  // the authenticated server route and never placed in localStorage.
+  // the authenticated server route and never placed in financialStorage.
   const [jevStatus, setJevStatus] = useState<{ enabled: boolean, source: string, acceptsPersonalKey: boolean } | null>(null)
   const [personalJevKey, setPersonalJevKey] = useState('')
   const [jevMessage, setJevMessage] = useState('')
@@ -88,6 +95,7 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
     try {
       const response = await fetch('/api/settings/jev', { cache: 'no-store' })
       const data = await response.json()
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
       if (response.ok && data?.success) setJevStatus(data.status)
     } catch {
       setJevStatus({ enabled: false, source: 'disabled', acceptsPersonalKey: false })
@@ -109,6 +117,7 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
         body: JSON.stringify({ apiKey: personalJevKey })
       })
       const data = await response.json()
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
       if (!response.ok || !data?.success) throw new Error(data?.error || 'Não foi possível validar a chave.')
       setPersonalJevKey('')
       setJevStatus(data.status)
@@ -126,6 +135,7 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
     try {
       const response = await fetch('/api/settings/jev', { method: 'DELETE' })
       const data = await response.json()
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
       if (!response.ok || !data?.success) throw new Error(data?.error || 'Não foi possível remover a chave.')
       setJevStatus(data.status)
       setJevMessage('Chave pessoal removida. O app continuará com regras locais.')
@@ -139,7 +149,7 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
   // Carregar dados salvos
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedProfile = localStorage.getItem('leaomed_user_profile')
+      const savedProfile = financialStorage.getItem('leaomed_user_profile')
       if (savedProfile) {
         try {
           const parsed = JSON.parse(savedProfile)
@@ -152,11 +162,11 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
         }
       }
 
-      const savedAccounts = localStorage.getItem('leaomed_connected_accounts')
+      const savedAccounts = financialStorage.getItem('leaomed_connected_accounts')
       if (savedAccounts) {
         try {
           const parsed = JSON.parse(savedAccounts)
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             setAccounts(parsed)
           }
         } catch (e) {
@@ -189,15 +199,26 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
 
   // Salvar Perfil
   const handleSaveProfile = async (e: React.FormEvent) => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     e.preventDefault()
     setProfileSuccessMsg('')
 
     const profileData = { fullName, email, specialty, crm }
-    localStorage.setItem('leaomed_user_profile', JSON.stringify(profileData))
+    financialStorage.setItem('leaomed_user_profile', JSON.stringify(profileData))
     window.dispatchEvent(new CustomEvent('leaomed_profile_updated', { detail: profileData }))
 
     if (!isDemo) {
       try {
+        await fetch('/api/user/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: fullName.trim(),
+            specialty: specialty.trim() || undefined,
+            crm: crm.trim() || undefined
+          })
+        })
+
         const supabase = createSupabaseBrowserClient()
         await supabase.auth.updateUser({
           data: { full_name: fullName, specialty, crm }
@@ -257,6 +278,7 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
 
   // Adicionar Conta
   const handleAddAccount = (e: React.FormEvent) => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     e.preventDefault()
     if (!newAccName.trim() || !newAccInstitution.trim()) return
 
@@ -271,7 +293,7 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
 
     const updated = [...accounts, newAcc]
     setAccounts(updated)
-    localStorage.setItem('leaomed_connected_accounts', JSON.stringify(updated))
+    financialStorage.setItem('leaomed_connected_accounts', JSON.stringify(updated))
     window.dispatchEvent(new CustomEvent('leaomed_accounts_updated', { detail: updated }))
 
     setNewAccName('')
@@ -283,11 +305,12 @@ export function AccountSettingsModal({ isOpen, onClose, isDemo = false }: Accoun
 
   // Remover Conta
   const handleRemoveAccount = (id: string, name: string) => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     if (!confirm(`Deseja remover a conta "${name}" da sua gestão?`)) return
 
     const updated = accounts.filter(a => a.id !== id)
     setAccounts(updated)
-    localStorage.setItem('leaomed_connected_accounts', JSON.stringify(updated))
+    financialStorage.setItem('leaomed_connected_accounts', JSON.stringify(updated))
     window.dispatchEvent(new CustomEvent('leaomed_accounts_updated', { detail: updated }))
 
     setAccountSuccessMsg(`Conta "${name}" removida.`)

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Nota de segurança</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  /* Cartão 9:16 (1080x1920). O conteúdo fica na zona segura do story: 250px livres no topo e 320px no fundo.
+      Para gerar a imagem: abra no navegador em 1080x1920 e tire um print,
+     ou rode: npx playwright screenshot --viewport-size=1080,1920 cartao-nota.html nota.png */
+  :root {
+    --fundo: #0b0f14; --painel: #121922; --linha: #1f2a36;
+    --texto: #eef3f8; --suave: #8a9aab;
+    --ok: #22c55e; --parcial: #f59e0b; --falha: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; }
+  body {
+    background: radial-gradient(1200px 900px at 50% 18%, #13202d 0%, var(--fundo) 60%);
+    color: var(--texto); font-family: Inter, system-ui, sans-serif;
+    display: flex; flex-direction: column; justify-content: center; padding: 250px 84px 320px; overflow: hidden;
+  }
+  .topo { text-align: center; }
+  .rotulo { font-size: 84px; font-weight: 800; line-height: 1.02; letter-spacing: -1px; color: #ffffff;
+    text-transform: uppercase; white-space: nowrap; }
+  .sistema { font-size: 44px; font-weight: 800; margin-top: 16px; word-break: break-word; }
+  .data { font-size: 28px; color: var(--suave); margin-top: 10px; }
+  .nota-bloco { margin: 26px 0 24px; display: flex; align-items: center; gap: 48px; }
+  .anel { position: relative; width: 250px; height: 250px; flex: none; }
+  .anel svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .anel .valor { position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; }
+  .anel .num { font-size: 104px; font-weight: 800; line-height: 1; }
+  .anel .de { font-size: 30px; color: var(--suave); margin-top: 6px; }
+  .frase { font-size: 42px; font-weight: 800; line-height: 1.15; }
+  .frase small { display: block; font-size: 28px; font-weight: 400; color: var(--suave);
+    margin-top: 12px; line-height: 1.35; }
+  .lista { background: var(--painel); border: 2px solid var(--linha); border-radius: 32px;
+    padding: 18px 40px; }
+  .item { display: flex; align-items: center; gap: 26px; padding: 11px 0;
+    border-bottom: 2px solid var(--linha); font-size: 32px; }
+  .item:last-child { border-bottom: 0; }
+  .item .marca { width: 44px; height: 44px; border-radius: 50%; flex: none; display: flex;
+    align-items: center; justify-content: center; font-size: 30px; font-weight: 800; color: #0b0f14; }
+  .item .nome { flex: 1; }
+  .item .st { font-family: "JetBrains Mono", monospace; font-size: 24px; letter-spacing: 2px; }
+  .ok .marca { background: var(--ok); } .ok .st { color: var(--ok); }
+  .parcial .marca { background: var(--parcial); } .parcial .st { color: var(--parcial); }
+  .falha .marca { background: var(--falha); } .falha .st { color: var(--falha); }
+  .rodape { padding-top: 26px; text-align: center; }
+  .rodape .skill { font-size: 28px; line-height: 1.4; }
+  .rodape .skill b { font-weight: 800; }
+  .rodape .cta { margin-top: 12px; font-size: 30px; font-weight: 800; }
+  .rodape .cta span { color: var(--ok); }
+</style>
+</head>
+<body>
+<script>
+  // ====== PREENCHA AQUI (o Claude troca estes valores ao fim da análise) ======
+  const DADOS = {
+    sistema: "LeãoMed Capital (Plataforma Financeira)",
+    data: "12 de outubro de 2026",
+    // status de cada ataque: "ok" (protegido), "parcial" ou "falha"
+    ataques: [
+      ["XSS (código injetado na página)", "ok"],
+      ["Rotas de API expostas (IDOR)", "ok"],
+      ["Chave de API exposta", "ok"],
+      ["Banco de dados aberto", "ok"],
+      ["SQL injection", "ok"],
+      ["Sem limite de tentativas", "parcial"],
+      ["Prompt injection", "ok"],
+      ["Pacotes inventados", "parcial"],
+    ],
+  };
+  // ============================================================================
+  const pontos = { ok: 1, parcial: 0.5, falha: 0 };
+  const total = DADOS.ataques.reduce((s, [, st]) => s + pontos[st], 0);
+  const nota = Math.round((total / DADOS.ataques.length) * 100) / 10; // 0 a 10, uma casa
+  const protegidos = DADOS.ataques.filter(([, st]) => st === "ok").length;
+  const cor = nota >= 9 ? "var(--ok)" : nota >= 6 ? "var(--parcial)" : "var(--falha)";
+  const frase = nota === 10
+    ? ["Protegido contra os 8 ataques mais comuns", "Nenhuma das brechas mais exploradas em sites feitos com IA foi encontrada."]
+    : nota >= 6
+      ? ["Bem encaminhado, mas ainda tem brecha", `${protegidos} de ${DADOS.ataques.length} ataques bloqueados. Dá para chegar no 10.`]
+      : ["Vulnerável: precisa de atenção", `${protegidos} de ${DADOS.ataques.length} ataques bloqueados. O plano de ação mostra por onde começar.`];
+  const rotuloSt = { ok: "PROTEGIDO", parcial: "PARCIAL", falha: "VULNERÁVEL" };
+  const marca = { ok: "✓", parcial: "!", falha: "✕" };
+  const circ = 2 * Math.PI * 160;
+  const notaTxt = Number.isInteger(nota) ? nota : nota.toFixed(1).replace(".", ",");
+  document.write(`
+    <div class="topo">
+      <div class="rotulo">Nota de segurança</div>
+      <div class="sistema">${DADOS.sistema}</div>
+      <div class="data">Analisado em ${DADOS.data}</div>
+    </div>
+    <div class="nota-bloco">
+      <div class="anel">
+        <svg viewBox="0 0 360 360">
+          <circle cx="180" cy="180" r="160" fill="none" stroke="#1f2a36" stroke-width="28"/>
+          <circle cx="180" cy="180" r="160" fill="none" stroke="${cor}" stroke-width="28"
+            stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${circ * (1 - nota / 10)}"/>
+        </svg>
+        <div class="valor"><div class="num" style="color:${cor}">${notaTxt}</div><div class="de">de 10</div></div>
+      </div>
+      <div class="frase">${frase[0]}<small>${frase[1]}</small></div>
+    </div>
+    <div class="lista">
+      ${DADOS.ataques.map(([nome, st]) => `
+        <div class="item ${st}"><div class="marca">${marca[st]}</div>
+          <div class="nome">${nome}</div><div class="st">${rotuloSt[st]}</div></div>`).join("")}
+    </div>
+    <div class="rodape">
+      <div class="skill">Análise feita com a skill gratuita <b>Análise de Site</b>,<br>criada por <b>Danilo Gato</b></div>
+      <div class="cta">Siga <span>@odanilogato</span> e pegue a sua em <span>cpdf.ai</span></div>
+    </div>`);
+</script>
+</body>
+</html>

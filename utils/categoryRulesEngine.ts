@@ -1,3 +1,5 @@
+
+import { financialStorage, getFinancialUserScope, getFinancialScopeVersion } from './userScopedStorage'
 import { USER_TAXONOMY } from '@/utils/taxonomy'
 
 export interface CategorizationRule {
@@ -70,7 +72,7 @@ const buildTaxonomyHeuristics = (): Array<{
     { pattern: 'pagamento efetuado', category: 'Pagamento de Fatura', subcategory: 'Fatura de Cartão', isBillPayment: true },
 
     // Estabelecimentos Frequentes e Lançamentos Reais
-    { pattern: 'localiza', category: 'Transporte', subcategory: 'Parcela T-Cross Cartão' },
+    { pattern: 'localiza', category: 'Transporte', subcategory: 'Parcela Veículo Cartão' },
     { pattern: 'uber', category: 'Transporte', subcategory: 'Táxi/Uber' },
     { pattern: '99app', category: 'Transporte', subcategory: 'Táxi/Uber' },
     { pattern: 'lapaza', category: 'Transporte', subcategory: 'Estacionamentos' },
@@ -111,11 +113,11 @@ const buildTaxonomyHeuristics = (): Array<{
     { pattern: 'super nosso', category: 'Casa', subcategory: 'Supermercado' },
 
     // Saúde & Farmácia
-    { pattern: 'araujo loja', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
-    { pattern: 'drogaria araujo', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
-    { pattern: 'raia', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
-    { pattern: 'drogasil', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
-    { pattern: 'pacheco', category: 'Saúde', subcategory: 'Farmácia & Medicamentos' },
+    { pattern: 'araujo loja', category: 'Saúde', subcategory: 'Remédios' },
+    { pattern: 'drogaria araujo', category: 'Saúde', subcategory: 'Remédios' },
+    { pattern: 'raia', category: 'Saúde', subcategory: 'Remédios' },
+    { pattern: 'drogasil', category: 'Saúde', subcategory: 'Remédios' },
+    { pattern: 'pacheco', category: 'Saúde', subcategory: 'Remédios' },
 
     // Softwares & Assinaturas
     { pattern: 'google one', category: 'Serviços de Assinaturas', subcategory: 'Streaming & Assinaturas' },
@@ -169,9 +171,10 @@ export class CategoryRulesEngine {
   static getCustomRules(): CategorizationRule[] {
     if (typeof window === 'undefined') return []
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
+      const raw = financialStorage.getItem(STORAGE_KEY)
       if (!raw) return []
-      return JSON.parse(raw) as CategorizationRule[]
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed : []
     } catch (_) {
       return []
     }
@@ -179,11 +182,15 @@ export class CategoryRulesEngine {
 
   // Sincroniza regras do PostgreSQL no client
   static async syncFromPostgres(): Promise<CategorizationRule[]> {
+    const requestScope = getFinancialScopeVersion()
+    if (typeof window === 'undefined') return []
+    if (!getFinancialUserScope() && !window.location.pathname.startsWith('/demo')) return []
     if (typeof window === 'undefined') return []
     try {
       const resp = await fetch('/api/category-rules')
       if (resp.ok) {
         const data = await resp.json()
+      if (getFinancialScopeVersion() !== requestScope) return []
         if (data.rules && Array.isArray(data.rules)) {
           const rules: CategorizationRule[] = data.rules.map((r: any) => ({
             id: r.id,
@@ -197,13 +204,14 @@ export class CategoryRulesEngine {
             createdAt: r.created_at,
             hitCount: r.hit_count
           }))
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(rules))
+          financialStorage.setItem(STORAGE_KEY, JSON.stringify(rules))
           return rules
         }
       }
     } catch (e) {
       console.warn('Falha na sincronização de regras com o banco:', e)
     }
+    if (getFinancialScopeVersion() !== requestScope) return []
     return this.getCustomRules()
   }
 
@@ -241,9 +249,9 @@ export class CategoryRulesEngine {
       rules.unshift(updatedRule)
     }
 
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && getFinancialUserScope()) {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(rules))
+        financialStorage.setItem(STORAGE_KEY, JSON.stringify(rules))
         window.dispatchEvent(new CustomEvent('leaomed_rules_updated', { detail: { rule: updatedRule } }))
 
         // Envia de forma assíncrona para o PostgreSQL
@@ -272,7 +280,7 @@ export class CategoryRulesEngine {
     const rules = this.getCustomRules().filter(r => r.id !== id)
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(rules))
+        financialStorage.setItem(STORAGE_KEY, JSON.stringify(rules))
         window.dispatchEvent(new CustomEvent('leaomed_rules_updated'))
         fetch(`/api/category-rules?id=${id}`, { method: 'DELETE' }).catch(() => {})
       } catch (_) {}

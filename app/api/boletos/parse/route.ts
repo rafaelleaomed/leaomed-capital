@@ -248,7 +248,7 @@ export async function POST(req: NextRequest) {
       field: 'outras'
     })
   } catch (err: any) {
-    console.error('Erro ao analisar boleto:', err)
+    console.error('Erro ao analisar boleto:', err instanceof Error ? err.name : 'unknown_error')
     return NextResponse.json({ success: false, error: err.message || 'Falha ao analisar arquivo.' }, { status: 500 })
   }
 }

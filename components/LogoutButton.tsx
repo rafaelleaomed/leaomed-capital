@@ -1,20 +1,19 @@
 'use client';
 
 import { createSupabaseBrowserClient } from '@/utils/supabase-client';
-import { useRouter } from 'next/navigation';
+import { setFinancialUserScope } from '@/utils/userScopedStorage';
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
 
 export function LogoutButton({ className }: { className?: string }) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const supabase = createSupabaseBrowserClient();
 
   const handleLogout = async () => {
     setLoading(true);
+    setFinancialUserScope(null);
     await supabase.auth.signOut();
-    router.replace('/login');
-    router.refresh();
+    window.location.replace('/login');
   };
 
   return (
