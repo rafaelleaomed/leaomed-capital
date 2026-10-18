@@ -1,3 +1,5 @@
+
+import { financialStorage, getFinancialUserScope, getFinancialScopeVersion } from './userScopedStorage'
 import { CategoryRulesEngine } from './categoryRulesEngine'
 import { DEMO_SYNTHETIC_TRANSACTIONS } from './demoSyntheticData'
 import { InstallmentStore } from './installmentStore'
@@ -6,6 +8,7 @@ export interface GranularTransaction {
   id: string
   entityType: 'PF' | 'PJ'
   date: string // YYYY-MM-DD
+  originalDate?: string
   description: string
   originalDescription?: string
   amount: number // Valores negativos para despesas, positivos para receitas
@@ -58,9 +61,10 @@ export class GranularTransactionStore {
     }
 
     try {
-      const raw = localStorage.getItem(key)
+      const raw = financialStorage.getItem(key)
       if (!raw) return []
-      return JSON.parse(raw) as GranularTransaction[]
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed : []
     } catch (_) {
       return []
     }
@@ -68,18 +72,22 @@ export class GranularTransactionStore {
 
   // Sincroniza do banco via API
   static async fetchFromApi(period?: string): Promise<GranularTransaction[]> {
+    const requestScope = getFinancialScopeVersion()
     if (typeof window === 'undefined') return []
+    if (!getFinancialUserScope() && !window.location.pathname.startsWith('/demo')) return []
     if (isDemoMode()) return [...DEMO_SYNTHETIC_TRANSACTIONS]
 
     try {
       const url = period ? `/api/transactions?period=${period}&limit=1000` : '/api/transactions?limit=1000'
       const res = await fetch(url)
       const data = await res.json()
-      if (data?.success && Array.isArray(data.transactions)) {
+      if (getFinancialScopeVersion() !== requestScope) return []
+      if (res.ok && data?.success && Array.isArray(data.transactions)) {
         const mapped: GranularTransaction[] = data.transactions.map((t: any) => ({
           id: t.id,
           entityType: t.entity_type || 'PF',
-          date: t.date?.split('T')[0] || t.date,
+          date: t.competence_date?.split('T')[0] || t.date?.split('T')[0] || t.date,
+          originalDate: t.date?.split('T')[0] || t.date,
           description: t.description,
           amount: parseFloat(t.amount) || 0,
           accountOrCard: t.account_name || 'Conta',
@@ -90,12 +98,13 @@ export class GranularTransactionStore {
           source: 'MANUAL'
         }))
         const key = getStorageKey()
-        localStorage.setItem(key, JSON.stringify(mapped))
+        financialStorage.setItem(key, JSON.stringify(mapped))
         return mapped
       }
     } catch (e) {
       console.warn('Fallback para cache local de transações:', e)
     }
+    if (getFinancialScopeVersion() !== requestScope) return []
     return this.getAll()
   }
 
@@ -122,7 +131,7 @@ export class GranularTransactionStore {
     if (typeof window === 'undefined') return
     try {
       const key = getStorageKey()
-      localStorage.setItem(key, JSON.stringify(items))
+      financialStorage.setItem(key, JSON.stringify(items))
       window.dispatchEvent(new CustomEvent('leaomed_transactions_updated', { detail: { count: items.length } }))
     } catch (_) {}
   }
@@ -278,7 +287,7 @@ export class GranularTransactionStore {
       try {
         const key = getStorageKey()
         const initialList = isDemoMode() ? [...DEMO_SYNTHETIC_TRANSACTIONS] : []
-        localStorage.setItem(key, JSON.stringify(initialList))
+        financialStorage.setItem(key, JSON.stringify(initialList))
         window.dispatchEvent(new CustomEvent('leaomed_transactions_updated'))
       } catch (_) {}
     }

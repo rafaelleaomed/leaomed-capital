@@ -1,5 +1,7 @@
 'use client'
 
+import { getFinancialScopeVersion } from '@/utils/userScopedStorage'
+
 import React, { useState, useEffect, useMemo } from 'react'
 import { 
   X, 
@@ -40,6 +42,7 @@ export function InvestmentLinkModal({
   transactionDescription = '',
   onSelectAsset
 }: InvestmentLinkModalProps) {
+  const financialScopeVersion = React.useRef(getFinancialScopeVersion()).current
   const [currentAction, setCurrentAction] = useState<'APORTE' | 'RESGATE'>(actionType)
   const [assets, setAssets] = useState<PortfolioAsset[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -81,6 +84,7 @@ export function InvestmentLinkModal({
   const absAmount = Math.abs(transactionAmount)
 
   const handleConfirm = () => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     if (!selectedAsset) return
 
     let updated: PortfolioAsset | null = null
@@ -105,6 +109,7 @@ export function InvestmentLinkModal({
   }
 
   const handleCreateAndSelect = (e: React.FormEvent) => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     e.preventDefault()
     if (!newAssetName.trim()) return
 

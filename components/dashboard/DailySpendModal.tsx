@@ -1,5 +1,7 @@
 'use client'
 
+import { financialStorage } from '@/utils/userScopedStorage'
+
 import React, { useState, useEffect } from 'react'
 import { 
   ShieldCheck, 
@@ -54,7 +56,7 @@ export function DailySpendModal({
   const handleApply = () => {
     onSaveInvestmentPct?.(targetPct)
     if (typeof window !== 'undefined') {
-      localStorage.setItem('leaomed_invest_target_pct', targetPct.toString())
+      financialStorage.setItem('leaomed_invest_target_pct', targetPct.toString())
       window.dispatchEvent(new CustomEvent('leaomed_investment_target_updated', {
         detail: { targetPct }
       }))

@@ -63,7 +63,7 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.error('Erro ao buscar investimentos no banco:', error);
+    console.error('Erro ao buscar investimentos no banco:', error instanceof Error ? error.name : 'unknown_error');
     return NextResponse.json(
       { success: false, error: 'Falha interna ao recuperar carteira de investimentos.' },
       { status: 500 }

@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, accessToken: connectToken.accessToken });
   } catch (error) {
-    console.error('Erro ao gerar connect token Pluggy:', error);
+    console.error('Erro ao gerar connect token Pluggy:', error instanceof Error ? error.name : 'unknown_error');
     return NextResponse.json(
       { success: false, error: 'Falha ao iniciar conexão segura com o Open Finance.' },
       { status: 500 }

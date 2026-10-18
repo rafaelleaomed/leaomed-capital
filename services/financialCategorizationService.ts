@@ -187,7 +187,7 @@ export class FinancialCategorizationService {
         }
       }
     } catch (dbErr) {
-      console.warn('[FinancialCategorizationService] Aviso ao consultar category_rules no Postgres:', dbErr)
+      console.warn('[FinancialCategorizationService] Aviso ao consultar category_rules no Postgres:', dbErr instanceof Error ? dbErr.name : 'unknown_error')
     }
 
     // -------------------------------------------------------------
@@ -199,7 +199,7 @@ export class FinancialCategorizationService {
         SELECT category, subcategory, is_fixed_expense
         FROM public.transactions
         WHERE user_id = ${req.user_id} 
-          AND account_id IN (SELECT id FROM public.accounts WHERE type = ${req.account_scope})
+          AND account_id IN (SELECT id FROM public.accounts WHERE type = ${req.account_scope} AND user_id = ${req.user_id})
           AND LOWER(description) = ${lowerDesc}
           AND category IS NOT NULL 
           AND category != 'Pendente'
@@ -231,7 +231,7 @@ export class FinancialCategorizationService {
         };
       }
     } catch (dbErr) {
-       console.warn('[FinancialCategorizationService] Aviso ao consultar hit histórico:', dbErr);
+       console.warn('[FinancialCategorizationService] Aviso ao consultar hit histórico:', dbErr instanceof Error ? dbErr.name : 'unknown_error');
     }
 
     // -------------------------------------------------------------
@@ -425,7 +425,8 @@ export class FinancialCategorizationService {
           error_message
         ) VALUES (
           ${params.user_id},
-          ${params.transaction_id || null},
+          (SELECT id FROM public.transactions
+           WHERE id = ${params.transaction_id || null} AND user_id = ${params.user_id}),
           ${params.input_hash},
           ${params.sanitized_input ? JSON.stringify(params.sanitized_input) : null},
           ${params.decision.provider},
@@ -446,7 +447,7 @@ export class FinancialCategorizationService {
         )
       `
     } catch (logErr) {
-      console.warn('[FinancialCategorizationService] Falha ao registrar log de auditoria no Postgres:', logErr)
+      console.warn('[FinancialCategorizationService] Falha ao registrar log de auditoria no Postgres:', logErr instanceof Error ? logErr.name : 'unknown_error')
     }
   }
 }

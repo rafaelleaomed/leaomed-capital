@@ -1,4 +1,6 @@
-import { CreditCardStore } from './creditCardStore'
+
+import { financialStorage, getFinancialUserScope } from './userScopedStorage'
+
 
 export interface InstallmentItem {
   id: string
@@ -18,126 +20,40 @@ export interface InstallmentItem {
 
 const STORAGE_KEY = 'leaomed_installment_store_v2'
 
-export const DEFAULT_INSTALLMENTS: InstallmentItem[] = [
-  {
-    id: 'inst_tcross_card',
-    name: 'Parcela Entrada T-Cross Cartão',
-    category: 'Transporte',
-    subcategory: 'Parcela T-Cross Cartão',
-    monthlyValue: 6837.22,
-    currentInstallment: 6,
-    totalInstallments: 16,
-    endMonthYear: 'Abril/2027',
-    contractNotes: 'Localiza Frotas • Entrada do veículo parcelada no cartão',
-    paymentMethod: 'Cartão C6 Carbon Black PF',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_tcross_financing',
-    name: 'Financiamento T-Cross (Banco VW/Safra)',
-    category: 'Transporte',
-    subcategory: 'Parcela T-Cross Financiamento',
-    monthlyValue: 3336.28,
-    currentInstallment: 14,
-    totalInstallments: 36,
-    endMonthYear: 'Abril/2028',
-    contractNotes: 'Contrato CCB 493464 • 36 parcelas fixas',
-    paymentMethod: 'Débito em Conta (Banco Safra)',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_gramado_parks',
-    name: 'Parcela Gramado Parks (Buona Vitta GVI126924)',
-    category: 'Financiamento',
-    subcategory: 'Parcela Gramado Parks',
-    monthlyValue: 1865.33,
-    currentInstallment: 5,
-    totalInstallments: 70,
-    endMonthYear: 'Fevereiro/2032',
-    contractNotes: 'Contrato de multipropriedade GVI126924 • Reajustado pelo IPCA',
-    paymentMethod: 'Boleto Gramado Parks',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_condo_buona_vitta',
-    name: 'Condomínio Buona Vitta Resort',
-    category: 'Financiamento',
-    subcategory: 'Condomínio Buona Vitta',
-    monthlyValue: 377.49,
-    currentInstallment: 5,
-    totalInstallments: 999,
-    endMonthYear: 'Mensal Contínuo',
-    contractNotes: 'Condomínio mensal recorrente • Taxa de manutenção',
-    isPerpetual: true,
-    paymentMethod: 'Boleto Condomínio',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_s26_ultra',
-    name: 'Samsung S26 Ultra',
-    category: 'Compras',
-    subcategory: 'Eletrônicos',
-    monthlyValue: 274.66,
-    currentInstallment: 4,
-    totalInstallments: 21,
-    endMonthYear: 'Novembro/2027',
-    contractNotes: 'Aquisição smartphone em 21x',
-    paymentMethod: 'Cartão C6 Carbon Black PF',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_vivara',
-    name: 'Aliança Solitário Vivara',
-    category: 'Compras',
-    subcategory: 'Joias & Presentes',
-    monthlyValue: 382.37,
-    currentInstallment: 7,
-    totalInstallments: 10,
-    endMonthYear: 'Outubro/2026',
-    contractNotes: 'Término em Outubro/2026',
-    paymentMethod: 'Cartão C6 Carbon Black PF',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_lava_seca',
-    name: 'Lava e Seca Midea',
-    category: 'Casa',
-    subcategory: 'Eletrodomésticos',
-    monthlyValue: 355.00,
-    currentInstallment: 7,
-    totalInstallments: 10,
-    endMonthYear: 'Outubro/2026',
-    contractNotes: 'Término em Outubro/2026 • Fatura Itaú',
-    paymentMethod: 'Cartão Itaú PF',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_tv_tcl',
-    name: 'TV TCL 55"',
-    category: 'Casa',
-    subcategory: 'Eletrônicos',
-    monthlyValue: 250.92,
-    currentInstallment: 7,
-    totalInstallments: 10,
-    endMonthYear: 'Outubro/2026',
-    contractNotes: 'Término em Outubro/2026 • Fatura Nubank',
-    paymentMethod: 'Cartão Nubank PF',
-    entityType: 'PF'
-  },
-  {
-    id: 'inst_sofa',
-    name: 'Sofá Retrátil Sala',
-    category: 'Casa',
-    subcategory: 'Móveis',
-    monthlyValue: 197.00,
-    currentInstallment: 4,
-    totalInstallments: 10,
-    endMonthYear: 'Dezembro/2026',
-    contractNotes: 'Mobiliário residencial em 10x',
-    paymentMethod: 'Cartão C6 Carbon Black PF',
-    entityType: 'PF'
+export function installmentEndDate(item: Pick<InstallmentItem, 'endMonthYear'>): string | undefined {
+  const months = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+  const match = item.endMonthYear.toLowerCase().match(/^([a-zç]+)\/(\d{4})$/)
+  if (!match) return undefined
+  const month = months.indexOf(match[1])
+  return month >= 0 ? `${match[2]}-${String(month + 1).padStart(2, '0')}-01` : undefined
+}
+
+export interface InstallmentDatabaseRow {
+  id: string; description: string; category: string; subcategory?: string
+  installment_amount: number | string; current_installment: number; total_installments: number
+  payment_method?: string; start_date?: string; end_date?: string
+}
+
+export function mapDatabaseInstallment(row: InstallmentDatabaseRow, previous?: InstallmentItem): InstallmentItem {
+  const end = row.end_date ? new Date(row.end_date) : null
+  const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+  return {
+    ...previous, id: String(row.id), name: row.description, category: row.category,
+    subcategory: row.subcategory, monthlyValue: Number(row.installment_amount) || 0,
+    currentInstallment: row.current_installment, totalInstallments: row.total_installments,
+    endMonthYear: previous?.isPerpetual ? 'Mensal Contínuo' : end && Number.isFinite(end.getTime()) ? `${months[end.getUTCMonth()]}/${end.getUTCFullYear()}` : formatEndMonthYear(row.current_installment, row.total_installments),
+    paymentMethod: row.payment_method || 'Cartão de Crédito', startDate: row.start_date?.slice(0, 10)
   }
-]
+}
+
+export function installmentApiPayload(item: Omit<InstallmentItem, 'id'>) {
+  return { description: item.name, category: item.category, subcategory: item.subcategory,
+    installment_amount: item.monthlyValue, current_installment: item.currentInstallment,
+    total_installments: item.totalInstallments, payment_method: item.paymentMethod,
+    start_date: item.startDate, end_date: installmentEndDate(item) }
+}
+
+export const DEFAULT_INSTALLMENTS: InstallmentItem[] = []
 
 export function parseInstallmentPattern(description: string): {
   isInstallment: boolean
@@ -195,24 +111,24 @@ export function formatEndMonthYear(current: number, total: number): string {
 
 export class InstallmentStore {
   static getInstallments(): InstallmentItem[] {
-    if (typeof window === 'undefined') return DEFAULT_INSTALLMENTS
+    if (typeof window === 'undefined') return []
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
+      const raw = financialStorage.getItem(STORAGE_KEY)
       if (!raw) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_INSTALLMENTS))
-        return DEFAULT_INSTALLMENTS
+        financialStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_INSTALLMENTS))
+        return []
       }
       const parsed = JSON.parse(raw)
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_INSTALLMENTS
+      return Array.isArray(parsed) ? parsed : []
     } catch (_) {
-      return DEFAULT_INSTALLMENTS
+      return []
     }
   }
 
   static saveInstallments(items: InstallmentItem[]): void {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined' || !getFinancialUserScope()) return
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
+      financialStorage.setItem(STORAGE_KEY, JSON.stringify(items))
       window.dispatchEvent(new CustomEvent('leaomed_installments_updated', { detail: { installments: items } }))
     } catch (_) {}
   }

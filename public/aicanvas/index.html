@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Canvas Pro | O Agente Auditor de Viabilidade de Projetos de IA</title>
+  <meta name="description" content="Valide a viabilidade técnica, de dados e de negócio da sua ideia de IA em menos de 15 minutos com um Agente Auditor Sênior.">
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="logo.jpg">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Space Grotesk"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              dark: '#080c14',
+              card: '#0f172a',
+              line: '#1e293b',
+              cyan: '#06b6d4',
+              emerald: '#10b981',
+              gold: '#f59e0b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glow-cyan {
+      box-shadow: 0 0 50px -10px rgba(6, 182, 212, 0.3);
+    }
+    .glow-btn {
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);
+    }
+    .grid-bg {
+      background-image: radial-gradient(rgba(30, 41, 59, 0.5) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="bg-brand-dark text-slate-100 font-sans selection:bg-brand-cyan selection:text-black min-h-screen">
+
+  <!-- BARRA DE TOPO / ANÚNCIO -->
+  <div class="bg-gradient-to-r from-cyan-950 via-slate-900 to-emerald-950 border-b border-brand-line text-xs py-2 px-4 text-center font-medium text-slate-300">
+    <span class="inline-flex items-center gap-1.5 text-brand-cyan">
+      <span class="w-2 h-2 rounded-full bg-brand-emerald animate-pulse"></span>
+      Lançamento Oficial 2026:
+    </span>
+    Oferta especial de lançamento por apenas <strong class="text-brand-emerald">R$ 47,00</strong> por tempo limitado!
+  </div>
+
+  <!-- CABEÇALHO -->
+  <header class="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <img src="logo.jpg" alt="Logo AI Canvas Pro" class="w-10 h-10 rounded-xl object-cover border border-brand-cyan/40 shadow-lg">
+      <div>
+        <span class="font-display font-bold text-lg tracking-tight text-white block">AI Canvas <span class="text-brand-cyan">Pro</span></span>
+        <span class="text-[10px] text-slate-400 uppercase tracking-widest block font-semibold">Agente Auditor de Viabilidade</span>
+      </div>
+    </div>
+    <a href="#comprar" class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition-all hover:scale-105">
+      <span>Garantir Acesso (R$ 47)</span>
+      <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-brand-emerald"></i>
+    </a>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="relative pt-8 pb-16 px-6 max-w-5xl mx-auto text-center grid-bg">
+    <!-- BADGE LOGO HERO -->
+    <div class="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-brand-card border border-brand-line text-xs text-brand-cyan mb-8 glow-cyan">
+      <img src="logo.jpg" alt="AI Canvas Icon" class="w-5 h-5 rounded-md object-cover">
+      <span>Metodologia Validada de Medicina Híbrida & Arquitetura de IA</span>
+    </div>
+
+    <h1 class="font-display text-4xl sm:text-6xl font-bold tracking-tight text-white max-w-4xl mx-auto leading-[1.15]">
+      <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-amber-400">90% dos Projetos de IA</span> Fracassam Antes do Primeiro Cliente.
+    </h1>
+
+    <p class="mt-6 text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
+      Não gaste semanas de desenvolvimento ou milhares de reais com código que ninguém vai usar. 
+      Audite a sua ideia com um <strong class="text-white font-semibold">Agente Especialista</strong> que avalia dados, riscos e emite um parecer de viabilidade <span class="text-brand-emerald font-semibold">(Go / No-Go)</span> em 15 minutos.
+    </p>
+
+    <!-- CTAS -->
+    <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+      <a href="#comprar" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-brand-dark font-extrabold text-base flex items-center justify-center gap-3 transition-all transform hover:scale-105 glow-btn">
+        <i data-lucide="sparkles" class="w-5 h-5"></i>
+        <span>QUERO TESTAR MINHA IDEIA POR R$ 47</span>
+      </a>
+    </div>
+
+    <!-- PROVAS SOCIAIS / BENEFÍCIOS RÁPIDOS -->
+    <div class="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400">
+      <div class="flex items-center gap-1.5">
+        <i data-lucide="shield-check" class="w-4 h-4 text-brand-emerald"></i>
+        <span>Garantia Incondicional de 7 Dias</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <i data-lucide="zap" class="w-4 h-4 text-brand-cyan"></i>
+        <span>Acesso Imediato pelo Hotmart</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <i data-lucide="infinity" class="w-4 h-4 text-brand-gold"></i>
+        <span>Acesso Vitalício sem Mensalidade</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- O VILÃO / O PROBLEMA REAL -->
+  <section class="py-16 px-6 bg-slate-900/60 border-y border-brand-line">
+    <div class="max-w-4xl mx-auto">
+      <div class="text-center mb-12">
+        <h2 class="text-2xl sm:text-3xl font-display font-bold text-white">
+          Por que tantas soluções de IA viram prejuízo?
+        </h2>
+        <p class="text-slate-400 text-sm mt-2">O erro clássico que quebra empreendedores, programadores e agências:</p>
+      </div>
+
+      <div class="grid sm:grid-cols-3 gap-6">
+        <div class="p-6 rounded-2xl bg-brand-dark border border-red-500/20">
+          <div class="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400 mb-4">
+            <i data-lucide="flame" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-white text-base">Amor pela Ferramenta</h3>
+          <p class="text-slate-400 text-xs mt-2 leading-relaxed">
+            A pessoa começa escolhendo o modelo (OpenAI, Claude, Llama) antes de ter certeza se o problema realmente precisa de IA para ser resolvido.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-brand-dark border border-amber-500/20">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 mb-4">
+            <i data-lucide="database" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-white text-base">Ilusão dos Dados</h3>
+          <p class="text-slate-400 text-xs mt-2 leading-relaxed">
+            Descobre no meio do desenvolvimento que os dados da empresa estão sujos, sem histórico suficiente ou bloqueados por segredo industrial/LGPD.
+          </p>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-brand-dark border border-blue-500/20">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 mb-4">
+            <i data-lucide="circle-slash" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-white text-base">Sem Métrica de Sucesso</h3>
+          <p class="text-slate-400 text-xs mt-2 leading-relaxed">
+            Ninguém definiu qual a taxa aceitável de alucinação ou o retorno financeiro mínimo, e o projeto é cancelado após meses de frustração.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- O CANVAS DE 10 BLOCOS (A METODOLOGIA) -->
+  <section class="py-20 px-6 max-w-5xl mx-auto">
+    <div class="text-center max-w-2xl mx-auto mb-14">
+      <span class="text-xs uppercase tracking-widest font-bold text-brand-emerald">Engenharia de Viabilidade</span>
+      <h2 class="text-3xl sm:text-4xl font-display font-bold text-white mt-2">
+        A auditoria completa em 10 blocos estratégicos
+      </h2>
+      <p class="text-slate-400 text-sm mt-3">
+        O Agente não deixa você pular etapas nem fingir que os problemas não existem. Ele investiga cada ponto crítico:
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+      <!-- 1 -->
+      <div class="p-4 rounded-xl bg-brand-card border border-brand-line">
+        <span class="w-6 h-6 rounded-full bg-brand-cyan/20 text-brand-cyan text-xs font-bold flex items-center justify-center mb-2">1</span>
+        <h4 class="font-bold text-sm text-white">Problema de Negócio</h4>
+        <p class="text-slate-400 text-xs mt-1">A dor real e o impacto. Proibido citar a solução aqui!</p>
+      </div>
+      <!-- 2 -->
+      <div class="p-4 rounded-xl bg-brand-card border border-brand-line">
+        <span class="w-6 h-6 rounded-full bg-brand-cyan/20 text-brand-cyan text-xs font-bold flex items-center justify-center mb-2">2</span>
+        <h4 class="font-bold text-sm text-white">Contexto Atual</h4>
+        <p class="text-slate-400 text-xs mt-1">Processos manuais, baseline atual e tentativas anteriores.</p>
+      </div>
+      <!-- 3 -->
+      <div class="p-4 rounded-xl bg-brand-card border border-brand-line">
+        <span class="w-6 h-6 rounded-full bg-brand-cyan/20 text-brand-cyan text-xs font-bold flex items-center justify-center mb-2">3</span>
+        <h4 class="font-bold text-sm text-white">Desafios Encontrados</h4>
+        <p class="text-slate-400 text-xs mt-1">Obstáculos técnicos, operacionais e resistência humana.</p>
+      </div>
+      <!-- 4 -->
+      <div class="p-4 rounded-xl bg-brand-card border border-brand-line">
+        <span class="w-6 h-6 rounded-full bg-brand-cyan/20 text-brand-cyan text-xs font-bold flex items-center justify-center mb-2">4</span>
+        <h4 class="font-bold text-sm text-white">Dados Disponíveis</h4>
+        <p class="text-slate-400 text-xs mt-1">Histórico, formato, qualidade e responsável pela extração.</p>
+      </div>
+      <!-- 5 -->
+      <div class="p-4 rounded-xl bg-brand-card border border-brand-line">
+        <span class="w-6 h-6 rounded-full bg-brand-cyan/20 text-brand-cyan text-xs font-bold flex items-center justify-center mb-2">5</span>
+        <h4 class="font-bold text-sm text-white">Requisitos Mínimos</h4>
+        <p class="text-slate-400 text-xs mt-1">Acessos, APIs, infra e condições prévias à PoC.</p>
+      </div>
+      <!-- 6 -->
+      <div class="p-4 rounded-xl bg-brand-card border border-brand-line">
+        <span class="w-6 h-6 rounded-full bg-brand-emerald/20 text-brand-emerald text-xs font-bold flex items-center justify-center mb-2">6</span>
+        <h4 class="font-bold text-sm text-white">Escopo da PoC</h4>
+        <p class="text-slate-400 text-xs mt-1">Qual o menor artefato funcional que valida o valor.</p>
+      </div>
+      <!-- 7 -->
+      <div class="p-4 rounded-xl bg-brand-card border border-brand-line">
+        <span class="w-6 h-6 rounded-full bg-brand-emerald/20 text-brand-emerald text-xs font-bold flex items-center justify-center mb-2">7</span>
+        <h4 class="font-bold text-sm text-white">Limitações (Não-Escopo)</h4>
+        <p class="text-slate-400 text-xs mt-1">O que explicitamente NÃO será feito para não estourar prazo.</p>
+      </div>
+      <!-- 8 -->
+      <div class="p-4 rounded-xl bg-brand-card border border-brand-line">
+        <span class="w-6 h-6 rounded-full bg-brand-emerald/20 text-brand-emerald text-xs font-bold flex items-center justify-center mb-2">8</span>
+        <h4 class="font-bold text-sm text-white">Critérios de Sucesso</h4>
+        <p class="text-slate-400 text-xs mt-1">Métricas claras: acurácia mínima, tempo economizado e ROI.</p>
+      </div>
+      <!-- 9 -->
+      <div class="p-4 rounded-xl bg-brand-card border border-brand-line">
+        <span class="w-6 h-6 rounded-full bg-brand-gold/20 text-brand-gold text-xs font-bold flex items-center justify-center mb-2">9</span>
+        <h4 class="font-bold text-sm text-white">Riscos e Restrições</h4>
+        <p class="text-slate-400 text-xs mt-1">LGPD, custo de tokens, alucinações e riscos legais.</p>
+      </div>
+      <!-- 10 -->
+      <div class="p-4 rounded-xl bg-brand-card border border-brand-line">
+        <span class="w-6 h-6 rounded-full bg-brand-gold/20 text-brand-gold text-xs font-bold flex items-center justify-center mb-2">10</span>
+        <h4 class="font-bold text-sm text-white">Entregas Tangíveis</h4>
+        <p class="text-slate-400 text-xs mt-1">Artefatos concretos: protótipo, relatório ou API mockada.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- O SCORECARD DE VIABILIDADE -->
+  <section class="py-16 px-6 bg-slate-900/40 border-t border-brand-line">
+    <div class="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-10">
+      <div class="flex-1 space-y-4">
+        <span class="px-3 py-1 rounded-full bg-brand-emerald/10 border border-brand-emerald/30 text-brand-emerald text-xs font-semibold">
+          Resultado com Algoritmo Ponderado
+        </span>
+        <h3 class="text-2xl sm:text-3xl font-display font-bold text-white leading-tight">
+          Você não sai com suposições. Sai com um veredito matemático.
+        </h3>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          O agente calcula a nota de 0 a 100 cruzando a prontidão dos dados (30%), a viabilidade técnica da IA (25%), o impacto real no negócio (25%) e a governança/riscos (20%).
+        </p>
+        <div class="space-y-2 pt-2">
+          <div class="flex items-center gap-3 text-xs">
+            <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">GO (75-100)</span>
+            <span class="text-slate-300">Projeto aprovado com sinal verde para iniciar a PoC.</span>
+          </div>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold">PIVOT (50-74)</span>
+            <span class="text-slate-300">Viável com ajustes prévios indispensáveis.</span>
+          </div>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="px-2 py-0.5 rounded bg-red-500/20 text-red-400 font-bold">NO-GO (<50)</span>
+            <span class="text-slate-300">Inviável no momento. Economiza seu tempo e dinheiro.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIMULAÇÃO VISUAL DO SCORECARD -->
+      <div class="w-full md:w-80 p-6 rounded-2xl bg-brand-dark border border-brand-line shadow-2xl relative">
+        <div class="flex items-center justify-between pb-4 border-b border-brand-line">
+          <div>
+            <span class="text-[10px] text-slate-400 uppercase font-semibold">Parecer do Auditor</span>
+            <h5 class="text-sm font-bold text-white">Relatório de Viabilidade</h5>
+          </div>
+          <span class="px-2 py-1 rounded bg-brand-emerald text-brand-dark font-extrabold text-xs">GO</span>
+        </div>
+        <div class="my-6 text-center">
+          <span class="text-5xl font-display font-extrabold text-white">88<span class="text-lg text-brand-emerald">/100</span></span>
+          <span class="block text-xs text-brand-emerald font-semibold mt-1">Viabilidade Alta Aprovada</span>
+        </div>
+        <div class="space-y-2.5 text-xs">
+          <div>
+            <div class="flex justify-between text-slate-400 mb-1">
+              <span>Prontidão de Dados</span>
+              <span class="text-white font-semibold">90%</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5"><div class="bg-brand-cyan h-1.5 rounded-full" style="width: 90%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-slate-400 mb-1">
+              <span>Viabilidade Técnica</span>
+              <span class="text-white font-semibold">85%</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5"><div class="bg-brand-emerald h-1.5 rounded-full" style="width: 85%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-slate-400 mb-1">
+              <span>Impacto de Negócio</span>
+              <span class="text-white font-semibold">95%</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5"><div class="bg-brand-gold h-1.5 rounded-full" style="width: 95%"></div></div>
+          </div>
+        </div>
+        <div class="mt-5 pt-3 border-t border-brand-line flex items-center justify-between text-[11px] text-slate-400">
+          <span>Arquivo para Download:</span>
+          <span class="text-brand-cyan font-mono font-semibold">CANVAS_IA.md ✓</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OFERTA E PREÇO (SECTION COMPRAR) -->
+  <section id="comprar" class="py-20 px-6 max-w-4xl mx-auto text-center">
+    <div class="p-8 sm:p-12 rounded-3xl bg-gradient-to-b from-brand-card to-brand-dark border-2 border-brand-emerald/40 glow-btn relative overflow-hidden">
+      
+      <div class="inline-block px-4 py-1.5 rounded-full bg-brand-emerald/20 text-brand-emerald text-xs font-bold uppercase tracking-wider mb-6">
+        Acesso Imediato & Vitalício • Oferta de Lançamento
+      </div>
+
+      <h2 class="text-3xl sm:text-5xl font-display font-bold text-white">
+        Garanta o Seu Agente Auditor de IA
+      </h2>
+      <p class="text-slate-400 text-sm max-w-xl mx-auto mt-3">
+        Tudo o que você precisa para validar suas próprias ideias ou vender auditorias de viabilidade de IA para clientes por até R$ 5.000.
+      </p>
+
+      <!-- PACOTE INCLUSO -->
+      <div class="max-w-md mx-auto my-8 space-y-3 text-left">
+        <div class="flex items-center gap-3 text-sm text-slate-200">
+          <i data-lucide="check-circle-2" class="w-5 h-5 text-brand-emerald shrink-0"></i>
+          <span><strong>Agente Auditor Completo:</strong> Roda na plataforma Hotmart/Web com inteligência em 10 blocos.</span>
+        </div>
+        <div class="flex items-center gap-3 text-sm text-slate-200">
+          <i data-lucide="check-circle-2" class="w-5 h-5 text-brand-emerald shrink-0"></i>
+          <span><strong>Template Oficial do Canvas:</strong> Versão editável em PDF e Notion para apresentar em reuniões.</span>
+        </div>
+        <div class="flex items-center gap-3 text-sm text-slate-200">
+          <i data-lucide="check-circle-2" class="w-5 h-5 text-brand-emerald shrink-0"></i>
+          <span><strong>Exportação Automática:</strong> Baixe o relatório completo de viabilidade pronto em 1 clique.</span>
+        </div>
+        <div class="flex items-center gap-3 text-sm text-slate-200">
+          <i data-lucide="check-circle-2" class="w-5 h-5 text-brand-emerald shrink-0"></i>
+          <span><strong>Atualizações Vitalícias:</strong> Sem mensalidades nem pegadinhas recorrentes.</span>
+        </div>
+      </div>
+
+      <!-- PREÇO -->
+      <div class="my-6">
+        <span class="text-slate-500 line-through text-lg">De R$ 197,00</span>
+        <div class="flex items-baseline justify-center gap-2 mt-1">
+          <span class="text-slate-400 text-sm">Por apenas</span>
+          <span class="text-5xl sm:text-6xl font-display font-extrabold text-brand-emerald">R$ 47</span>
+          <span class="text-slate-400 text-sm">à vista</span>
+        </div>
+        <span class="text-xs text-slate-400 block mt-1">ou em até 5x de R$ 10,23 no cartão</span>
+      </div>
+
+      <!-- BOTÃO CHECKOUT HOTMART -->
+      <!-- O usuário pode trocar essa URL pelo link de checkout específico da Hotmart -->
+      <a href="https://pay.hotmart.com" target="_blank" class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-10 py-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-brand-dark font-extrabold text-lg transition-all transform hover:scale-105 shadow-xl">
+        <i data-lucide="lock" class="w-5 h-5"></i>
+        <span>COMPRAR AGORA POR APENAS R$ 47</span>
+      </a>
+
+      <!-- GARANTIA -->
+      <div class="mt-8 flex items-center justify-center gap-3 text-xs text-slate-400">
+        <i data-lucide="shield-check" class="w-5 h-5 text-brand-emerald"></i>
+        <span><strong>7 Dias de Garantia Incondicional:</strong> Se não economizar seu tempo, devolvemos 100% do seu dinheiro pela Hotmart.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ / PERGUNTAS FREQUENTES -->
+  <section class="py-16 px-6 max-w-3xl mx-auto border-t border-brand-line">
+    <h3 class="text-2xl font-display font-bold text-center text-white mb-8">Perguntas Frequentes</h3>
+    <div class="space-y-4">
+      <div class="p-5 rounded-2xl bg-brand-card border border-brand-line">
+        <h4 class="font-bold text-sm text-white">Preciso saber programar para usar o Agente?</h4>
+        <p class="text-slate-400 text-xs mt-2 leading-relaxed">
+          Não! O agente foi feito para empreendedores, gestores de produto, consultores e desenvolvedores. A conversa é 100% em português claro, guiando você pelas perguntas estratégicas.
+        </p>
+      </div>
+
+      <div class="p-5 rounded-2xl bg-brand-card border border-brand-line">
+        <h4 class="font-bold text-sm text-white">Onde o agente fica hospedado?</h4>
+        <p class="text-slate-400 text-xs mt-2 leading-relaxed">
+          Você recebe o acesso direto na Área de Membros oficial da Hotmart. Basta clicar e começar a usar no navegador do computador ou celular, sem precisar instalar nada.
+        </p>
+      </div>
+
+      <div class="p-5 rounded-2xl bg-brand-card border border-brand-line">
+        <h4 class="font-bold text-sm text-white">Posso usar para atender meus clientes de consultoria?</h4>
+        <p class="text-slate-400 text-xs mt-2 leading-relaxed">
+          Com certeza! Muitos profissionais usam exatamente essa ferramenta para cobrar de R$ 2.000 a R$ 5.000 por auditorias de viabilidade de IA para empresas.
+        </p>
+      </div>
+
+      <div class="p-5 rounded-2xl bg-brand-card border border-brand-line">
+        <h4 class="font-bold text-sm text-white">Como recebo o acesso após o pagamento?</h4>
+        <p class="text-slate-400 text-xs mt-2 leading-relaxed">
+          Imediatamente! Assim que o pagamento for aprovado pela Hotmart, você recebe um e-mail com os dados de login para entrar na área de membros e começar a usar.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RODAPÉ -->
+  <footer class="py-8 px-6 text-center border-t border-brand-line text-xs text-slate-500">
+    <p>© 2026 AI Canvas Pro. Todos os direitos reservados.</p>
+    <p class="mt-1">Este produto não garante ganhos financeiros. A viabilidade técnica depende da correta implementação dos critérios mapeados.</p>
+  </footer>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

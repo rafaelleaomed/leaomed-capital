@@ -1,4 +1,7 @@
 'use client'
+import { documentTransactionsForPersistence } from '@/utils/documentImport'
+
+import { getFinancialScopeVersion } from '@/utils/userScopedStorage'
 
 import { AccessibleDialog } from './AccessibleDialog'
 
@@ -69,6 +72,7 @@ async function compressImageIfNeeded(file: File): Promise<File> {
 }
 
 export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUploadModalProps) {
+  const financialScopeVersion = React.useRef(getFinancialScopeVersion()).current
   const [activeTab, setActiveTab] = useState<'FILE' | 'PASTE'>('FILE')
   const [pastedText, setPastedText] = useState('')
   const [isUploading, setIsUploading] = useState(false)
@@ -114,6 +118,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
       for (let i = 0; i < filesToProcess.length; i++) {
         const rawFile = filesToProcess[i]
         const fileToUpload = await compressImageIfNeeded(rawFile)
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
         formData.append('files', fileToUpload)
       }
 
@@ -131,6 +136,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
 
       let data: any = null
       const rawText = await res.text()
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
       try {
         data = JSON.parse(rawText)
       } catch (_) {
@@ -228,6 +234,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
       })
 
       const data = await res.json()
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
       if (!res.ok || !data?.success) {
         throw new Error(data?.error || 'Não foi possível encontrar transações no texto colado.')
       }
@@ -261,6 +268,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
   }
 
   const handleSaveToDatabase = async () => {
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
     if (parsedTransactions.length === 0) return
     const needsReview = parseDiagnostics.some(diagnostic => diagnostic?.requiresReview || diagnostic?.requires_review)
     if (needsReview && !reviewAcknowledged) {
@@ -271,25 +279,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
     setIsUploading(true)
     setStatusMessage('Salvando e categorizando lançamentos no banco de dados...')
     try {
-      const formatted = parsedTransactions.flatMap(t => {
-        const rawAmount = typeof t.val === 'number' ? t.val : parseFloat(t.val) || 0
-        const entryType = t.entryType || (t.isCardBillPayment ? 'bill_payment' : 'purchase')
-        if (entryType === 'bill_payment' || t.isCardBillPayment) return []
-        const signedAmount = typeof t.signedAmount === 'number' ? t.signedAmount : rawAmount
-        const isCredit = t.direction === 'credit' || entryType === 'refund' || signedAmount < 0
-        const amount = isCredit ? Math.abs(signedAmount) : -Math.abs(signedAmount)
-
-        return [{
-          date: t.date,
-          description: t.desc,
-          amount,
-          accountOrCard: t.accountOrCard,
-          category: t.cat || 'Outros',
-          subcategory: t.subcategory || 'Geral',
-          isFixed: Boolean(t.isFixed),
-          isIgnored: false
-        }]
-      })
+      const formatted = documentTransactionsForPersistence(parsedTransactions)
 
       if (formatted.length === 0) throw new Error('A fatura não possui compras ou créditos elegíveis para salvar.')
 
@@ -300,6 +290,7 @@ export function DocumentUploadModal({ isOpen, onClose, onSuccess }: DocumentUplo
       })
 
       const result = await res.json()
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
 
       if (!res.ok || !result.success) {
         throw new Error(result.error || 'Erro ao persistir transações.')

@@ -7,6 +7,23 @@ from dotenv import load_dotenv
 import hashlib
 import re
 
+
+def upsert_owned_account(cursor, user_id, acc_type, item_id, account):
+    """Never reuse an external account ID already owned by another user."""
+    cursor.execute("""
+        INSERT INTO accounts (user_id, type, pluggy_item_id, pluggy_account_id, name, institution)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        ON CONFLICT (pluggy_account_id) DO UPDATE SET name = EXCLUDED.name
+        WHERE accounts.user_id = EXCLUDED.user_id
+          AND accounts.pluggy_item_id = EXCLUDED.pluggy_item_id
+        RETURNING id, user_id
+    """, (user_id, acc_type, item_id, account['id'], account['name'], account['institution']))
+    owned_account = cursor.fetchone()
+    if not owned_account or str(owned_account['user_id']) != str(user_id):
+        raise PermissionError('External account ownership conflict')
+    return owned_account['id']
+
+
 sys.stdout.reconfigure(encoding='utf-8')
 load_dotenv()
 
@@ -79,15 +96,12 @@ def process_pending_webhooks():
                     acc_type = 'PJ' if acc.get('type') == 'BUSINESS' else 'PF'
                     pluggy_account_id = acc['id']
                     
-                    # 3. Upsert na tabela Accounts
-                    cursor.execute("""
-                        INSERT INTO accounts (user_id, type, pluggy_item_id, pluggy_account_id, name, institution)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (pluggy_account_id) DO UPDATE SET name = EXCLUDED.name
-                        RETURNING id
-                    """, (user_id, acc_type, item_id, pluggy_account_id, acc['name'], item_data.get('connector', {}).get('name', 'Instituição')))
-                    
-                    internal_account_id = cursor.fetchone()['id']
+                    # 3. Upsert com dono validado antes de buscar transações.
+                    internal_account_id = upsert_owned_account(cursor, user_id, acc_type, item_id, {
+                        'id': pluggy_account_id,
+                        'name': acc['name'],
+                        'institution': item_data.get('connector', {}).get('name', 'Instituição'),
+                    })
                     
                     # 4. Obter e inserir Transactions
                     txs_res = pluggy_request(f"/transactions?accountId={pluggy_account_id}", token)
@@ -100,6 +114,7 @@ def process_pending_webhooks():
                         date = tx['date'][:10]
                         desc = clean_desc(tx['description'])
                         
+                        # The verified account ID scopes the existing deduplication hash.
                         hash_input = f"{internal_account_id}_{date}_{abs(amount)}_{desc}"
                         tx_hash = hashlib.md5(hash_input.encode('utf-8')).hexdigest()
                         
@@ -113,15 +128,16 @@ def process_pending_webhooks():
                             duplicated += 1
                             continue # Ignora silenciosamente duplicações baseadas no hash
                     
-                    print(f"📊 Conta {acc['name']}: {inserted} novas transações, {duplicated} ignoradas (já existiam).")
+                    print(f"📊 Conta sincronizada: {inserted} novas transações, {duplicated} ignoradas (já existiam).")
 
                 # Concluído com sucesso
                 cursor.execute("UPDATE webhook_events SET status = 'completed', processed_at = NOW() WHERE id = %s", (event_id,))
                 print(f"✅ Webhook {event_id} FINALIZADO.")
 
             except Exception as e:
-                print(f"❌ Erro na integração: {e}")
-                cursor.execute("UPDATE webhook_events SET status = 'error', last_error = %s, retry_count = retry_count + 1 WHERE id = %s", (str(e), event_id))
+                error_code = type(e).__name__
+                print(f"❌ Erro na integração: {error_code}")
+                cursor.execute("UPDATE webhook_events SET status = 'error', last_error = %s, retry_count = retry_count + 1 WHERE id = %s", (error_code, event_id))
 
         cursor.close(); conn.close()
     except Exception as e:

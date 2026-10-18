@@ -20,7 +20,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, history: rows });
   } catch (error) {
-    console.error('Erro ao buscar histórico no banco:', error);
+    console.error('Erro ao buscar histórico no banco:', error instanceof Error ? error.name : 'unknown_error');
     return NextResponse.json(
       { success: false, error: 'Falha interna ao recuperar histórico financeiro.' },
       { status: 500 }

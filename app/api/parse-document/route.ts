@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
         subcategory: string
         subdivision?: string
         date: string
+        competenceDate: string
         accountOrCard?: string
         isFixed?: boolean
         isCardBillPayment?: boolean
@@ -210,6 +211,7 @@ export async function POST(req: NextRequest) {
           subcategory: t.subcategory,
           subdivision: t.subdivision,
           date: t.date,
+          competenceDate: parseResult.document_type.startsWith('C6_FATURA') ? `${parseResult.period}-01` : t.date,
           accountOrCard: t.accountOrCard || parseResult.institution,
           isFixed: t.is_fixed,
           isCardBillPayment: t.is_card_bill_payment,
@@ -246,6 +248,7 @@ export async function POST(req: NextRequest) {
         subcategory: t.subcategory,
         subdivision: t.subdivision,
         date: t.date,
+        competenceDate: parseResult.document_type.startsWith('C6_FATURA') ? `${parseResult.period}-01` : t.date,
         accountOrCard: t.accountOrCard || parseResult.institution,
         isFixed: t.is_fixed,
         isCardBillPayment: t.is_card_bill_payment,

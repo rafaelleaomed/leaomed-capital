@@ -23,7 +23,7 @@ const COLOR_OPTIONS = [
 ]
 
 const BADGE_PRESETS = [
-  'Principal (PF) - Veículo & Pessoal',
+  '',
   'Casa & Eletro (PF)',
   'Tecnologia & Família (PF)',
   'Supermercado & Alimentação',
@@ -60,15 +60,15 @@ export default function CreditCardModal({
   }, [])
 
   const [name, setName] = useState('')
-  const [institution, setInstitution] = useState('C6 Bank')
-  const [limit, setLimit] = useState(20000)
+  const [institution, setInstitution] = useState('')
+  const [limit, setLimit] = useState(0)
   const [spent, setSpent] = useState(0)
-  const [closingDay, setClosingDay] = useState(20)
-  const [dueDay, setDueDay] = useState(28)
+  const [closingDay, setClosingDay] = useState(1)
+  const [dueDay, setDueDay] = useState(1)
   const [additionalCards, setAdditionalCards] = useState('Nenhum')
-  const [cardholder, setCardholder] = useState('Dr. Rafael Leão')
-  const [lastDigits, setLastDigits] = useState('4821')
-  const [badge, setBadge] = useState('Principal (PF) - Veículo & Pessoal')
+  const [cardholder, setCardholder] = useState('Titular do cartão')
+  const [lastDigits, setLastDigits] = useState('')
+  const [badge, setBadge] = useState('')
   const [color, setColor] = useState('bg-[var(--capital-card,#f8fafc)]')
   const [entityType, setEntityType] = useState<'PF' | 'PJ'>('PF')
   const [notes, setNotes] = useState('')
@@ -77,29 +77,29 @@ export default function CreditCardModal({
   useEffect(() => {
     if (cardToEdit) {
       setName(cardToEdit.name)
-      setInstitution(cardToEdit.institution || 'C6 Bank')
+      setInstitution(cardToEdit.institution || '')
       setLimit(cardToEdit.limit || 0)
       setSpent(cardToEdit.spent || 0)
-      setClosingDay(cardToEdit.closingDay || 20)
-      setDueDay(cardToEdit.dueDay || 28)
+      setClosingDay(cardToEdit.closingDay || 1)
+      setDueDay(cardToEdit.dueDay || 1)
       setAdditionalCards(cardToEdit.additionalCards || 'Nenhum')
-      setCardholder(cardToEdit.cardholder || 'Dr. Rafael Leão')
-      setLastDigits(cardToEdit.lastDigits || '4821')
-      setBadge(cardToEdit.badge || 'Principal (PF)')
+      setCardholder(cardToEdit.cardholder || 'Titular do cartão')
+      setLastDigits(cardToEdit.lastDigits || '')
+      setBadge(cardToEdit.badge || '')
       setColor(cardToEdit.color || 'bg-[var(--capital-card,#f8fafc)]')
       setEntityType(cardToEdit.entityType || 'PF')
       setNotes(cardToEdit.notes || '')
     } else {
       setName('')
-      setInstitution('C6 Bank')
-      setLimit(15000)
+      setInstitution('')
+      setLimit(0)
       setSpent(0)
-      setClosingDay(15)
-      setDueDay(22)
+      setClosingDay(1)
+      setDueDay(1)
       setAdditionalCards('Nenhum')
-      setCardholder('Dr. Rafael Leão')
-      setLastDigits('1234')
-      setBadge('Principal (PF)')
+      setCardholder('Titular do cartão')
+      setLastDigits('')
+      setBadge('')
       setColor('bg-[var(--capital-card,#f8fafc)]')
       setEntityType('PF')
       setNotes('')
@@ -231,7 +231,7 @@ export default function CreditCardModal({
             <div className="flex items-end justify-between text-xs z-10 pt-1 border-t border-[var(--capital-line,#e4dfd3)]">
               <div>
                 <span className="text-[9px] uppercase tracking-wider block opacity-70">Titular</span>
-                <span className="font-bold text-[11px] truncate">{cardholder || 'Dr. Rafael Leão'}</span>
+                <span className="font-bold text-[11px] truncate">{cardholder || 'Titular do cartão'}</span>
               </div>
               <div className="text-right">
                 <span className="text-[9px] uppercase tracking-wider block opacity-70">Limite Total</span>
@@ -405,7 +405,7 @@ export default function CreditCardModal({
                 type="text"
                 value={cardholder}
                 onChange={(e) => setCardholder(e.target.value)}
-                placeholder="Dr. Rafael Leão"
+                placeholder="Titular do cartão"
                 className="w-full px-3 py-2 rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]"
               />
             </div>
@@ -478,7 +478,7 @@ export default function CreditCardModal({
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: Parcela Lava e Seca Midea (R$ 355,00) / Entrada T-Cross"
+              placeholder="Ex: Parcela Lava e Seca Midea (R$ 355,00) / Entrada Veículo"
               className="w-full px-3 py-2 rounded-xl bg-[var(--capital-neutral,#f8fafc)] dark:bg-[var(--capital-card,#232a2e)] border border-[var(--capital-line,#e4dfd3)] dark:border-[var(--capital-line,#e4dfd3)] text-[var(--capital-text,#242a2e)] dark:text-[var(--capital-text,#f6f3e9)]"
             />
           </div>

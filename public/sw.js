@@ -1,5 +1,5 @@
 // Service Worker LeãoMed Capital - Versão 3 (Atualização de Design e Login Persistente)
-const CACHE_NAME = 'leaomed-pwa-v3';
+const CACHE_NAME = 'leaomed-pwa-v4';
 
 // Apenas assets estáticos imutáveis (NUNCA incluir rotas dinâmicas como '/')
 const STATIC_ASSETS = [
@@ -58,12 +58,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // 4. Se for asset de mídia ou ícone pré-cacheado, responde Cache-First para alta velocidade
-  const isStaticMedia =
-    url.pathname.startsWith('/icon-') ||
-    url.pathname.endsWith('.png') ||
-    url.pathname.endsWith('.jpg') ||
-    url.pathname.endsWith('.ico') ||
-    url.pathname === '/manifest.json';
+  const isStaticMedia = STATIC_ASSETS.includes(url.pathname);
 
   if (isStaticMedia) {
     event.respondWith(

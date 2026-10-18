@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sql } from '@/utils/db'
 import { getAuthenticatedUserId } from '@/utils/auth-helpers'
 import crypto from 'crypto'
+import { canRecoverLegacyInstallments } from '@/services/installmentPersistence'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,6 +18,8 @@ function generateTransactionHash(t: {
 }): string {
   const normDesc = (t.description || '').trim().toLowerCase().replace(/\s+/g, ' ')
   const source = (t.sourceAccountOrCard || '').trim().toLowerCase().replace(/\s+/g, ' ')
+  // accountId is authorized against the session before hashing. Preserve the
+  // existing hash format so re-importing old statements remains idempotent.
   const raw = `${t.date}|${Number(t.amount).toFixed(2)}|${normDesc}|${t.accountId || 'default'}|${source}`
   return crypto.createHash('sha256').update(raw).digest('hex')
 }
@@ -48,36 +51,36 @@ export async function GET(req: NextRequest) {
 
       if (entity === 'PF' || entity === 'PJ') {
         rows = await sql`
-          SELECT t.id, t.account_id, t.amount, t.date, t.description, t.category, t.subcategory,
+          SELECT t.id, t.account_id, t.amount, t.date, t.competence_date, t.description, t.category, t.subcategory,
                  t.is_fixed, t.is_ignored, a.type as entity_type, a.name as account_name
           FROM public.transactions t
-          LEFT JOIN public.accounts a ON a.id = t.account_id
+          LEFT JOIN public.accounts a ON a.id = t.account_id AND a.user_id = t.user_id
           WHERE t.user_id = ${userId}
-            AND t.date >= ${startDate} AND t.date <= ${endDate}
+            AND COALESCE(t.competence_date, t.date) >= ${startDate} AND COALESCE(t.competence_date, t.date) <= ${endDate}
             AND (a.type = ${entity} OR a.type IS NULL)
-          ORDER BY t.date DESC, t.created_at DESC
+          ORDER BY COALESCE(t.competence_date, t.date) DESC, t.created_at DESC
           LIMIT ${limit} OFFSET ${offset}
         `
       } else {
         rows = await sql`
-          SELECT t.id, t.account_id, t.amount, t.date, t.description, t.category, t.subcategory,
+          SELECT t.id, t.account_id, t.amount, t.date, t.competence_date, t.description, t.category, t.subcategory,
                  t.is_fixed, t.is_ignored, a.type as entity_type, a.name as account_name
           FROM public.transactions t
-          LEFT JOIN public.accounts a ON a.id = t.account_id
+          LEFT JOIN public.accounts a ON a.id = t.account_id AND a.user_id = t.user_id
           WHERE t.user_id = ${userId}
-            AND t.date >= ${startDate} AND t.date <= ${endDate}
-          ORDER BY t.date DESC, t.created_at DESC
+            AND COALESCE(t.competence_date, t.date) >= ${startDate} AND COALESCE(t.competence_date, t.date) <= ${endDate}
+          ORDER BY COALESCE(t.competence_date, t.date) DESC, t.created_at DESC
           LIMIT ${limit} OFFSET ${offset}
         `
       }
     } else {
       rows = await sql`
-        SELECT t.id, t.account_id, t.amount, t.date, t.description, t.category, t.subcategory,
+        SELECT t.id, t.account_id, t.amount, t.date, t.competence_date, t.description, t.category, t.subcategory,
                t.is_fixed, t.is_ignored, a.type as entity_type, a.name as account_name
         FROM public.transactions t
-        LEFT JOIN public.accounts a ON a.id = t.account_id
+        LEFT JOIN public.accounts a ON a.id = t.account_id AND a.user_id = t.user_id
         WHERE t.user_id = ${userId}
-        ORDER BY t.date DESC, t.created_at DESC
+        ORDER BY COALESCE(t.competence_date, t.date) DESC, t.created_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `
     }
@@ -90,7 +93,7 @@ export async function GET(req: NextRequest) {
       offset
     })
   } catch (error: any) {
-    console.error('Erro ao buscar transactions no banco:', error)
+    console.error('Erro ao buscar transactions no banco:', error instanceof Error ? error.name : 'unknown_error')
     return NextResponse.json(
       { success: false, error: 'Falha ao buscar transações no banco de dados.' },
       { status: 500 }
@@ -103,11 +106,14 @@ export async function GET(req: NextRequest) {
  * Inserção de uma ou múltiplas transações com deduplicação atômica via hash único.
  */
 export async function POST(req: NextRequest) {
-  const { userId, errorResponse } = await getAuthenticatedUserId()
+  const { userId, user, errorResponse } = await getAuthenticatedUserId()
   if (errorResponse) return errorResponse
 
   try {
     const body = await req.json()
+    if (body.recoverLegacy && (!canRecoverLegacyInstallments(user) || body.expectedUserId !== userId)) {
+      return NextResponse.json({ success: false, error: 'Recuperação indisponível para esta conta.' }, { status: 403 })
+    }
     const transactionsToInsert = Array.isArray(body.transactions) ? body.transactions : [body]
 
     if (transactionsToInsert.length === 0) {
@@ -116,7 +122,10 @@ export async function POST(req: NextRequest) {
 
     const invalidTransactionIndex = transactionsToInsert.findIndex((tx: any) => {
       const amount = Number(tx?.amount)
-      return !tx?.date || !/^\d{4}-\d{2}-\d{2}$/.test(tx.date) || !tx?.description?.trim() || !Number.isFinite(amount) || amount === 0
+      return !tx?.date || !/^\d{4}-\d{2}-\d{2}$/.test(tx.date) ||
+        (tx.competenceDate !== undefined && (typeof tx.competenceDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(tx.competenceDate))) ||
+        [tx?.accountOrCard, tx?.sourceAccountOrCard].some(source => source !== undefined && (typeof source !== 'string' || source.length > 255)) ||
+        !tx?.description?.trim() || !Number.isFinite(amount) || amount === 0
     })
     if (invalidTransactionIndex >= 0) {
       return NextResponse.json({
@@ -125,18 +134,40 @@ export async function POST(req: NextRequest) {
       }, { status: 400 })
     }
 
+    // Validate every supplied account before any mutation, including mixed batches.
+    const suppliedAccountIds = [...new Set(transactionsToInsert.map((tx: any) => tx.accountId).filter(Boolean))]
+    for (const accountId of suppliedAccountIds) {
+      if (typeof accountId !== 'string') {
+        return NextResponse.json({ success: false, error: 'Conta inválida.' }, { status: 400 })
+      }
+      const ownedAccount = await sql`
+        SELECT id FROM public.accounts WHERE id = ${accountId} AND user_id = ${userId}
+      `
+      if (ownedAccount.length === 0) {
+        return NextResponse.json({ success: false, error: 'Conta não encontrada.' }, { status: 404 })
+      }
+    }
+
+    if (!userId || !user?.email) return NextResponse.json({ success: false, error: 'Identidade autenticada indisponível.' }, { status: 401 })
+    // Supabase Auth and the financial database are independent; create only this verified identity.
+    await sql`INSERT INTO public.users (id, email) VALUES (${userId}, ${user.email}) ON CONFLICT (id) DO NOTHING`
+
     // Busca ou cria uma conta padrão para o usuário caso não informada
     const existingAccounts = await sql`
-      SELECT id, type FROM public.accounts WHERE user_id = ${userId} LIMIT 2
+      SELECT id, type, pluggy_account_id FROM public.accounts WHERE user_id = ${userId}
+      ORDER BY created_at ASC, id ASC
     `
-    let defaultPfAccountId = existingAccounts.find((a: any) => a.type === 'PF')?.id
-    let defaultPjAccountId = existingAccounts.find((a: any) => a.type === 'PJ')?.id
+    const defaultFor = (entity: 'PF' | 'PJ') => existingAccounts.find((a: any) => a.type === entity && a.pluggy_account_id === `manual_${entity.toLowerCase()}_${userId}`)?.id ||
+      existingAccounts.find((a: any) => a.type === entity && !String(a.pluggy_account_id || '').startsWith('manual_source_'))?.id
+    let defaultPfAccountId = defaultFor('PF')
+    let defaultPjAccountId = defaultFor('PJ')
 
     if (!defaultPfAccountId) {
       const createdPf = await sql`
         INSERT INTO public.accounts (user_id, type, pluggy_item_id, pluggy_account_id, name, institution)
         VALUES (${userId}, 'PF', 'manual_import', ${`manual_pf_${userId}`}, 'Conta Corrente PF', 'Manual / Extrato')
         ON CONFLICT (pluggy_account_id) DO UPDATE SET name = EXCLUDED.name
+        WHERE public.accounts.user_id = EXCLUDED.user_id
         RETURNING id
       `
       defaultPfAccountId = createdPf[0]?.id
@@ -147,14 +178,20 @@ export async function POST(req: NextRequest) {
         INSERT INTO public.accounts (user_id, type, pluggy_item_id, pluggy_account_id, name, institution)
         VALUES (${userId}, 'PJ', 'manual_import', ${`manual_pj_${userId}`}, 'Conta Inter PJ', 'Manual / Extrato')
         ON CONFLICT (pluggy_account_id) DO UPDATE SET name = EXCLUDED.name
+        WHERE public.accounts.user_id = EXCLUDED.user_id
         RETURNING id
       `
       defaultPjAccountId = createdPj[0]?.id
     }
 
+    if (!defaultPfAccountId || !defaultPjAccountId) {
+      return NextResponse.json({ success: false, error: 'Falha ao obter contas do usuário.' }, { status: 500 })
+    }
+
     let insertedCount = 0
     let duplicateCount = 0
     let failedCount = 0
+    const sourceAccounts = new Map<string, string>()
 
     for (const tx of transactionsToInsert) {
       if (!tx.date || tx.amount === undefined || tx.amount === null || !tx.description) {
@@ -162,14 +199,37 @@ export async function POST(req: NextRequest) {
       }
 
       const entityType = (tx.entityType || tx.type || 'PF').toUpperCase()
-      const accountId = tx.accountId || (entityType === 'PJ' ? defaultPjAccountId : defaultPfAccountId)
+      const defaultAccountId = entityType === 'PJ' ? defaultPjAccountId : defaultPfAccountId
+      const source = (tx.accountOrCard || tx.sourceAccountOrCard || '').trim()
+      // Preserve the historic hash account even when repairing the persisted
+      // account reference so reimporting an existing PDF does not duplicate it.
+      const hashAccountId = tx.accountId || defaultAccountId
+      let accountId = hashAccountId
+      if (!tx.accountId && source) {
+        const normalizedSource = source.toLowerCase().replace(/\s+/g, ' ')
+        const sourceHash = crypto.createHash('sha256').update(normalizedSource).digest('hex')
+        const sourceKey = `manual_source_${userId}_${entityType === 'PJ' ? 'pj' : 'pf'}_${sourceHash}`
+        accountId = sourceAccounts.get(sourceKey)
+        if (!accountId) {
+          const sourceRows = await sql`
+            INSERT INTO public.accounts (user_id, type, pluggy_item_id, pluggy_account_id, name, institution)
+            VALUES (${userId}, ${entityType === 'PJ' ? 'PJ' : 'PF'}, 'manual_import', ${sourceKey}, ${source}, 'Manual / Extrato')
+            ON CONFLICT (pluggy_account_id) DO UPDATE SET name = EXCLUDED.name
+            WHERE public.accounts.user_id = EXCLUDED.user_id
+            RETURNING id
+          `
+          accountId = sourceRows[0]?.id
+          if (!accountId) return NextResponse.json({ success: false, error: 'Não foi possível vincular a origem à sua conta.' }, { status: 500 })
+          sourceAccounts.set(sourceKey, accountId)
+        }
+      }
       const rawId = tx.id || tx.raw_id || `manual_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
       const txHash = generateTransactionHash({
         date: tx.date,
         amount: Number(tx.amount),
         description: tx.description,
-        accountId,
-        sourceAccountOrCard: tx.accountOrCard || tx.sourceAccountOrCard
+        accountId: hashAccountId,
+        sourceAccountOrCard: source
       })
 
       const amount = Number(tx.amount)
@@ -189,18 +249,22 @@ export async function POST(req: NextRequest) {
             ${tx.description}, ${category}, ${subcategory}, ${isFixed}, ${isIgnored}, ${txHash}
           )
           ON CONFLICT (hash) DO UPDATE SET
+            account_id = EXCLUDED.account_id,
+            competence_date = EXCLUDED.competence_date,
             category = EXCLUDED.category,
             subcategory = EXCLUDED.subcategory,
             is_fixed = EXCLUDED.is_fixed,
             is_ignored = EXCLUDED.is_ignored
+          WHERE public.transactions.user_id = EXCLUDED.user_id
           RETURNING id
         `
         if (res && res.length > 0) insertedCount++
+        else failedCount++ // A conflict owned by another user must never be reported as saved.
       } catch (insertErr: any) {
         if (insertErr.code === '23505') { // unique_violation
           duplicateCount++
         } else {
-          console.error('Erro ao inserir transação:', insertErr)
+          console.error('Erro ao inserir transação:', insertErr instanceof Error ? insertErr.name : 'unknown_error')
           failedCount++
         }
       }
@@ -218,7 +282,7 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json(response, { status: failedCount > 0 ? 500 : 200 })
   } catch (error: any) {
-    console.error('Erro na rota POST /api/transactions:', error)
+    console.error('Erro na rota POST /api/transactions:', error instanceof Error ? error.name : 'unknown_error')
     return NextResponse.json(
       { success: false, error: 'Falha ao salvar transações no banco.' },
       { status: 500 }
@@ -259,7 +323,7 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true, transaction: updated[0] })
   } catch (error: any) {
-    console.error('Erro ao atualizar transação:', error)
+    console.error('Erro ao atualizar transação:', error instanceof Error ? error.name : 'unknown_error')
     return NextResponse.json(
       { success: false, error: 'Falha ao atualizar transação.' },
       { status: 500 }
