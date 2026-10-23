@@ -13,6 +13,11 @@ export type InvoiceProfileId =
   | 'nubank'
   | 'inter'
   | 'santander'
+  | 'nuinvest'
+  | 'nucripto'
+  | 'inter_global'
+  | 'bybit'
+  | 'mexc'
   | 'generic'
 
 export interface InvoiceProfile {
@@ -136,6 +141,56 @@ export const INVOICE_PROFILES: Record<InvoiceProfileId, InvoiceProfile> = {
     excludedLineAnchors: commonExcludedLines,
     supportsCardSubtotals: false,
     maturity: 'generic_semantic',
+  },
+  nuinvest: {
+    id: 'nuinvest',
+    label: 'NuInvest / XP / Rico',
+    documentAnchors: [/nuinvest/i, /\bxp\s+investimentos\b/i, /\brico\b/i, /data\s+neg[oó]cio/i],
+    transactionAnchors: [/data\s+neg[oó]cio/i, /negocia[cç][oõ]es/i],
+    excludedSectionAnchors: [],
+    excludedLineAnchors: [],
+    supportsCardSubtotals: false,
+    maturity: 'specialized',
+  },
+  nucripto: {
+    id: 'nucripto',
+    label: 'NuCripto',
+    documentAnchors: [/nucripto/i, /nubank.*cripto/i, /quantidade.*valor\s+em\s+brl/i],
+    transactionAnchors: [/data.*descri[cç][aã]o.*quantidade/i],
+    excludedSectionAnchors: [],
+    excludedLineAnchors: [],
+    supportsCardSubtotals: false,
+    maturity: 'specialized',
+  },
+  inter_global: {
+    id: 'inter_global',
+    label: 'Inter Global / Inter Invest',
+    documentAnchors: [/inter\s+global/i, /inter\s+invest/i, /ativo.*opera[cç][aã]o.*quantidade.*pre[cç]o/i],
+    transactionAnchors: [/data.*ativo.*opera[cç][aã]o/i],
+    excludedSectionAnchors: [],
+    excludedLineAnchors: [],
+    supportsCardSubtotals: false,
+    maturity: 'specialized',
+  },
+  bybit: {
+    id: 'bybit',
+    label: 'Bybit',
+    documentAnchors: [/bybit/i, /date\(utc\).*symbol.*side.*price.*quantity.*fee/i],
+    transactionAnchors: [/date\(utc\)/i, /symbol.*side.*price/i],
+    excludedSectionAnchors: [],
+    excludedLineAnchors: [],
+    supportsCardSubtotals: false,
+    maturity: 'specialized',
+  },
+  mexc: {
+    id: 'mexc',
+    label: 'MEXC',
+    documentAnchors: [/mexc/i, /time.*symbol.*side.*price.*amount.*total.*fee/i],
+    transactionAnchors: [/time.*symbol.*side/i],
+    excludedSectionAnchors: [],
+    excludedLineAnchors: [],
+    supportsCardSubtotals: false,
+    maturity: 'specialized',
   },
   generic: {
     id: 'generic',
