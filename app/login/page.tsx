@@ -83,6 +83,8 @@ function LoginForm() {
         setError('Não foi possível validar seu link de acesso. Por favor, tente entrar novamente.');
       } else if (urlError === 'auth_config_error') {
         setError('Serviço de autenticação temporariamente indisponível. Tente novamente.');
+      } else if (urlError === 'session_expired') {
+        setError('Sua sessão expirou ou não pôde ser iniciada. Faça login novamente.');
       } else {
         setError(decodeURIComponent(urlError));
       }
