@@ -19,7 +19,7 @@ export default async function DashboardPage({
 }) {
   // ── Autenticação e Autorização Estrita por Sessão ─────────────────────────
   const user = await getAuthenticatedUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/login?error=session_expired')
 
   if (!isUserAuthorized(user)) {
     redirect('/login?error=' + encodeURIComponent('Acesso restrito ao proprietário da plataforma.'))
