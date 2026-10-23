@@ -125,7 +125,9 @@ function parseNuinvest(text: string): InvestmentParseResult | null {
     const code = row[codeIdx] || 'ATIVO'
     const dc = (row[dcIdx] || '').trim().toUpperCase()
     const total = parseCurrencyValue(row[totalIdx] || '')
+    // Skip rows with missing date, zero value, or unrecognised DC field (prevents silent misclassification)
     if (!rawDate || total === 0) continue
+    if (dcIdx >= 0 && dc !== 'C' && dc !== 'D') continue
 
     txs.push({
       date: parseInvoiceDate(rawDate),

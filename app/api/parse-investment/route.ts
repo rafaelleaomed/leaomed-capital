@@ -51,8 +51,9 @@ export async function POST(req: NextRequest) {
         rawText = rawText.slice(1)
       }
 
-      // Fallback to latin1 for Brazilian bank exports that use accents without UTF-8
-      if (!rawText.includes(',') && !rawText.includes(';') && !rawText.includes('\t')) {
+      // Fallback to latin1 for Brazilian bank exports that use accents without UTF-8.
+      // Detect via U+FFFD replacement characters introduced by UTF-8 decoding of latin1 bytes.
+      if (rawText.includes('\uFFFD')) {
         rawText = buffer.toString('latin1')
       }
     } else {
