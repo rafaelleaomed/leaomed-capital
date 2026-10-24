@@ -33,7 +33,10 @@ export function LegacyFinancialRecovery({ children }: { children?: ReactNode }) 
           if (!saved.ok || !(await saved.json()).success) throw new Error('recovery_failed')
         }
         if (!stillCurrent()) return
-        if (transactions.length) financialStorage.setItem('leaomed_owner_transactions_recovery_v1', 'complete')
+        // Marca a geração v2 mesmo sem registros: este navegador já foi verificado.
+        // Em falha parcial o marcador não é gravado, para repetir com segurança;
+        // a API deduplica os reenvios pelo hash da transação do mesmo usuário.
+        financialStorage.setItem('leaomed_owner_transactions_recovery_v2', 'complete')
         if (settingsCount || transactions.length) setMessage('Dados anteriores deste navegador recuperados para sua conta.')
         const raw = window.localStorage.getItem('leaomed_installment_store_v2')
         if (!raw) return
