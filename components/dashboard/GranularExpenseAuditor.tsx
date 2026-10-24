@@ -930,7 +930,9 @@ export function GranularExpenseAuditor({
     })
   }
 
-  const handleSaveEdit = () => {
+  const [isSavingEdit, setIsSavingEdit] = useState(false)
+
+  const handleSaveEdit = async () => {
     if (getFinancialScopeVersion() !== financialScopeVersion) return
     if (!editingTx) return
 
@@ -943,8 +945,7 @@ export function GranularExpenseAuditor({
 
     const fallbackCat = editForm.txType === 'INCOME' ? 'Receita PF & Pró-Labore' : 'Despesas Pessoais'
 
-    if (getFinancialScopeVersion() !== financialScopeVersion) return
-    GranularTransactionStore.updateTransaction(editingTx.id, {
+    const updates: Partial<GranularTransaction> = {
       description: editForm.description.trim(),
       amount: finalVal,
       date: editForm.date,
@@ -955,12 +956,27 @@ export function GranularExpenseAuditor({
       investmentAsset: editForm.investmentAsset.trim() || undefined,
       investmentAction: editForm.investmentAction || undefined,
       isFixed: editForm.isFixed
-    })
+    }
+
+    if (getFinancialScopeVersion() !== financialScopeVersion) return
+    setIsSavingEdit(true)
+    try {
+      const saved = await GranularTransactionStore.persistClassification(editingTx.id, updates)
+      if (getFinancialScopeVersion() !== financialScopeVersion) return
+      if (!saved) throw new Error('Lançamento não encontrado no cache local.')
+    } catch (error: any) {
+      setBulkToast(error?.message || 'Não foi possível salvar a classificação. Tente novamente.')
+      setTimeout(() => setBulkToast(null), 4000)
+      return
+    } finally {
+      setIsSavingEdit(false)
+    }
 
     if (editForm.updateRuleToo && editForm.description.trim().length >= 2) {
+      const finalCatForRule = finalCat || fallbackCat
       CategoryRulesEngine.saveRule({
         pattern: editForm.description.trim().split(' ')[0],
-        category: finalCat || fallbackCat,
+        category: finalCatForRule,
         subcategory: finalSubcat || 'Outros',
         subdivision: editForm.subdivision.trim() || undefined,
         entityType: editingTx.entityType,
@@ -2040,17 +2056,21 @@ export function GranularExpenseAuditor({
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-[var(--capital-line,#e4dfd3)]">
               <button
+                type="button"
                 onClick={() => setEditingTx(null)}
-                className="px-4 py-2 rounded-xl border border-[var(--capital-line,#e4dfd3)] text-xs font-bold text-[var(--capital-text,#242a2e)] hover:text-[var(--capital-text,#242a2e)] cursor-pointer"
+                disabled={isSavingEdit}
+                className="px-4 py-2 rounded-xl border border-[var(--capital-line,#e4dfd3)] text-xs font-bold text-[var(--capital-text,#242a2e)] hover:text-[var(--capital-text,#242a2e)] cursor-pointer disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
+                type="button"
                 onClick={handleSaveEdit}
-                className="px-5 py-2 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-none cursor-pointer"
+                disabled={isSavingEdit}
+                className="px-5 py-2 rounded-xl bg-[var(--capital-button,#c7a354)] hover:bg-[var(--capital-button,#c7a354)] text-[var(--capital-button-text,#242a2e)] font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-none cursor-pointer disabled:opacity-50"
               >
                 <Check className="w-4 h-4" />
-                <span>Salvar Alterações</span>
+                <span>{isSavingEdit ? 'Salvando...' : 'Salvar Alterações'}</span>
               </button>
             </div>
           </div>

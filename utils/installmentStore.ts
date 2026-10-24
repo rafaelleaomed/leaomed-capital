@@ -55,6 +55,40 @@ export function installmentApiPayload(item: Omit<InstallmentItem, 'id'>) {
 
 export const DEFAULT_INSTALLMENTS: InstallmentItem[] = []
 
+function normalizeInstallmentIdentity(value: string): string {
+  return (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\b(cartao|credito|credit|pf|pj|black)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+}
+
+export function installmentIdentityKey(item: InstallmentItem): string {
+  return [
+    normalizeInstallmentIdentity(item.name),
+    normalizeInstallmentIdentity(item.paymentMethod),
+    Math.round(Math.abs(Number(item.monthlyValue) || 0) * 100),
+    item.currentInstallment,
+    item.totalInstallments,
+    normalizeInstallmentIdentity(item.endMonthYear),
+    item.entityType || 'PF'
+  ].join('|')
+}
+
+/** Remove repetições semânticas na projeção sem apagar registros do banco. */
+export function deduplicateInstallmentItems(items: InstallmentItem[]): InstallmentItem[] {
+  const seen = new Set<string>()
+  return items.filter(item => {
+    const key = installmentIdentityKey(item)
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 export function parseInstallmentPattern(description: string): {
   isInstallment: boolean
   current: number

@@ -176,6 +176,31 @@ export class GranularTransactionStore {
     return true
   }
 
+  /** Persiste a classificação no banco antes de atualizar o cache local. */
+  static async persistClassification(id: string, updates: Partial<GranularTransaction>): Promise<boolean> {
+    const requestScope = getFinancialScopeVersion()
+    if (isDemoMode()) return this.updateTransaction(id, updates)
+    if (!getFinancialUserScope()) return false
+
+    const response = await fetch('/api/transactions', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id,
+        category: updates.category,
+        subcategory: updates.subcategory,
+        is_fixed: updates.isFixed,
+        is_ignored: updates.isIgnored
+      })
+    })
+    const result = await response.json().catch(() => null)
+    if (getFinancialScopeVersion() !== requestScope) return false
+    if (!response.ok || !result?.success) {
+      throw new Error(result?.error || 'Não foi possível salvar a classificação.')
+    }
+    return this.updateTransaction(id, updates)
+  }
+
   // Remove transação
   static deleteTransaction(id: string): boolean {
     const items = this.getAll()

@@ -22,7 +22,8 @@ import {
   formatEndMonthYear,
   mapDatabaseInstallment,
   installmentApiPayload,
-  InstallmentDatabaseRow
+  InstallmentDatabaseRow,
+  deduplicateInstallmentItems
 } from '@/utils/installmentStore'
 import { CreditCardStore } from '@/utils/creditCardStore'
 import { 
@@ -247,7 +248,7 @@ export function InstallmentsProjection({
             const localList = InstallmentStore.getInstallments()
             const dbMapped = data.installments.map((row: InstallmentDatabaseRow) => mapDatabaseInstallment(row, localList.find(item => item.id === String(row.id))))
             const pending = localList.filter(item => item.id.startsWith('inst_'))
-            InstallmentStore.saveInstallments([...dbMapped, ...pending])
+            InstallmentStore.saveInstallments(deduplicateInstallmentItems([...dbMapped, ...pending]))
           } else setPersistenceError('Não foi possível carregar os parcelamentos salvos.')
         })
         .catch(() => { if (getFinancialScopeVersion() === financialScopeVersion) setPersistenceError('Não foi possível carregar os parcelamentos salvos.') })
