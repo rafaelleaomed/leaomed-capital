@@ -59,16 +59,41 @@ export interface LegacyTransaction {
   isIgnored?: boolean
 }
 
+const LEGACY_OWNER_TRANSACTION_KEYS = [
+  'leaomed_granular_txs_user',
+  'leaomed_granular_transactions_user',
+  'leaomed_granular_transactions_v5',
+  'leaomed_granular_transactions_v4',
+  'leaomed_granular_transactions_v3',
+  'leaomed_granular_transactions_v2',
+  'leaomed_granular_txs',
+] as const
+
 export function getVerifiedOwnerLegacyTransactions(capability: OwnerRecoveryCapability): LegacyTransaction[] {
-  if (!hasVerifiedLegacyOwner(capability) || financialStorage.getItem('leaomed_owner_transactions_recovery_v1')) return []
-  const raw = window.localStorage.getItem('leaomed_granular_txs_user')
-  if (!raw || raw.length > 10_000_000) return []
-  try {
-    const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed) || parsed.length > 25000) return []
-    return parsed.filter((value): value is LegacyTransaction => Boolean(value && typeof value === 'object' &&
-      typeof value.id === 'string' && typeof value.description === 'string' && value.description.trim() &&
-      typeof value.amount === 'number' && Number.isFinite(value.amount) && value.amount !== 0 &&
-      typeof value.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.date)))
-  } catch { return [] }
+  // O marcador v1 cobria apenas uma chave. A geração v2 reabre a recuperação
+  // para procurar todas as versões históricas; a API deduplica pelo hash da
+  // transação e o marcador v2 impede novas tentativas após sucesso.
+  if (!hasVerifiedLegacyOwner(capability) || financialStorage.getItem('leaomed_owner_transactions_recovery_v2')) return []
+
+  const recovered = new Map<string, LegacyTransaction>()
+  for (const key of LEGACY_OWNER_TRANSACTION_KEYS) {
+    if (recovered.size >= 25000) break
+    const raw = window.localStorage.getItem(key)
+    if (!raw || raw.length > 10_000_000) continue
+    try {
+      const parsed: unknown = JSON.parse(raw)
+      if (!Array.isArray(parsed)) continue
+      for (const value of parsed) {
+        if (recovered.size >= 25000) break
+        if (!value || typeof value !== 'object') continue
+        const candidate = value as Partial<LegacyTransaction>
+        if (typeof candidate.id !== 'string' || !candidate.id || recovered.has(candidate.id) ||
+            typeof candidate.description !== 'string' || !candidate.description.trim() ||
+            typeof candidate.amount !== 'number' || !Number.isFinite(candidate.amount) || candidate.amount === 0 ||
+            typeof candidate.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(candidate.date)) continue
+        recovered.set(candidate.id, candidate as LegacyTransaction)
+      }
+    } catch { /* Keep malformed legacy data untouched for manual recovery. */ }
+  }
+  return [...recovered.values()]
 }
