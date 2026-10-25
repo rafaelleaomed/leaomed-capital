@@ -3,6 +3,7 @@ import { financialStorage, getFinancialUserScope, getFinancialScopeVersion } fro
 import { CategoryRulesEngine } from './categoryRulesEngine'
 import { DEMO_SYNTHETIC_TRANSACTIONS } from './demoSyntheticData'
 import { InstallmentStore } from './installmentStore'
+import { buildPersistedTransactionUpdate } from './transactionUpdatePayload'
 
 export interface GranularTransaction {
   id: string
@@ -176,22 +177,19 @@ export class GranularTransactionStore {
     return true
   }
 
-  /** Persiste a classificação no banco antes de atualizar o cache local. */
+  /** Persiste os campos editáveis suportados pelo banco antes de atualizar o cache local. */
   static async persistClassification(id: string, updates: Partial<GranularTransaction>): Promise<boolean> {
     const requestScope = getFinancialScopeVersion()
     if (isDemoMode()) return this.updateTransaction(id, updates)
     if (!getFinancialUserScope()) return false
 
+    const original = this.getAll().find(transaction => transaction.id === id)
+    if (!original) return false
+
     const response = await fetch('/api/transactions', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id,
-        category: updates.category,
-        subcategory: updates.subcategory,
-        is_fixed: updates.isFixed,
-        is_ignored: updates.isIgnored
-      })
+      body: JSON.stringify(buildPersistedTransactionUpdate(id, original, updates))
     })
     const result = await response.json().catch(() => null)
     if (getFinancialScopeVersion() !== requestScope) return false

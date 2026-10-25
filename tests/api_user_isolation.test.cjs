@@ -60,7 +60,20 @@ async function sql(strings, ...values) {
   if (query.startsWith('UPDATE public.transactions')) {
     assert.match(query, /WHERE id = \? AND user_id = \?/)
     const [id, owner] = values.slice(-2)
-    return transactions.filter(t => t.id === id && t.user_id === owner)
+    const transaction = transactions.find(t => t.id === id && t.user_id === owner)
+    if (!transaction) return []
+    const [description, amount, date, competenceDate, category, subcategory, fixed, ignored] = values
+    Object.assign(transaction, {
+      description: description ?? transaction.description,
+      amount: amount ?? transaction.amount,
+      date: date ?? transaction.date,
+      competence_date: competenceDate ?? transaction.competence_date,
+      category: category ?? transaction.category,
+      subcategory: subcategory ?? transaction.subcategory,
+      is_fixed: fixed ?? transaction.is_fixed,
+      is_ignored: ignored ?? transaction.is_ignored
+    })
+    return [transaction]
   }
   if (query.startsWith('DELETE FROM public.category_rules')) {
     assert.match(query, /WHERE id = \? AND user_id = \?/)
@@ -143,6 +156,42 @@ async function main() {
   }
   assert.equal(transactions.length, 2)
   assert.equal((await routes.transactions.PUT(req('transactions', { id: transactions[0].id, category: 'intrusion' }, 'PUT'))).status, 404)
+  userId = 'user-a'
+  const ownEdit = await routes.transactions.PUT(req('transactions', {
+    id: transactions[0].id,
+    description: 'Edited purchase',
+    amount: -25.5,
+    date: '2026-10-20',
+    category: 'Saúde',
+    subcategory: 'Farmácia',
+    is_fixed: true,
+    is_ignored: false
+  }, 'PUT'))
+  assert.equal(ownEdit.status, 200)
+  assert.deepEqual(
+    {
+      description: transactions[0].description,
+      amount: transactions[0].amount,
+      date: transactions[0].date,
+      competence_date: transactions[0].competence_date,
+      category: transactions[0].category,
+      subcategory: transactions[0].subcategory,
+      is_fixed: transactions[0].is_fixed,
+      is_ignored: transactions[0].is_ignored
+    },
+    {
+      description: 'Edited purchase',
+      amount: -25.5,
+      date: '2026-10-20',
+      competence_date: '2026-10-20',
+      category: 'Saúde',
+      subcategory: 'Farmácia',
+      is_fixed: true,
+      is_ignored: false
+    },
+    'Transaction edits must survive a database reload'
+  )
+  userId = 'user-b'
   assert.equal((await routes['category-rules'].DELETE(new Request('http://localhost/api/category-rules?id=foreign-rule', { method: 'DELETE' }))).status, 404)
   assert.notEqual(transactions[0].hash, transactions[1].hash)
   assert.equal((await routes.transactions.POST(req('transactions', { ...tx, accountId: 'account-b', raw_id: 'new-import-id' }))).status, 200)

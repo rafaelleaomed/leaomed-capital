@@ -292,7 +292,7 @@ export async function POST(req: NextRequest) {
 
 /**
  * PUT /api/transactions
- * Atualiza categoria, subcategoria ou status de uma transação pertencente ao usuário.
+ * Atualiza os campos editáveis de uma transação pertencente ao usuário.
  */
 export async function PUT(req: NextRequest) {
   const { userId, errorResponse } = await getAuthenticatedUserId()
@@ -300,21 +300,35 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { id, category, subcategory, is_fixed, is_ignored } = body
+    const { id, description, amount, date, category, subcategory, is_fixed, is_ignored } = body
 
     if (!id) {
       return NextResponse.json({ success: false, error: 'ID da transação é obrigatório.' }, { status: 400 })
     }
 
+    if (description !== undefined && (typeof description !== 'string' || !description.trim())) {
+      return NextResponse.json({ success: false, error: 'Descrição inválida.' }, { status: 400 })
+    }
+    if (amount !== undefined && (typeof amount !== 'number' || !Number.isFinite(amount))) {
+      return NextResponse.json({ success: false, error: 'Valor inválido.' }, { status: 400 })
+    }
+    if (date !== undefined && (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date))) {
+      return NextResponse.json({ success: false, error: 'Data inválida.' }, { status: 400 })
+    }
+
     const updated = await sql`
       UPDATE public.transactions
       SET 
+        description = COALESCE(${description?.trim()}, description),
+        amount = COALESCE(${amount}, amount),
+        date = COALESCE(${date}, date),
+        competence_date = COALESCE(${date}, competence_date),
         category = COALESCE(${category}, category),
         subcategory = COALESCE(${subcategory}, subcategory),
         is_fixed = COALESCE(${is_fixed}, is_fixed),
         is_ignored = COALESCE(${is_ignored}, is_ignored)
       WHERE id = ${id} AND user_id = ${userId}
-      RETURNING id, category, subcategory, is_fixed, is_ignored
+      RETURNING id, description, amount, date, competence_date, category, subcategory, is_fixed, is_ignored
     `
 
     if (!updated || updated.length === 0) {
