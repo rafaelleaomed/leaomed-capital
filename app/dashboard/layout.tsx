@@ -51,7 +51,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </div>
           </header>
           <div className="capital-shell-body flex flex-1 items-start">
-            <SidebarNavigation />
+            <SidebarNavigation userName={userName} userEmail={userEmail} />
             <main id="capital-main-content" tabIndex={-1} className="capital-main flex-1 min-w-0">{children}</main>
           </div>
         </div>
