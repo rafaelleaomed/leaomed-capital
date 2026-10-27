@@ -66,11 +66,38 @@ export default async function DashboardPage({
     const userId = user.id
 
     // 1. Agregação contábil completa sobre TODO o mês selecionado (SEM LIMIT 100)
+    //
+    // Regras de deduplicação de transferências internas PJ ↔ PF:
+    //   • Despesas: excluir sempre transferências entre contas próprias (não são gasto real).
+    //   • Receita:  na visão CONSOLIDADA, excluir pró-labore recebido na PF (já contado
+    //               como receita na PJ). Em PF isolado, o pró-labore é a receita real.
+    //
+    // Categorias consideradas transferência interna:
+    //   Saída (despesa): qualquer categoria que contenha "transferência" ou "aporte"
+    //   Entrada (receita, só CONSOLIDADO): "Receita PF & Pró-Labore" e aliases
     const summaryRows = await sql`
       SELECT 
-        COALESCE(SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END), 0) as total_income,
-        COALESCE(SUM(CASE WHEN t.amount < 0 AND t.is_ignored = FALSE THEN ABS(t.amount) ELSE 0 END), 0) as total_expenses,
-        COALESCE(SUM(CASE WHEN t.amount < 0 AND t.is_ignored = FALSE AND t.is_fixed = TRUE THEN ABS(t.amount) ELSE 0 END), 0) as fixed_expenses,
+        COALESCE(SUM(CASE
+          WHEN t.amount > 0
+            AND NOT (
+              ${activeFilter} = 'CONSOLIDATED'
+              AND LOWER(COALESCE(t.category, '')) SIMILAR TO '%(pró-labore|pro.labore|receita pf|salário pj)%'
+            )
+          THEN t.amount ELSE 0 END), 0) as total_income,
+
+        COALESCE(SUM(CASE
+          WHEN t.amount < 0
+            AND t.is_ignored = FALSE
+            AND LOWER(COALESCE(t.category, '')) NOT SIMILAR TO '%(transferência|transferencia|aporte)%'
+          THEN ABS(t.amount) ELSE 0 END), 0) as total_expenses,
+
+        COALESCE(SUM(CASE
+          WHEN t.amount < 0
+            AND t.is_ignored = FALSE
+            AND t.is_fixed = TRUE
+            AND LOWER(COALESCE(t.category, '')) NOT SIMILAR TO '%(transferência|transferencia|aporte)%'
+          THEN ABS(t.amount) ELSE 0 END), 0) as fixed_expenses,
+
         COUNT(t.id) as total_transactions
       FROM public.transactions t
       LEFT JOIN public.accounts a ON a.id = t.account_id AND a.user_id = t.user_id
@@ -93,7 +120,7 @@ export default async function DashboardPage({
     const txCount = parseInt(summary.total_transactions || '0', 10)
     hasRealData = txCount > 0
 
-    // 2. Agrupamento das top categorias de despesas do período
+    // 2. Agrupamento das top categorias de despesas (excluindo transferências internas)
     const categoryRows = await sql`
       SELECT 
         COALESCE(t.category, 'Outros') as name,
@@ -103,6 +130,7 @@ export default async function DashboardPage({
       WHERE t.user_id = ${userId}
         AND t.amount < 0
         AND t.is_ignored = FALSE
+        AND LOWER(COALESCE(t.category, '')) NOT SIMILAR TO '%(transferência|transferencia|aporte)%'
         AND COALESCE(t.competence_date, t.date) >= ${startDate} AND COALESCE(t.competence_date, t.date) <= ${endDate}
         AND (
           CASE 
