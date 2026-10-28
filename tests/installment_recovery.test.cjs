@@ -2,7 +2,7 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 const Module = require('node:module')
-const ts = require('typescript')
+const { compileTypeScript } = require('../scripts/register-typescript-tests.cjs')
 const root = path.resolve(__dirname, '..')
 let user = { id: 'owner-a', email: 'owner@example.invalid' }
 let writes = 0
@@ -39,7 +39,7 @@ Module._load = function(request, parent, main) {
   return originalLoad.call(this, request.startsWith('@/') ? path.join(root, request.slice(2)) : request, parent, main)
 }
 require.extensions['.ts'] = (module, file) => {
-  module._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText, file)
+  module._compile(compileTypeScript(fs.readFileSync(file, 'utf8'), file), file)
 }
 const item = { id: 'legacy-1', name: 'Synthetic plan', category: 'Outros', monthlyValue: 15, currentInstallment: 2, totalInstallments: 6, endMonthYear: 'Fevereiro/2027', paymentMethod: 'Synthetic card' }
 const request = items => new Request('http://localhost/api/installments/recovery', { method: 'POST', body: JSON.stringify({ user_id: 'someone-else', installments: items }), headers: { 'content-type': 'application/json' } })

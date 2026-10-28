@@ -1,15 +1,12 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
-const ts = require('typescript')
 const path = require('node:path')
+const { compileTypeScript } = require('./register-typescript-tests.cjs')
 
 require.extensions['.ts'] = (module, filename) => {
   const source = fs.readFileSync(filename, 'utf8').replace(/from ['"]@\/([^'"]+)['"]/g, (_, relative) => `from ${JSON.stringify(path.resolve(__dirname, '..', relative))}`)
-  const compiled = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 }
-  })
-  module._compile(compiled.outputText, filename)
+  module._compile(compileTypeScript(source, filename), filename)
 }
 
 const cache = new Map()
@@ -103,9 +100,7 @@ test('client modules and their compiled output contain no private seed sentinels
     const root = path.resolve(__dirname, '..', directory)
     for (const relative of fs.readdirSync(root, { recursive: true }).filter(file => /\.(tsx|ts)$/.test(file))) {
       const source = fs.readFileSync(path.join(root, relative), 'utf8')
-      const compiled = ts.transpileModule(source, {
-        compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX }
-      }).outputText
+      const compiled = compileTypeScript(source, path.join(root, relative))
       assert.equal(blocked.some(value => source.includes(value) || compiled.includes(value)), false, `${directory}/${relative} must contain no private seed`)
     }
   }
