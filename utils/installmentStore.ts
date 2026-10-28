@@ -66,15 +66,30 @@ function normalizeInstallmentIdentity(value: string): string {
     .replace(/\s+/g, ' ')
 }
 
+/** Extrai o nome núcleo do parcelamento removendo:
+ *  - prefixos comuns: "Parcela Entrada", "Parcela", "Entrada", "Financiamento"
+ *  - conteúdo entre parênteses: (Localiza), (GVI126924), (Banco Safra), etc.
+ *  Isso garante que itens como "Parcela Entrada T-Cross Cartão" e
+ *  "Entrada T-Cross Cartão (Localiza)" resultem na mesma chave.
+ */
+function coreInstallmentName(raw: string): string {
+  return normalizeInstallmentIdentity(
+    (raw || '')
+      .replace(/\s*\([^)]*\)/g, '')
+      .replace(/^(parcela\s+entrada\s+|parcela\s+|entrada\s+|financiamento\s+)/i, '')
+      .trim()
+  )
+}
+
 export function installmentIdentityKey(item: InstallmentItem): string {
-  // Chave SEM nome: dois parcelamentos com paymentMethod + valor + parcelas + vencimento
-  // idênticos são o mesmo item, independente de como o nome foi salvo.
+  // Chave: nome-núcleo + valor arredondado ao R$1 mais próximo + entidade.
+  // O arredondamento absorve variações de centavos causadas por IPCA ou
+  // diferenças de importação (ex: R$ 6.837,22 vs R$ 6.837,14).
+  // Parênteses no nome (Localiza, GVI126924, Banco Safra…) são ignorados.
+  const amountBucket = Math.round(Math.abs(Number(item.monthlyValue) || 0))
   return [
-    normalizeInstallmentIdentity(item.paymentMethod),
-    Math.round(Math.abs(Number(item.monthlyValue) || 0) * 100),
-    item.currentInstallment,
-    item.totalInstallments,
-    normalizeInstallmentIdentity(item.endMonthYear),
+    coreInstallmentName(item.name),
+    amountBucket,
     item.entityType || 'PF'
   ].join('|')
 }
