@@ -20,6 +20,7 @@ interface AllocationItem {
   name?: string
   label?: string
   value?: string | number
+  percent?: string | number
   percentage?: string | number
   total?: string | number
 }
@@ -27,6 +28,7 @@ interface AllocationItem {
 type I10Response =
   | { configured: false; error?: string }
   | { configured: true; summary: SummaryData; allocation: AllocationItem[] | Record<string, unknown>; error?: string }
+  | { configured: null; error: string }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -64,10 +66,11 @@ export function InvestimentosI10() {
     try {
       const res = await fetch('/api/investidor10', { credentials: 'same-origin' })
       const json: I10Response = await res.json()
+      if (!res.ok) throw new Error(('error' in json && json.error) || 'Não foi possível carregar os dados.')
       setData(json)
       setFetchedAt(new Date())
     } catch {
-      setData({ configured: false, error: 'Não foi possível carregar os dados.' })
+      setData({ configured: null, error: 'Não foi possível carregar os dados.' })
     } finally {
       setLoading(false)
     }
@@ -122,8 +125,19 @@ export function InvestimentosI10() {
     )
   }
 
+  // ── Erro de carregamento ────────────────────────────────────────────────────
+  if (data?.configured === null) {
+    return (
+      <div className="capital-panel accent-border" role="alert">
+        <div className="panel-heading"><h2>Carteira de Investimentos</h2></div>
+        <p className="small-note" style={{ color: 'var(--capital-danger)', marginBottom: 14 }}>{data.error}</p>
+        <button type="button" className="capital-secondary-button" onClick={fetchData}>Tentar novamente</button>
+      </div>
+    )
+  }
+
   // ── Não configurado ─────────────────────────────────────────────────────────
-  if (!data?.configured) {
+  if (!data || data.configured !== true) {
     return (
       <div className="capital-panel accent-border">
         <div className="panel-heading">
@@ -321,8 +335,9 @@ export function InvestimentosI10() {
           >
             {allocation.slice(0, 20).map((item, idx) => {
               const label = item.ticker ?? item.name ?? item.label ?? `Ativo ${idx + 1}`
-              const pct = parseFloat(String(item.percentage ?? item.value ?? '0'))
-              const total = item.total !== undefined ? parseFloat(String(item.total)) : null
+              const pct = parseFloat(String(item.percent ?? item.percentage ?? '0'))
+              const totalValue = item.value ?? item.total
+              const total = totalValue !== undefined ? parseFloat(String(totalValue)) : null
 
               return (
                 <li key={`${label}-${idx}`} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

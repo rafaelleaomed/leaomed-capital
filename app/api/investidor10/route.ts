@@ -15,8 +15,16 @@ const I10_HEADERS = {
  * Aceita: "1584990", "https://investidor10.com.br/wallet/public/1584990?h=null", etc.
  */
 function extractWalletId(input: string): string | null {
-  const match = input.match(/\b(\d{5,})\b/)
-  return match ? match[1] : null
+  if (/^\d{5,15}$/.test(input)) return input
+
+  try {
+    const url = new URL(input)
+    if (url.hostname !== 'investidor10.com.br' && url.hostname !== 'www.investidor10.com.br') return null
+    const match = url.pathname.match(/\/wallet\/public\/(\d{5,15})(?:\/|$)/)
+    return match?.[1] ?? null
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -58,7 +66,7 @@ export async function GET() {
 
     if (!summaryRes.ok || !allocationRes.ok) {
       return NextResponse.json(
-        { configured: true, error: 'Falha ao buscar dados do Investidor10. Tente novamente mais tarde.' },
+        { configured: null, error: 'Falha ao buscar dados do Investidor10. Tente novamente mais tarde.' },
         { status: 502, headers: { 'Cache-Control': 'private, no-store' } }
       )
     }
@@ -75,7 +83,7 @@ export async function GET() {
   } catch (error) {
     console.error('[GET /api/investidor10] Erro:', error instanceof Error ? error.name : 'unknown_error')
     return NextResponse.json(
-      { configured: false, error: 'Falha ao buscar carteira de investimentos.' },
+      { configured: null, error: 'Falha ao buscar carteira de investimentos.' },
       { status: 500, headers: { 'Cache-Control': 'private, no-store' } }
     )
   }
@@ -87,7 +95,7 @@ export async function GET() {
  * Aceita o corpo: { walletUrl: string } — URL completa ou apenas o ID numérico.
  */
 export async function POST(req: NextRequest) {
-  const { userId, errorResponse } = await getAuthenticatedUserId()
+  const { userId, user, errorResponse } = await getAuthenticatedUserId()
   if (errorResponse) return errorResponse
 
   try {
@@ -104,7 +112,7 @@ export async function POST(req: NextRequest) {
     const walletId = extractWalletId(walletUrl)
     if (!walletId) {
       return NextResponse.json(
-        { success: false, error: 'ID da carteira inválido. Use o link público da carteira ou apenas o número.' },
+        { success: false, error: 'ID da carteira inválido. Use o link restrito/público da carteira ou apenas o número.' },
         { status: 400 }
       )
     }
@@ -116,24 +124,31 @@ export async function POST(req: NextRequest) {
     )
     if (!verifyRes.ok) {
       return NextResponse.json(
-        { success: false, error: 'Carteira não encontrada no Investidor10. Verifique se o link está correto e se a carteira é pública.' },
+        { success: false, error: 'Carteira não encontrada. Verifique se o link está correto e se ela está como Restrita ou Pública.' },
         { status: 422 }
       )
     }
 
     // Verifica se o corpo contém dados válidos (não uma resposta de erro)
     const verifyData = await verifyRes.json()
-    if (!verifyData?.equity && !verifyData?.applied) {
+    if (verifyData?.equity == null && verifyData?.applied == null) {
       return NextResponse.json(
-        { success: false, error: 'Não foi possível confirmar os dados da carteira. Verifique se ela é pública.' },
+        { success: false, error: 'Não foi possível confirmar os dados. Verifique se a carteira está como Restrita ou Pública.' },
         { status: 422 }
       )
     }
 
-    // Salva o wallet_id no perfil do usuário (upsert seguro por user_id)
+    if (!userId || !user?.email) {
+      return NextResponse.json(
+        { success: false, error: 'Identidade autenticada indisponível.' },
+        { status: 401 }
+      )
+    }
+
+    // Garante a identidade local e salva somente no registro do usuário autenticado.
     await sql`
-      INSERT INTO public.users (id, investidor10_wallet_id)
-      VALUES (${userId}, ${walletId})
+      INSERT INTO public.users (id, email, investidor10_wallet_id)
+      VALUES (${userId}, ${user.email.trim().toLowerCase()}, ${walletId})
       ON CONFLICT (id) DO UPDATE SET
         investidor10_wallet_id = EXCLUDED.investidor10_wallet_id
     `
