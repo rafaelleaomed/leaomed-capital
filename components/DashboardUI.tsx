@@ -19,6 +19,7 @@ import { CategoryChart } from './dashboard/CategoryChart'
 import { DataIngestionCenter } from './dashboard/DataIngestionCenter'
 import { InstallmentsProjection } from './dashboard/InstallmentsProjection'
 import { InvestmentRebalance } from './dashboard/InvestmentRebalance'
+import { InvestimentosI10 } from './dashboard/InvestimentosI10'
 import { HistoricalOverview } from './dashboard/HistoricalOverview'
 import { OnboardingWizardModal } from './dashboard/OnboardingWizardModal'
 import { QuickTransactionModal } from './dashboard/QuickTransactionModal'
@@ -332,6 +333,11 @@ export default function DashboardUI({
           <div id="balanceamento-investimentos" className="scroll-mt-24">
             <InvestmentRebalance isDemo={isDemo} />
           </div>
+          {!isDemo && (
+            <div id="investimentos-i10" className="scroll-mt-24">
+              <InvestimentosI10 />
+            </div>
+          )}
         </div>
       )}
 
