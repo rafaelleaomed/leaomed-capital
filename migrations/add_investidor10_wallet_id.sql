@@ -9,7 +9,12 @@ ALTER TABLE public.users
 
 ALTER TABLE public.users
   ADD CONSTRAINT users_investidor10_wallet_id_format
-  CHECK (investidor10_wallet_id IS NULL OR investidor10_wallet_id ~ '^\d{5,15}$');
+  CHECK (investidor10_wallet_id IS NULL OR investidor10_wallet_id ~ '^[0-9]{5,15}$');
+
+-- Impede que a mesma carteira seja vinculada a dois usuários do aplicativo
+CREATE UNIQUE INDEX IF NOT EXISTS users_investidor10_wallet_id_unique
+  ON public.users (investidor10_wallet_id)
+  WHERE investidor10_wallet_id IS NOT NULL;
 
 -- Comentário explicativo da coluna
 COMMENT ON COLUMN public.users.investidor10_wallet_id IS
