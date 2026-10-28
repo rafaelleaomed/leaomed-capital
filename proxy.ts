@@ -30,7 +30,7 @@ function copyCookies(from: NextResponse, to: NextResponse): NextResponse {
  */
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const isPrivate = pathname.startsWith('/dashboard') || (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/') && !pathname.startsWith('/api/webhooks/'));
+  const isPrivate = pathname.startsWith('/dashboard') || (pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/') && !pathname.startsWith('/api/webhooks/') && !pathname.startsWith('/api/internal/'));
   const privateResponse = (result: NextResponse) => {
     if (isPrivate) {
       result.headers.set('Cache-Control', 'private, no-store, max-age=0');
