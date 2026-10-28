@@ -36,7 +36,7 @@ process.env.I10_MIGRATION_USER_EMAIL = 'owner@example.com'
 process.env.I10_MIGRATION_WALLET_ID = '1584990'
 const request = (method, token) => new Request('http://localhost/api/internal/i10-migration', {
   method,
-  headers: token ? { authorization: `Bearer ${token}` } : {}
+  headers: token ? { 'x-admin-secret': token } : {}
 })
 
 async function main() {

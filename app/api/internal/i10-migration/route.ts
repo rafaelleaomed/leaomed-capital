@@ -9,8 +9,7 @@ const NO_STORE = { 'Cache-Control': 'private, no-store' }
 
 function isAuthorized(request: NextRequest): boolean {
   const expected = process.env.I10_MIGRATION_TOKEN
-  const header = request.headers.get('authorization')
-  const provided = header?.startsWith('Bearer ') ? header.slice(7) : ''
+  const provided = request.headers.get('x-admin-secret') || ''
   if (!expected || expected.length < 24 || !provided) return false
 
   const expectedBuffer = Buffer.from(expected)
