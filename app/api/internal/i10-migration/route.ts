@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ captured_at: new Date().toISOString(), columns, target_user: users[0] }, { headers: NO_STORE })
   } catch (error) {
-    console.error('[temporary i10 migration backup]', error instanceof Error ? error.name : 'unknown_error')
+    console.error('[temporary i10 migration backup]', error)
     return NextResponse.json({ success: false, error: 'Falha ao criar backup.' }, { status: 500, headers: NO_STORE })
   }
 }
