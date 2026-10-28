@@ -2,7 +2,7 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 const Module = require('node:module')
-const ts = require('typescript')
+const { compileTypeScript } = require('../scripts/register-typescript-tests.cjs')
 const { NextRequest } = require('next/server')
 const root = path.resolve(__dirname, '..')
 const originalLoad = Module._load
@@ -22,10 +22,7 @@ Module._load = function (request, parent, isMain) {
   return originalLoad.call(this, request.startsWith('@/') ? path.join(root, request.slice(2)) : request, parent, isMain)
 }
 require.extensions['.ts'] = (module, file) => {
-  const { outputText } = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
-    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true },
-  })
-  module._compile(outputText, file)
+  module._compile(compileTypeScript(fs.readFileSync(file, 'utf8'), file), file)
 }
 
 async function main() {

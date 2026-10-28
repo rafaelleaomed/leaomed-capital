@@ -2,7 +2,7 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 const Module = require('node:module')
-const ts = require('typescript')
+const { compileTypeScript } = require('../scripts/register-typescript-tests.cjs')
 const root = path.resolve(__dirname, '..')
 let user = { id: 'nonowner-a', email: 'a@example.invalid' }
 let queries = 0
@@ -34,7 +34,7 @@ Module._load = function(request, parent, main) {
   return originalLoad.call(this, request.startsWith('@/') ? path.join(root, request.slice(2)) : request, parent, main)
 }
 require.extensions['.ts'] = (module, file) => {
-  module._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText, file)
+  module._compile(compileTypeScript(fs.readFileSync(file, 'utf8'), file), file)
 }
 const item = { id: 'foreign-db-uuid-from-file', user_id: 'nonowner-b', name: 'Synthetic own backup', category: 'Other', monthlyValue: 25, currentInstallment: 1, totalInstallments: 6, endMonthYear: 'Março/2027', paymentMethod: 'Synthetic card' }
 const req = (override = {}) => new Request('http://localhost/api/installments/import', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ expectedUserId: user?.id, ownershipConfirmed: true, installments: [item], ...override }) })

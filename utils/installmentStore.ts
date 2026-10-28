@@ -68,7 +68,7 @@ function normalizeInstallmentIdentity(value: string): string {
 
 /** Extrai o nome núcleo do parcelamento removendo:
  *  - prefixos comuns: "Parcela Entrada", "Parcela", "Entrada", "Financiamento"
- *  - conteúdo entre parênteses: (Localiza), (GVI126924), (Banco Safra), etc.
+ *  - conteúdo entre parênteses: (Locadora), (Contrato), (Banco), etc.
  *  Isso garante que itens como "Parcela Entrada T-Cross Cartão" e
  *  "Entrada T-Cross Cartão (Localiza)" resultem na mesma chave.
  */
@@ -85,7 +85,7 @@ export function installmentIdentityKey(item: InstallmentItem): string {
   // Chave: nome-núcleo + valor arredondado ao R$1 mais próximo + entidade.
   // O arredondamento absorve variações de centavos causadas por IPCA ou
   // diferenças de importação (ex: R$ 6.837,22 vs R$ 6.837,14).
-  // Parênteses no nome (Localiza, GVI126924, Banco Safra…) são ignorados.
+  // Informações entre parênteses no nome são ignoradas.
   const amountBucket = Math.round(Math.abs(Number(item.monthlyValue) || 0))
   return [
     coreInstallmentName(item.name),

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 const Module = require('node:module')
-const ts = require('typescript')
+const { compileTypeScript } = require('../scripts/register-typescript-tests.cjs')
 const root = path.resolve(__dirname, '..')
 const originalLoad = Module._load
 let effect, authListener, releaseUser, ready = false, navigations = []
@@ -28,10 +28,7 @@ Module._load = function (request, parent, isMain) {
   return originalLoad.call(this, request.startsWith('@/') ? path.join(root, request.slice(2)) : request, parent, isMain)
 }
 for (const extension of ['.ts', '.tsx']) require.extensions[extension] = (module, file) => {
-  const compiled = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
-    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
-  })
-  module._compile(compiled.outputText, file)
+  module._compile(compileTypeScript(fs.readFileSync(file, 'utf8'), file), file)
 }
 const { FinancialSessionBoundary } = require('../components/FinancialSessionBoundary.tsx')
 const { getFinancialUserScope, setFinancialUserScope } = require('../utils/userScopedStorage.ts')
