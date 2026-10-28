@@ -67,8 +67,9 @@ function normalizeInstallmentIdentity(value: string): string {
 }
 
 export function installmentIdentityKey(item: InstallmentItem): string {
+  // Chave SEM nome: dois parcelamentos com paymentMethod + valor + parcelas + vencimento
+  // idênticos são o mesmo item, independente de como o nome foi salvo.
   return [
-    normalizeInstallmentIdentity(item.name),
     normalizeInstallmentIdentity(item.paymentMethod),
     Math.round(Math.abs(Number(item.monthlyValue) || 0) * 100),
     item.currentInstallment,
