@@ -24,12 +24,16 @@ export async function GET() {
   if (errorResponse) return errorResponse;
 
   try {
+    // DISTINCT ON remove duplicatas no banco: mesmo valor + parcelas + vencimento + pagamento
+    // é o mesmo item, independente de pequenas variações no nome cadastrado.
     const rows = await sql`
-      SELECT id, description, category, subcategory, total_installments, current_installment,
-             installment_amount, payment_method, start_date, end_date, is_active
+      SELECT DISTINCT ON (installment_amount, current_installment, total_installments, end_date, payment_method)
+        id, description, category, subcategory, total_installments, current_installment,
+        installment_amount, payment_method, start_date, end_date, is_active
       FROM public.installments
       WHERE user_id = ${userId} AND is_active = TRUE
-      ORDER BY installment_amount DESC
+      ORDER BY installment_amount DESC, current_installment DESC, total_installments DESC,
+               end_date DESC, payment_method, id
     `;
 
     return NextResponse.json({ success: true, installments: rows }, { headers: { 'Cache-Control': 'private, no-store' } });
