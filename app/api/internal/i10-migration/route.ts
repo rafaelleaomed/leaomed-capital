@@ -25,21 +25,12 @@ function migrationConfig() {
   return { email, walletId: walletId as string }
 }
 
-function unauthorized(request: NextRequest) {
-  const expected = process.env.I10_MIGRATION_TOKEN || ''
-  return NextResponse.json({
-    success: false,
-    error: 'Não autorizado.',
-    diagnostic: {
-      configured: expected.length >= 24,
-      expected_length: expected.length,
-      provided_length: (request.headers.get('x-admin-secret') || '').length,
-    },
-  }, { status: 401, headers: NO_STORE })
+function unauthorized() {
+  return NextResponse.json({ success: false, error: 'Não autorizado.' }, { status: 401, headers: NO_STORE })
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request)) return unauthorized(request)
+  if (!isAuthorized(request)) return unauthorized()
   const config = migrationConfig()
   if (!config) {
     return NextResponse.json({ success: false, error: 'Configuração indisponível.' }, { status: 503, headers: NO_STORE })
@@ -74,7 +65,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!isAuthorized(request)) return unauthorized(request)
+  if (!isAuthorized(request)) return unauthorized()
   const config = migrationConfig()
   if (!config) {
     return NextResponse.json({ success: false, error: 'Configuração indisponível.' }, { status: 503, headers: NO_STORE })

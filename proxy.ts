@@ -111,7 +111,8 @@ export async function proxy(request: NextRequest) {
       pathname === '/demo' ||
       pathname.startsWith('/demo/') ||
       pathname.startsWith('/api/auth/') ||
-      pathname.startsWith('/api/webhooks/');
+      pathname.startsWith('/api/webhooks/') ||
+      pathname.startsWith('/api/internal/');
 
     // Rotas protegidas — exige sessão válida
     const isProtected =
