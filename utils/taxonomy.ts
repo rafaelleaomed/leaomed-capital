@@ -24,6 +24,10 @@ export const CATEGORY_CANONICAL_MAP: Record<string, string> = {
   'Transferência Entre Contas': 'Transferência / Aporte',
   'Transferência / Aporte': 'Transferência / Aporte',
   'Pet': 'Pets',
+  'Casa': 'Moradia',
+  'Moradia': 'Moradia',
+  'Lazer': 'Lazer & Estilo de Vida',
+  'Lazer & Estilo de Vida': 'Lazer & Estilo de Vida',
   'Assinaturas': 'Serviços de Assinaturas',
   'Restaurante': 'Alimentação',
   'Impostos': 'Impostos e Taxas PF'
