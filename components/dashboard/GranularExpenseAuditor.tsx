@@ -43,6 +43,7 @@ import {
 import { CategoryRulesEngine } from '@/utils/categoryRulesEngine'
 import { normalizeCategoryName } from '@/utils/taxonomy'
 import { InvestmentLinkModal } from './InvestmentLinkModal'
+import { CategoryManagementPanel } from './CategoryManagementPanel'
 
 interface GranularExpenseAuditorProps {
   currentFilter?: string
@@ -191,6 +192,7 @@ export function GranularExpenseAuditor({
   initialCategory
 }: GranularExpenseAuditorProps) {
   const financialScopeVersion = React.useRef(getFinancialScopeVersion()).current
+  const [activeView, setActiveView] = useState<'TRANSACTIONS' | 'CATEGORIES'>('TRANSACTIONS')
   const [transactions, setTransactions] = useState<GranularTransaction[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [txTypeFilter, setTxTypeFilter] = useState<'ALL' | 'EXPENSE' | 'INCOME'>('ALL')
@@ -302,7 +304,8 @@ export function GranularExpenseAuditor({
     investmentAsset: '',
     investmentAction: null as 'APORTE' | 'RESGATE' | null,
     isFixed: false,
-    updateRuleToo: true
+    updateRuleToo: true,
+    applyToMatchingHistory: false
   })
 
   // Formulário de Novo Lançamento Manual
@@ -926,7 +929,8 @@ export function GranularExpenseAuditor({
       investmentAsset: tx.investmentAsset || '',
       investmentAction: tx.investmentAction || null,
       isFixed: tx.isFixed,
-      updateRuleToo: true
+      updateRuleToo: true,
+      applyToMatchingHistory: false
     })
   }
 
@@ -960,13 +964,22 @@ export function GranularExpenseAuditor({
 
     if (getFinancialScopeVersion() !== financialScopeVersion) return
     setIsSavingEdit(true)
+    let matchingUpdatedCount = 1
     try {
-      const saved = await GranularTransactionStore.persistClassification(editingTx.id, updates)
+      if (editForm.applyToMatchingHistory) {
+        matchingUpdatedCount = await GranularTransactionStore.persistClassificationForExactName(
+          editingTx.id,
+          editingTx.description,
+          updates
+        )
+      } else {
+        const saved = await GranularTransactionStore.persistClassification(editingTx.id, updates)
+        if (!saved) throw new Error('Lançamento não encontrado no cache local.')
+      }
       if (getFinancialScopeVersion() !== financialScopeVersion) return
-      if (!saved) throw new Error('Lançamento não encontrado no cache local.')
     } catch (error: any) {
       setBulkToast(error?.message || 'Não foi possível salvar a classificação. Tente novamente.')
-      setTimeout(() => setBulkToast(null), 4000)
+      setTimeout(() => setBulkToast(null), 5000)
       return
     } finally {
       setIsSavingEdit(false)
@@ -975,7 +988,8 @@ export function GranularExpenseAuditor({
     if (editForm.updateRuleToo && editForm.description.trim().length >= 2) {
       const finalCatForRule = finalCat || fallbackCat
       CategoryRulesEngine.saveRule({
-        pattern: editForm.description.trim().split(' ')[0],
+        pattern: editForm.description.trim(),
+        match_type: 'exact',
         category: finalCatForRule,
         subcategory: finalSubcat || 'Outros',
         subdivision: editForm.subdivision.trim() || undefined,
@@ -984,6 +998,10 @@ export function GranularExpenseAuditor({
       })
     }
 
+    if (editForm.applyToMatchingHistory) {
+      setBulkToast(`Categoria aplicada a ${matchingUpdatedCount} lançamento(s) com exatamente este nome, incluindo os anteriores.`)
+      setTimeout(() => setBulkToast(null), 5000)
+    }
     setEditingTx(null)
   }
 
@@ -1089,8 +1107,37 @@ export function GranularExpenseAuditor({
     }
   }
 
+  const viewSwitcher = (
+    <div className="grid grid-cols-2 p-1 rounded-xl border border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-neutral,#f8fafc)] max-w-xl">
+      <button
+        type="button"
+        onClick={() => setActiveView('TRANSACTIONS')}
+        className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 ${activeView === 'TRANSACTIONS' ? 'bg-[var(--capital-card,#fff)] text-[var(--capital-text,#242a2e)] shadow-xs' : 'text-[var(--capital-muted,#242a2e)]'}`}
+      >
+        <CreditCard className="w-4 h-4" /> Lançamentos
+      </button>
+      <button
+        type="button"
+        onClick={() => setActiveView('CATEGORIES')}
+        className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 ${activeView === 'CATEGORIES' ? 'bg-[var(--capital-card,#fff)] text-[var(--capital-text,#242a2e)] shadow-xs' : 'text-[var(--capital-muted,#242a2e)]'}`}
+      >
+        <Tag className="w-4 h-4" /> Categorias e subcategorias
+      </button>
+    </div>
+  )
+
+  if (activeView === 'CATEGORIES') {
+    return (
+      <div className="space-y-5 animate-in fade-in duration-200">
+        {viewSwitcher}
+        <CategoryManagementPanel onChanged={() => loadTransactions(selectedPeriod)} />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-5 animate-in fade-in duration-200">
+      {viewSwitcher}
       {/* 1. BANNER DO DETECTOR INTELIGENTE DE DUPLICIDADES (Cartão vs Débito de Fatura em Conta) */}
       {duplicateReport.hasDuplicates && (
         <div className="p-4 md:p-5 rounded-xl bg-[var(--capital-warning-soft,#fcf1dc)] dark:bg-[var(--capital-warning-soft,#fcf1dc)] border border-[var(--capital-warning,#8b5b15)] text-[var(--capital-warning,#8b5b15)] dark:text-[var(--capital-warning,#8b5b15)]">
@@ -1930,9 +1977,20 @@ export function GranularExpenseAuditor({
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block mb-1">
-                    Subcategoria
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--capital-muted,#242a2e)] block">
+                      Subcategoria
+                    </label>
+                    {!editForm.isCustomCategory && (
+                      <button
+                        type="button"
+                        onClick={() => setEditForm(prev => ({ ...prev, isCustomSubcategory: true, customSubcategory: '' }))}
+                        className="text-[10px] font-bold text-[var(--capital-success,#157449)] hover:underline"
+                      >
+                        + Criar subcategoria
+                      </button>
+                    )}
+                  </div>
                   {(!editForm.isCustomCategory && !editForm.isCustomSubcategory) ? (
                     <select
                       value={editForm.subcategory}
@@ -2049,7 +2107,19 @@ export function GranularExpenseAuditor({
                     onChange={(e) => setEditForm({ ...editForm, updateRuleToo: e.target.checked })}
                     className="rounded border-[var(--capital-line,#e4dfd3)] bg-[var(--capital-card,#f8fafc)] text-[var(--capital-success,#157449)] focus:ring-[var(--capital-accent,#927025)] w-4 h-4 cursor-pointer"
                   />
-                  <span>Sempre categorizar lançamentos semelhantes nesta categoria</span>
+                  <span>Lembrar este nome exato para os próximos lançamentos</span>
+                </label>
+
+                <label className="flex items-start gap-2 cursor-pointer text-xs font-bold text-[var(--capital-accent,#927025)] rounded-xl border border-[var(--capital-accent,#927025)] bg-[var(--capital-soft,#f6f0df)] p-3">
+                  <input
+                    type="checkbox"
+                    checked={editForm.applyToMatchingHistory}
+                    onChange={(e) => setEditForm({ ...editForm, applyToMatchingHistory: e.target.checked })}
+                    className="mt-0.5 rounded border-[var(--capital-accent,#927025)] bg-[var(--capital-card,#f8fafc)] text-[var(--capital-success,#157449)] focus:ring-[var(--capital-accent,#927025)] w-4 h-4 cursor-pointer"
+                  />
+                  <span>
+                    Aplicar categoria e subcategoria a todos os lançamentos com exatamente este nome, inclusive os anteriores
+                  </span>
                 </label>
               </div>
             </div>

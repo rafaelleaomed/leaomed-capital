@@ -294,6 +294,73 @@ export async function POST(req: NextRequest) {
  * PUT /api/transactions
  * Atualiza os campos editáveis de uma transação pertencente ao usuário.
  */
+export async function PATCH(req: NextRequest) {
+  const { userId, errorResponse } = await getAuthenticatedUserId()
+  if (errorResponse) return errorResponse
+
+  try {
+    const body = await req.json()
+    const { id, source_description, description, amount, date, category, subcategory, is_fixed, is_ignored } = body
+
+    if (!id || typeof source_description !== 'string' || !source_description.trim()) {
+      return NextResponse.json({ success: false, error: 'Lançamento e nome de origem são obrigatórios.' }, { status: 400 })
+    }
+    if (typeof category !== 'string' || !category.trim() || typeof subcategory !== 'string' || !subcategory.trim()) {
+      return NextResponse.json({ success: false, error: 'Categoria e subcategoria são obrigatórias.' }, { status: 400 })
+    }
+    if (description !== undefined && (typeof description !== 'string' || !description.trim())) {
+      return NextResponse.json({ success: false, error: 'Descrição inválida.' }, { status: 400 })
+    }
+    if (amount !== undefined && (typeof amount !== 'number' || !Number.isFinite(amount))) {
+      return NextResponse.json({ success: false, error: 'Valor inválido.' }, { status: 400 })
+    }
+    if (date !== undefined && (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date))) {
+      return NextResponse.json({ success: false, error: 'Data inválida.' }, { status: 400 })
+    }
+
+    const updated = await sql`
+      WITH owned_target AS (
+        SELECT id
+        FROM public.transactions
+        WHERE id = ${id} AND user_id = ${userId}
+      )
+      UPDATE public.transactions AS t
+      SET
+        description = CASE WHEN t.id = ${id} THEN COALESCE(${description?.trim()}, t.description) ELSE t.description END,
+        amount = CASE WHEN t.id = ${id} THEN COALESCE(${amount}, t.amount) ELSE t.amount END,
+        date = CASE WHEN t.id = ${id} THEN COALESCE(${date}, t.date) ELSE t.date END,
+        competence_date = CASE WHEN t.id = ${id} THEN COALESCE(${date}, t.competence_date) ELSE t.competence_date END,
+        category = ${category.trim()},
+        subcategory = ${subcategory.trim()},
+        is_fixed = CASE WHEN t.id = ${id} THEN COALESCE(${is_fixed}, t.is_fixed) ELSE t.is_fixed END,
+        is_ignored = CASE WHEN t.id = ${id} THEN COALESCE(${is_ignored}, t.is_ignored) ELSE t.is_ignored END
+      FROM owned_target
+      WHERE t.user_id = ${userId}
+        AND (
+          t.id = owned_target.id
+          OR REGEXP_REPLACE(LOWER(TRIM(t.description)), '\\s+', ' ', 'g') =
+             REGEXP_REPLACE(LOWER(TRIM(${source_description})), '\\s+', ' ', 'g')
+        )
+      RETURNING t.id, t.description, t.amount, t.date,
+                t.competence_date, t.category, t.subcategory,
+                t.is_fixed, t.is_ignored
+    `
+
+    if (!updated || updated.length === 0) {
+      return NextResponse.json({ success: false, error: 'Lançamento não encontrado ou acesso não autorizado.' }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      success: true,
+      updatedCount: updated.length,
+      transaction: updated.find((item: any) => item.id === id) || updated[0]
+    })
+  } catch (error) {
+    console.error('Erro ao recategorizar lançamentos pelo nome:', error instanceof Error ? error.name : 'unknown_error')
+    return NextResponse.json({ success: false, error: 'Falha ao atualizar lançamentos com o mesmo nome.' }, { status: 500 })
+  }
+}
+
 export async function PUT(req: NextRequest) {
   const { userId, errorResponse } = await getAuthenticatedUserId()
   if (errorResponse) return errorResponse

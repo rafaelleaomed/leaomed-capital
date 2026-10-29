@@ -4,6 +4,7 @@ import { CategoryRulesEngine } from './categoryRulesEngine'
 import { DEMO_SYNTHETIC_TRANSACTIONS } from './demoSyntheticData'
 import { InstallmentStore } from './installmentStore'
 import { buildPersistedTransactionUpdate } from './transactionUpdatePayload'
+import { applyClassificationToExactName } from './categoryManagement'
 
 export interface GranularTransaction {
   id: string
@@ -197,6 +198,49 @@ export class GranularTransactionStore {
       throw new Error(result?.error || 'Não foi possível salvar a classificação.')
     }
     return this.updateTransaction(id, updates)
+  }
+
+  /** Persiste a edição e aplica categoria/subcategoria a todos os lançamentos do usuário com o mesmo nome exato. */
+  static async persistClassificationForExactName(
+    id: string,
+    sourceDescription: string,
+    updates: Partial<GranularTransaction>
+  ): Promise<number> {
+    const requestScope = getFinancialScopeVersion()
+    if (isDemoMode()) {
+      const current = this.getAll().find(transaction => transaction.id === id)
+      if (!current) return 0
+      const classified = applyClassificationToExactName(this.getAll(), sourceDescription, {
+        category: updates.category || current.category,
+        subcategory: updates.subcategory || current.subcategory,
+      })
+      const next = classified.transactions.map(transaction => transaction.id === id ? { ...transaction, ...updates } : transaction)
+      this.save(next)
+      return classified.updatedCount
+    }
+    if (!getFinancialUserScope()) return 0
+
+    const original = this.getAll().find(transaction => transaction.id === id)
+    if (!original) return 0
+    const payload = buildPersistedTransactionUpdate(id, original, updates)
+    const response = await fetch('/api/transactions', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, source_description: sourceDescription })
+    })
+    const result = await response.json().catch(() => null)
+    if (getFinancialScopeVersion() !== requestScope) return 0
+    if (!response.ok || !result?.success) {
+      throw new Error(result?.error || 'Não foi possível atualizar os lançamentos com o mesmo nome.')
+    }
+
+    const classified = applyClassificationToExactName(this.getAll(), sourceDescription, {
+      category: updates.category || original.category,
+      subcategory: updates.subcategory || original.subcategory,
+    })
+    const next = classified.transactions.map(transaction => transaction.id === id ? { ...transaction, ...updates } : transaction)
+    this.save(next)
+    return Number(result.updatedCount) || classified.updatedCount
   }
 
   // Remove transação
